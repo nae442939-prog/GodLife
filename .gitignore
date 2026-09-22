@@ -1,0 +1,24 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Java / Maven (backend)
+target/
+*.class
+
+# Node (frontend)
+node_modules/
+dist/
+
+# Python (ai-server)
+venv/
+__pycache__/
+*.pyc
+
+# 환경변수 (실제 값은 절대 올리면 안됨)
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
