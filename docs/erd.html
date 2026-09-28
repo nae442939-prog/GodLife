@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="blueprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GodLife ERD</title>
+<style>
+  :root {
+    --page: #071d3a; --sheet: #0a2a54; --ink: #d8e8ff; --muted: #8fb0dc; --faint: #5b7fb0;
+    --tbl: #0c2f5f; --zone-l: 66%; --head-l: 30%; --bd-l: 66%; --edge: #9cc4ff; --card: #0d2b52; --line: #1d4478;
+    --gold: 47; --cy: 195; --vi: 275;
+  }
+  :root[data-theme="paper"] {
+    --page: #eef2f8; --sheet: #fbfcfe; --ink: #10284a; --muted: #4b6488; --faint: #7f93b3;
+    --tbl: #ffffff; --zone-l: 36%; --head-l: 88%; --bd-l: 36%; --edge: #35598f; --card: #ffffff; --line: #ced9ea;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--page); color: var(--ink); font: 15px/1.6 "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -.02em; }
+  h1 small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+  .lead { color: var(--muted); margin: 0 0 22px; max-width: 72ch; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .toolbar .sp { flex: 1; }
+  button { font: inherit; font-size: 13px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; cursor: pointer; }
+  button:hover { border-color: var(--edge); }
+  button:focus-visible, .tbl:focus-visible { outline: 2px solid var(--edge); outline-offset: 2px; }
+  .zoom { display: inline-flex; align-items: center; gap: 4px; }
+  .zoom output { min-width: 48px; text-align: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chip { border-radius: 999px; border-color: hsl(var(--h) 50% var(--zone-l) / .55); padding: 3px 11px; font-size: 12.5px; }
+  .chip b { color: hsl(var(--h) 65% var(--zone-l)); font-weight: 700; margin-right: 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .sheet { height: min(78vh, 900px); overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--sheet); cursor: grab; overscroll-behavior: contain; }
+  .sheet.drag { cursor: grabbing; user-select: none; }
+  .sheet svg { display: block; color: var(--ink); }
+  h2 { font-size: 18px; margin: 40px 0 12px; letter-spacing: -.01em; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card h3 { margin: 0 0 4px; font-size: 14.5px; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  ul.as { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+  ul.as li { margin: 6px 0; }
+  code { font: 12.5px/1 ui-monospace, Consolas, "D2Coding", "Malgun Gothic", monospace; background: color-mix(in srgb, var(--edge) 16%, transparent); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---- svg ---- */
+  svg { font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif; }
+  .bg { fill: var(--sheet); }
+  .tick { font-size: 10px; fill: var(--muted); }
+  .zone-box { fill: hsl(var(--h) 60% 50% / .05); stroke: hsl(var(--h) 55% var(--zone-l) / .6); stroke-width: 1.2; stroke-dasharray: 7 5; }
+  .zone-n { fill: none; stroke: hsl(var(--h) 65% var(--zone-l)); stroke-width: 1.4; }
+  .zone-nt { font-size: 11px; font-weight: 700; fill: hsl(var(--h) 65% var(--zone-l)); }
+  .zone-t { font-size: 15px; font-weight: 700; fill: var(--ink); }
+  .zone-d { font-size: 11px; fill: var(--muted); }
+  .edge { fill: none; stroke: currentColor; stroke-width: 1.25; opacity: .5; transition: opacity .12s; }
+  .tbl { transition: opacity .12s; outline: none; }
+  .tb-body { fill: var(--tbl); stroke: hsl(var(--h) 45% var(--zone-l) / .75); stroke-width: 1.2; }
+  .tb-head { fill: hsl(var(--h) 55% var(--head-l)); }
+  .tb-name { font: 700 13px ui-monospace, Consolas, "D2Coding", "Malgun Gothic", monospace; fill: var(--ink); }
+  .tb-ko { font-size: 11.5px; fill: var(--ink); opacity: .78; }
+  .tb-sep { stroke: var(--ink); stroke-width: .5; opacity: .13; }
+  .tb-sep.foot { opacity: .3; stroke-dasharray: 3 3; }
+  .hit { fill: transparent; }
+  .row:hover .hit { fill: hsl(var(--h) 70% 60% / .12); }
+  .c-name { font: 11.5px ui-monospace, Consolas, "D2Coding", "Malgun Gothic", monospace; fill: var(--ink); }
+  .c-name.is-pk { font-weight: 700; }
+  .c-type { font: 10.5px ui-monospace, Consolas, "D2Coding", "Malgun Gothic", monospace; fill: var(--muted); }
+  .c-tag { font: italic 9.5px ui-monospace, Consolas, "Malgun Gothic", monospace; fill: hsl(var(--cy) 70% var(--bd-l)); opacity: .9; }
+  .c-foot { font: 9.5px ui-monospace, Consolas, "D2Coding", "Malgun Gothic", monospace; fill: var(--muted); }
+  .bd-pk { fill: hsl(var(--gold) 90% 55% / .18); stroke: hsl(var(--gold) 85% var(--bd-l)); }
+  .bd-fk { fill: hsl(var(--cy) 85% 55% / .16); stroke: hsl(var(--cy) 75% var(--bd-l)); }
+  .bd-uk { fill: hsl(var(--vi) 80% 65% / .16); stroke: hsl(var(--vi) 70% var(--bd-l)); }
+  .bd { stroke-width: 1; }
+  .bd-t { font: 700 8.5px ui-monospace, Consolas, "Malgun Gothic", monospace; }
+  .bd-t-pk { fill: hsl(var(--gold) 90% var(--bd-l)); }
+  .bd-t-fk { fill: hsl(var(--cy) 80% var(--bd-l)); }
+  .bd-t-uk { fill: hsl(var(--vi) 75% var(--bd-l)); }
+  .note-box { fill: hsl(var(--h) 60% 50% / .07); stroke: hsl(var(--h) 55% var(--zone-l) / .45); stroke-width: 1; }
+  .note-t { font-size: 10.5px; fill: var(--muted); }
+  .tb-lab { font-size: 10px; fill: var(--muted); }
+  .tb-val { font-size: 12.5px; fill: var(--ink); font-weight: 600; }
+  .tb-big { font-size: 19px; fill: var(--ink); font-weight: 800; letter-spacing: .01em; }
+  .lg-t { font-size: 11.5px; fill: var(--ink); }
+  /* hover focus */
+  .focus .tbl:not(.hl) { opacity: .25; }
+  .focus .edge:not(.hl) { opacity: .06; }
+  .focus .edge.hl { opacity: 1; stroke-width: 2.4; stroke: hsl(var(--h) 85% var(--zone-l)); }
+  .focus .zone, .focus .note { opacity: .5; }
+  @media print { .toolbar, .chips { display: none; } .sheet { height: auto; overflow: visible; border: 0; } .sheet svg { width: 100% !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GodLife ERD <small>설계도 · 1~3차 전체 · 초안 v0.1</small></h1>
+  <p class="lead">갓생살기의 전체 기능 명세(계정 · 챌린지 · 인증 · 원장/정산 · 랭킹 · AI 검증 · 부정행위 방지 · 소셜 · 결제 · 마켓플레이스)를 38개 테이블로 옮긴 논리 ERD. 표에 마우스를 올리면 연결된 표만 강조됩니다.</p>
+
+  <div class="toolbar">
+    <div class="zoom">
+      <button id="zout" aria-label="축소">−</button><output id="zval">100%</output><button id="zin" aria-label="확대">+</button>
+    </div>
+    <button id="zfit">전체 보기</button>
+    <button id="z100">100%</button>
+    <span class="sp"></span>
+    <button id="theme">제도지 모드</button>
+  </div>
+  <div class="chips" aria-label="영역으로 이동">
+      <button class="chip" data-zone="account" data-x="110" data-y="110" style="--h:195"><b>01</b> 계정 · 인증 · 티어</button>
+      <button class="chip" data-zone="challenge" data-x="872" data-y="110" style="--h:38"><b>02</b> 챌린지 코어</button>
+      <button class="chip" data-zone="verify" data-x="1634" data-y="110" style="--h:150"><b>03</b> 인증 · AI 검증</button>
+      <button class="chip" data-zone="payment" data-x="110" data-y="1084" style="--h:45"><b>04</b> 결제 (테스트)</button>
+      <button class="chip" data-zone="points" data-x="528" data-y="1084" style="--h:50"><b>05</b> 포인트 · 원장 · 정산</button>
+      <button class="chip" data-zone="ranking" data-x="1290" data-y="1084" style="--h:285"><b>06</b> 랭킹 · 시즌</button>
+      <button class="chip" data-zone="fraud" data-x="1708" data-y="1084" style="--h:0"><b>07</b> 부정행위 방지</button>
+      <button class="chip" data-zone="market" data-x="110" data-y="1965" style="--h:25"><b>08</b> 마켓플레이스</button>
+      <button class="chip" data-zone="retention" data-x="872" data-y="1965" style="--h:165"><b>09</b> 리텐션</button>
+      <button class="chip" data-zone="social" data-x="1290" data-y="1965" style="--h:300"><b>10</b> 소셜 · 배지</button>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <svg id="erd" role="img" data-w="2546" data-h="3124" viewBox="0 0 2546 3124" aria-label="GodLife ERD: 계정, 챌린지, 인증, 포인트 원장과 정산, 랭킹, 소셜, 결제, 마켓플레이스 38개 테이블의 관계도">
+<defs>
+  <pattern id="g-minor" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="currentColor" stroke-width=".5" opacity=".07"/></pattern>
+  <pattern id="g-major" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="url(#g-minor)"/><path d="M100 0H0V100" fill="none" stroke="currentColor" stroke-width=".8" opacity=".12"/></pattern>
+  <marker id="m-many" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="0" refY="8" orient="auto" viewBox="0 0 16 16"><path d="M0 3L11 8M0 8H11M0 13L11 8" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
+  <marker id="m-one-s" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="0" refY="8" orient="auto" viewBox="0 0 16 16"><path d="M7 3V13M11 3V13" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
+  <marker id="m-one-e" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="16" refY="8" orient="auto" viewBox="0 0 16 16"><path d="M5 3V13M9 3V13" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
+</defs>
+<rect class="bg" width="2546" height="3124"/>
+<rect width="2546" height="3124" fill="url(#g-major)" class="ink"/>
+<g class="frame ink">
+  <rect x="28" y="28" width="2490" height="3068" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".7"/>
+  <rect x="44" y="44" width="2458" height="3036" fill="none" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="180.55555555555554" y="39" class="tick" text-anchor="middle">A</text><text x="180.55555555555554" y="3092" class="tick" text-anchor="middle">A</text>
+<text x="453.66666666666663" y="39" class="tick" text-anchor="middle">B</text><text x="453.66666666666663" y="3092" class="tick" text-anchor="middle">B</text>
+<path d="M317.1111111111111 28V44M317.1111111111111 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="726.7777777777777" y="39" class="tick" text-anchor="middle">C</text><text x="726.7777777777777" y="3092" class="tick" text-anchor="middle">C</text>
+<path d="M590.2222222222222 28V44M590.2222222222222 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="999.8888888888888" y="39" class="tick" text-anchor="middle">D</text><text x="999.8888888888888" y="3092" class="tick" text-anchor="middle">D</text>
+<path d="M863.3333333333333 28V44M863.3333333333333 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="1273" y="39" class="tick" text-anchor="middle">E</text><text x="1273" y="3092" class="tick" text-anchor="middle">E</text>
+<path d="M1136.4444444444443 28V44M1136.4444444444443 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="1546.1111111111109" y="39" class="tick" text-anchor="middle">F</text><text x="1546.1111111111109" y="3092" class="tick" text-anchor="middle">F</text>
+<path d="M1409.5555555555554 28V44M1409.5555555555554 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="1819.2222222222222" y="39" class="tick" text-anchor="middle">G</text><text x="1819.2222222222222" y="3092" class="tick" text-anchor="middle">G</text>
+<path d="M1682.6666666666665 28V44M1682.6666666666665 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="2092.333333333333" y="39" class="tick" text-anchor="middle">H</text><text x="2092.333333333333" y="3092" class="tick" text-anchor="middle">H</text>
+<path d="M1955.7777777777776 28V44M1955.7777777777776 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="2365.4444444444443" y="39" class="tick" text-anchor="middle">I</text><text x="2365.4444444444443" y="3092" class="tick" text-anchor="middle">I</text>
+<path d="M2228.8888888888887 28V44M2228.8888888888887 3080V3096" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="186" class="tick" text-anchor="middle">1</text><text x="2510" y="186" class="tick" text-anchor="middle">1</text>
+<text x="36" y="462" class="tick" text-anchor="middle">2</text><text x="2510" y="462" class="tick" text-anchor="middle">2</text>
+<path d="M28 320H44M2502 320H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="738" class="tick" text-anchor="middle">3</text><text x="2510" y="738" class="tick" text-anchor="middle">3</text>
+<path d="M28 596H44M2502 596H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="1014" class="tick" text-anchor="middle">4</text><text x="2510" y="1014" class="tick" text-anchor="middle">4</text>
+<path d="M28 872H44M2502 872H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="1290" class="tick" text-anchor="middle">5</text><text x="2510" y="1290" class="tick" text-anchor="middle">5</text>
+<path d="M28 1148H44M2502 1148H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="1566" class="tick" text-anchor="middle">6</text><text x="2510" y="1566" class="tick" text-anchor="middle">6</text>
+<path d="M28 1424H44M2502 1424H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="1842" class="tick" text-anchor="middle">7</text><text x="2510" y="1842" class="tick" text-anchor="middle">7</text>
+<path d="M28 1700H44M2502 1700H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="2118" class="tick" text-anchor="middle">8</text><text x="2510" y="2118" class="tick" text-anchor="middle">8</text>
+<path d="M28 1976H44M2502 1976H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="2394" class="tick" text-anchor="middle">9</text><text x="2510" y="2394" class="tick" text-anchor="middle">9</text>
+<path d="M28 2252H44M2502 2252H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="2670" class="tick" text-anchor="middle">10</text><text x="2510" y="2670" class="tick" text-anchor="middle">10</text>
+<path d="M28 2528H44M2502 2528H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+<text x="36" y="2946" class="tick" text-anchor="middle">11</text><text x="2510" y="2946" class="tick" text-anchor="middle">11</text>
+<path d="M28 2804H44M2502 2804H2518" stroke="currentColor" stroke-width=".8" opacity=".55"/>
+</g>
+<g class="zone" id="zone-account" style="--h:195">
+  <rect class="zone-box" x="110" y="110" width="692" height="904" rx="10"/>
+  <circle class="zone-n" cx="146" cy="142" r="14"/>
+  <text class="zone-nt" x="146" y="146" text-anchor="middle">01</text>
+  <text class="zone-t" x="170" y="140">계정 · 인증 · 티어</text>
+  <text class="zone-d" x="170" y="158">1차 · 가입/로그인, 휴대폰 1계정 제한, 기기 지문</text>
+</g>
+<g class="zone" id="zone-challenge" style="--h:38">
+  <rect class="zone-box" x="872" y="110" width="692" height="904" rx="10"/>
+  <circle class="zone-n" cx="908" cy="142" r="14"/>
+  <text class="zone-nt" x="908" y="146" text-anchor="middle">02</text>
+  <text class="zone-t" x="932" y="140">챌린지 코어</text>
+  <text class="zone-d" x="932" y="158">1차 · 생성/탐색/참가, 무료·베팅 모드, 진행률</text>
+</g>
+<g class="zone" id="zone-verify" style="--h:150">
+  <rect class="zone-box" x="1634" y="110" width="692" height="904" rx="10"/>
+  <circle class="zone-n" cx="1670" cy="142" r="14"/>
+  <text class="zone-nt" x="1670" y="146" text-anchor="middle">03</text>
+  <text class="zone-t" x="1694" y="140">인증 · AI 검증</text>
+  <text class="zone-d" x="1694" y="158">1차 사진 제출 · 2차 전이학습 모델 판정/중복 탐지/검토</text>
+</g>
+<g class="zone" id="zone-payment" style="--h:45">
+  <rect class="zone-box" x="110" y="1084" width="348" height="811" rx="10"/>
+  <circle class="zone-n" cx="146" cy="1116" r="14"/>
+  <text class="zone-nt" x="146" y="1120" text-anchor="middle">04</text>
+  <text class="zone-t" x="170" y="1114">결제 (테스트)</text>
+  <text class="zone-d" x="170" y="1132">3차 · PG 샌드박스 충전</text>
+</g>
+<g class="zone" id="zone-points" style="--h:50">
+  <rect class="zone-box" x="528" y="1084" width="692" height="811" rx="10"/>
+  <circle class="zone-n" cx="564" cy="1116" r="14"/>
+  <text class="zone-nt" x="564" y="1120" text-anchor="middle">05</text>
+  <text class="zone-t" x="588" y="1114">포인트 · 원장 · 정산</text>
+  <text class="zone-d" x="588" y="1132">1차 · 잔액은 원장 합계, 정산은 자정 배치</text>
+</g>
+<g class="zone" id="zone-ranking" style="--h:285">
+  <rect class="zone-box" x="1290" y="1084" width="348" height="811" rx="10"/>
+  <circle class="zone-n" cx="1326" cy="1116" r="14"/>
+  <text class="zone-nt" x="1326" y="1120" text-anchor="middle">06</text>
+  <text class="zone-t" x="1350" y="1114">랭킹 · 시즌</text>
+  <text class="zone-d" x="1350" y="1132">1차 통합 랭킹 · 3차 시즌제</text>
+</g>
+<g class="zone" id="zone-fraud" style="--h:0">
+  <rect class="zone-box" x="1708" y="1084" width="348" height="811" rx="10"/>
+  <circle class="zone-n" cx="1744" cy="1116" r="14"/>
+  <text class="zone-nt" x="1744" y="1120" text-anchor="middle">07</text>
+  <text class="zone-t" x="1768" y="1114">부정행위 방지</text>
+  <text class="zone-d" x="1768" y="1132">2차 · 담합 탐지 + 방어선 한눈에</text>
+</g>
+<g class="zone" id="zone-market" style="--h:25">
+  <rect class="zone-box" x="110" y="1965" width="692" height="889" rx="10"/>
+  <circle class="zone-n" cx="146" cy="1997" r="14"/>
+  <text class="zone-nt" x="146" y="2001" text-anchor="middle">08</text>
+  <text class="zone-t" x="170" y="1995">마켓플레이스</text>
+  <text class="zone-d" x="170" y="2013">3차 · 스폰서 상품 · 포인트 결제 · 주문/배송</text>
+</g>
+<g class="zone" id="zone-retention" style="--h:165">
+  <rect class="zone-box" x="872" y="1965" width="348" height="889" rx="10"/>
+  <circle class="zone-n" cx="908" cy="1997" r="14"/>
+  <text class="zone-nt" x="908" y="2001" text-anchor="middle">09</text>
+  <text class="zone-t" x="932" y="1995">리텐션</text>
+  <text class="zone-d" x="932" y="2013">3차 · 알림 · 주간 리포트</text>
+</g>
+<g class="zone" id="zone-social" style="--h:300">
+  <rect class="zone-box" x="1290" y="1965" width="692" height="889" rx="10"/>
+  <circle class="zone-n" cx="1326" cy="1997" r="14"/>
+  <text class="zone-nt" x="1326" y="2001" text-anchor="middle">10</text>
+  <text class="zone-t" x="1350" y="1995">소셜 · 배지</text>
+  <text class="zone-d" x="1350" y="2013">3차 · 팔로우, 응원 댓글, 배지 (티어는 01 존)</text>
+</g>
+<g class="edges">
+<path class="edge" data-a="users" data-b="tiers" d="M434,375.5 C474,375.5 438,228.5 478,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:195"><title>users.tier_id → tiers.id  (N:1)</title></path>
+<path class="edge" data-a="social_accounts" data-b="users" d="M434,554.5 C516.5714285714286,554.5 516.5714285714286,228.5 434,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:195"><title>social_accounts.user_id → users.id  (N:1)</title></path>
+<path class="edge" data-a="phone_verifications" data-b="users" d="M434,860.5 C540,860.5 540,228.5 434,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:195"><title>phone_verifications.user_id → users.id  (N:1, 선택)</title></path>
+<path class="edge" data-a="refresh_tokens" data-b="users" d="M478,449.5 C438,449.5 474,228.5 434,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:195"><title>refresh_tokens.user_id → users.id  (N:1)</title></path>
+<path class="edge" data-a="refresh_tokens" data-b="devices" d="M778,470.5 C862.1428571428571,470.5 862.1428571428571,807.5 778,807.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:195"><title>refresh_tokens.device_id → devices.id  (N:1, 선택)</title></path>
+<path class="edge" data-a="password_reset_tokens" data-b="users" d="M478,649.5 C438,649.5 474,228.5 434,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:195"><title>password_reset_tokens.user_id → users.id  (N:1)</title></path>
+<path class="edge" data-a="devices" data-b="users" d="M478,828.5 C438,828.5 474,228.5 434,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:195"><title>devices.user_id → users.id  (N:1)</title></path>
+<path class="edge" data-a="challenges" data-b="categories" d="M1196,428.5 C1260.5714285714287,428.5 1260.5714285714287,228.5 1196,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:38"><title>challenges.category_id → categories.id  (N:1)</title></path>
+<path class="edge" data-a="challenge_participants" data-b="challenges" d="M1240,249.5 C1200,249.5 1236,386.5 1196,386.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:38"><title>challenge_participants.challenge_id → challenges.id  (N:1)</title></path>
+<path class="edge" data-a="verifications" data-b="challenge_participants" d="M1658,249.5 C1599,249.5 1599,228.5 1540,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:150"><title>verifications.participant_id → challenge_participants.id  (N:1)</title></path>
+<path class="edge" data-a="ai_inference_results" data-b="verifications" d="M2002,249.5 C1962,249.5 1998,228.5 1958,228.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:150"><title>ai_inference_results.verification_id → verifications.id  (1:1)</title></path>
+<path class="edge" data-a="image_embeddings" data-b="verifications" d="M2002,512.5 C1962,512.5 1998,228.5 1958,228.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:150"><title>image_embeddings.verification_id → verifications.id  (1:1)</title></path>
+<path class="edge" data-a="review_queue" data-b="verifications" d="M1958,527.5 C2036.7142857142858,527.5 2036.7142857142858,228.5 1958,228.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:150"><title>review_queue.verification_id → verifications.id  (1:1)</title></path>
+<path class="edge" data-a="reports" data-b="verifications" d="M1958,748.5 C2064,748.5 2064,228.5 1958,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:150"><title>reports.verification_id → verifications.id  (N:1)</title></path>
+<path class="edge" data-a="point_transactions" data-b="wallets" d="M852,1381.5 C913.5714285714286,1381.5 913.5714285714286,1202.5 852,1202.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:50"><title>point_transactions.wallet_id → wallets.id  (N:1)</title></path>
+<path class="edge" data-a="settlements" data-b="challenges" d="M1196,1223.5 C1302,1223.5 1302,386.5 1196,386.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:50"><title>settlements.challenge_id → challenges.id  (1:1)</title></path>
+<path class="edge" data-a="settlement_items" data-b="settlements" d="M1196,1465.5 C1269.5714285714287,1465.5 1269.5714285714287,1202.5 1196,1202.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:50"><title>settlement_items.settlement_id → settlements.id  (N:1)</title></path>
+<path class="edge" data-a="settlement_items" data-b="challenge_participants" d="M1196,1486.5 C1236,1486.5 1200,228.5 1240,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:50"><title>settlement_items.participant_id → challenge_participants.id  (N:1)</title></path>
+<path class="edge" data-a="settlement_items" data-b="point_transactions" d="M896,1612.5 C856,1612.5 892,1360.5 852,1360.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:50"><title>settlement_items.refund_tx_id → point_transactions.id  (N:1, 선택)</title></path>
+<path class="edge" data-a="payments" data-b="point_transactions" d="M434,1391.5 C493,1391.5 493,1360.5 552,1360.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:45"><title>payments.transaction_id → point_transactions.id  (1:1, 선택)</title></path>
+<path class="edge" data-a="season_rankings" data-b="seasons" d="M1614,1730.5 C1684.7142857142858,1730.5 1684.7142857142858,1487.5 1614,1487.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:285"><title>season_rankings.season_id → seasons.id  (N:1)</title></path>
+<path class="edge" data-a="collusion_flags" data-b="challenges" d="M1732,1223.5 C1464,1223.5 1464,386.5 1196,386.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:0"><title>collusion_flags.challenge_id → challenges.id  (N:1)</title></path>
+<path class="edge" data-a="products" data-b="sponsors" d="M434,2378.5 C512.1428571428571,2378.5 512.1428571428571,2083.5 434,2083.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:25"><title>products.sponsor_id → sponsors.id  (N:1)</title></path>
+<path class="edge" data-a="products" data-b="product_categories" d="M434,2399.5 C492.57142857142856,2399.5 492.57142857142856,2241.5 434,2241.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:25"><title>products.category_id → product_categories.id  (N:1)</title></path>
+<path class="edge" data-a="wishlists" data-b="products" d="M478,2346.5 C438,2346.5 474,2357.5 434,2357.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:25"><title>wishlists.product_id → products.id  (1:1)</title></path>
+<path class="edge" data-a="orders" data-b="addresses" d="M778,2504.5 C874.1428571428571,2504.5 874.1428571428571,2083.5 778,2083.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:25"><title>orders.address_id → addresses.id  (N:1)</title></path>
+<path class="edge" data-a="orders" data-b="point_transactions" d="M778,2525.5 C891,2525.5 439,1360.5 552,1360.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:25"><title>orders.transaction_id → point_transactions.id  (1:1)</title></path>
+<path class="edge" data-a="order_items" data-b="orders" d="M778,2746.5 C854.5714285714286,2746.5 854.5714285714286,2462.5 778,2462.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:25"><title>order_items.order_id → orders.id  (N:1)</title></path>
+<path class="edge" data-a="order_items" data-b="products" d="M478,2767.5 C438,2767.5 474,2357.5 434,2357.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:25"><title>order_items.product_id → products.id  (N:1)</title></path>
+<path class="edge" data-a="user_badges" data-b="badges" d="M1614,2283.5 C1678.5714285714287,2283.5 1678.5714285714287,2083.5 1614,2083.5" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)" style="--h:300"><title>user_badges.badge_id → badges.id  (1:1)</title></path>
+<path class="edge" data-a="comments" data-b="verifications" d="M1958,2277.5 C2064,2277.5 2064,228.5 1958,228.5" marker-start="url(#m-many)" marker-end="url(#m-one-e)" style="--h:300"><title>comments.verification_id → verifications.id  (N:1)</title></path>
+</g>
+<g class="tables">
+<g class="tbl" tabindex="0" data-name="users" data-rel="tiers social_accounts phone_verifications refresh_tokens password_reset_tokens devices challenges challenge_participants review_queue reports wallets payments user_stats season_rankings collusion_flags addresses wishlists orders notifications push_tokens weekly_reports user_badges follows comments" transform="translate(134,184)" style="--h:195">
+<title>users — 회원
+가입/로그인의 중심 테이블. 거의 모든 도메인이 이 테이블을 참조</title>
+<rect class="tb-body" width="300" height="273" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">users</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">회원</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>email — 로그인 ID</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">email</text>
+<text class="c-type" x="290" y="69" text-anchor="end">VARCHAR(255)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>password_hash — BCrypt 해시. 소셜 전용 가입자는 NULL</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">password_hash</text>
+<text class="c-type" x="290" y="90" text-anchor="end">VARCHAR(255)?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="101" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="110.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="111.5">nickname</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(30)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">profile_image_url</text>
+<text class="c-type" x="290" y="132" text-anchor="end">VARCHAR(500)?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>bio — 자기소개</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">bio</text>
+<text class="c-type" x="290" y="153" text-anchor="end">VARCHAR(200)?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>phone_hash — 휴대폰 번호 HMAC 해시(원문 미저장). UNIQUE = 계정당 1개 → 다중계정 베팅 악용 방지</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="164" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="173.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="174.5">phone_hash</text>
+<text class="c-type" x="290" y="174" text-anchor="end">CHAR(64)?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row"><title>tier_id — 브론즈~다이아. 티어별 베팅 상한 결정</title>
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="185" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="194.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="195.5">tier_id</text>
+<text class="c-type" x="290" y="195" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row"><title>role — USER · ADMIN</title>
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">role</text>
+<text class="c-type" x="290" y="216" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="223" y2="223"/>
+<g class="row"><title>status — ACTIVE · SUSPENDED · WITHDRAWN</title>
+<rect class="hit" x="0" y="223" width="300" height="21"/>
+<text class="c-name" x="48" y="237.5">status</text>
+<text class="c-type" x="290" y="237" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="244" y2="244"/>
+<g class="row">
+<rect class="hit" x="0" y="244" width="300" height="21"/>
+<text class="c-name" x="48" y="258.5">created_at</text>
+<text class="c-type" x="290" y="258" text-anchor="end">DATETIME</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="social_accounts" data-rel="users" transform="translate(134,489)" style="--h:195">
+<title>social_accounts — 소셜 연동</title>
+<rect class="tb-body" width="300" height="169" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">social_accounts</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">소셜 연동</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>provider — KAKAO · GOOGLE</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">provider</text>
+<text class="c-type" x="290" y="90" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">provider_user_id</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(100)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">linked_at</text>
+<text class="c-type" x="290" y="132" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="141" y2="141"/>
+<text class="c-foot" x="12" y="154">UK (provider, provider_user_id)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="phone_verifications" data-rel="users" transform="translate(134,690)" style="--h:195">
+<title>phone_verifications — 휴대폰 본인인증</title>
+<rect class="tb-body" width="300" height="211" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">phone_verifications</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">휴대폰 본인인증</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<text class="c-name" x="48" y="69.5">phone_hash</text>
+<text class="c-type" x="290" y="69" text-anchor="end">CHAR(64)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>code_hash — SMS 인증번호 해시</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">code_hash</text>
+<text class="c-type" x="290" y="90" text-anchor="end">CHAR(64)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>attempt_count — 시도 횟수 제한</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">attempt_count</text>
+<text class="c-type" x="290" y="111" text-anchor="end">TINYINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">expires_at</text>
+<text class="c-type" x="290" y="132" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">verified_at</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DATETIME?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>user_id — 가입 도중에는 아직 user 가 없을 수 있어 NULL 허용</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="164" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="173.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="174.5">user_id</text>
+<text class="c-type" x="290" y="174" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="183" y2="183"/>
+<text class="c-foot" x="12" y="196">IDX (phone_hash, expires_at)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="tiers" data-rel="users" transform="translate(478,184)" style="--h:195">
+<title>tiers — 티어</title>
+<rect class="tb-body" width="300" height="168" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">tiers</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">티어</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>name — BRONZE ~ DIAMOND</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">name</text>
+<text class="c-type" x="290" y="69" text-anchor="end">VARCHAR(20)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>min_score — 승급 기준 누적 점수</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">min_score</text>
+<text class="c-type" x="290" y="90" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>daily_bet_limit — 일일 총 베팅 상한. 저티어일수록 낮음</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">daily_bet_limit</text>
+<text class="c-type" x="290" y="111" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>monthly_bet_limit — 월간 총 베팅 상한</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">monthly_bet_limit</text>
+<text class="c-type" x="290" y="132" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>high_stake_allowed — 고액 베팅방 입장 가능 여부</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">high_stake_allowed</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BOOLEAN</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="refresh_tokens" data-rel="users devices" transform="translate(478,384)" style="--h:195">
+<title>refresh_tokens — 리프레시 토큰</title>
+<rect class="tb-body" width="300" height="168" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">refresh_tokens</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">리프레시 토큰</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">device_id</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>token_hash — 토큰 원문 미저장</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="101" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="110.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="111.5">token_hash</text>
+<text class="c-type" x="290" y="111" text-anchor="end">CHAR(64)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">expires_at</text>
+<text class="c-type" x="290" y="132" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>revoked_at — 로그아웃 = 현재 기기 토큰만 폐기</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">revoked_at</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DATETIME?</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="password_reset_tokens" data-rel="users" transform="translate(478,584)" style="--h:195">
+<title>password_reset_tokens — 비밀번호 재설정</title>
+<rect class="tb-body" width="300" height="147" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">password_reset_tokens</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">비밀번호 재설정</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>token_hash — 이메일 링크용 1회성 토큰</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="89.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="90.5">token_hash</text>
+<text class="c-type" x="290" y="90" text-anchor="end">CHAR(64)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">expires_at</text>
+<text class="c-type" x="290" y="111" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">used_at</text>
+<text class="c-type" x="290" y="132" text-anchor="end">DATETIME?</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="devices" data-rel="refresh_tokens users push_tokens" transform="translate(478,763)" style="--h:195">
+<title>devices — 기기 지문</title>
+<rect class="tb-body" width="300" height="225" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">devices</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">기기 지문</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>fingerprint_hash — 기기 핑거프린트 해시</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">fingerprint_hash</text>
+<text class="c-type" x="290" y="90" text-anchor="end">CHAR(64)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">ip_address</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(45)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">user_agent</text>
+<text class="c-type" x="290" y="132" text-anchor="end">VARCHAR(255)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">first_seen_at</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">last_seen_at</text>
+<text class="c-type" x="290" y="174" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="183" y2="183"/>
+<text class="c-foot" x="12" y="196">UK (user_id, fingerprint_hash)</text>
+<text class="c-foot" x="12" y="210">IDX (fingerprint_hash) · IDX (ip_address)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="categories" data-rel="challenges" transform="translate(896,184)" style="--h:38">
+<title>categories — 챌린지 카테고리</title>
+<rect class="tb-body" width="300" height="126" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">categories</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">챌린지 카테고리</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>name — 운동 · 공부 · 독서 …</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">name</text>
+<text class="c-type" x="290" y="69" text-anchor="end">VARCHAR(30)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>ai_label — AI 분류 모델 클래스 라벨과 1:1 매핑</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="89.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="90.5">ai_label</text>
+<text class="c-type" x="290" y="90" text-anchor="end">VARCHAR(50)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">is_active</text>
+<text class="c-type" x="290" y="111" text-anchor="end">BOOLEAN</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="challenges" data-rel="users categories challenge_participants settlements collusion_flags" transform="translate(896,342)" style="--h:38">
+<title>challenges — 챌린지</title>
+<rect class="tb-body" width="300" height="477" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">challenges</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">챌린지</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>host_id — 개설자</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">host_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">category_id</text>
+<text class="c-type" x="290" y="90" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">title</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(100)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">description</text>
+<text class="c-type" x="290" y="132" text-anchor="end">TEXT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>mode — FREE(무료) · BET(베팅)</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">mode</text>
+<text class="c-type" x="290" y="153" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">start_date</text>
+<text class="c-type" x="290" y="174" text-anchor="end">DATE</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">end_date</text>
+<text class="c-type" x="290" y="195" text-anchor="end">DATE</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row"><title>frequency_type — DAILY · WEEKLY_N</title>
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">frequency_type</text>
+<text class="c-type" x="290" y="216" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="223" y2="223"/>
+<g class="row"><title>weekly_count — WEEKLY_N 일 때 주 N회</title>
+<rect class="hit" x="0" y="223" width="300" height="21"/>
+<text class="c-name" x="48" y="237.5">weekly_count</text>
+<text class="c-type" x="290" y="237" text-anchor="end">TINYINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="244" y2="244"/>
+<g class="row"><title>entry_fee — 개설자가 정한 참가비(예치 포인트). FREE 모드는 0</title>
+<rect class="hit" x="0" y="244" width="300" height="21"/>
+<text class="c-name" x="48" y="258.5">entry_fee</text>
+<text class="c-type" x="290" y="258" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="265" y2="265"/>
+<g class="row"><title>min_bet — 1회 최소 예치 포인트</title>
+<rect class="hit" x="0" y="265" width="300" height="21"/>
+<text class="c-name" x="48" y="279.5">min_bet</text>
+<text class="c-type" x="290" y="279" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="286" y2="286"/>
+<g class="row"><title>max_bet — 1회 최대 예치 포인트</title>
+<rect class="hit" x="0" y="286" width="300" height="21"/>
+<text class="c-name" x="48" y="300.5">max_bet</text>
+<text class="c-type" x="290" y="300" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="307" y2="307"/>
+<g class="row">
+<rect class="hit" x="0" y="307" width="300" height="21"/>
+<text class="c-name" x="48" y="321.5">max_participants</text>
+<text class="c-type" x="290" y="321" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="328" y2="328"/>
+<g class="row"><title>participant_count — 인기순 정렬용 비정규화 카운터</title>
+<rect class="hit" x="0" y="328" width="300" height="21"/>
+<text class="c-name" x="48" y="342.5">participant_count</text>
+<text class="c-type" x="290" y="342" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="349" y2="349"/>
+<g class="row"><title>verify_from — 인증 가능 시간대(옵션). 예: 새벽 기상 ~06시</title>
+<rect class="hit" x="0" y="349" width="300" height="21"/>
+<text class="c-name" x="48" y="363.5">verify_from</text>
+<text class="c-type" x="290" y="363" text-anchor="end">TIME?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="370" y2="370"/>
+<g class="row">
+<rect class="hit" x="0" y="370" width="300" height="21"/>
+<text class="c-name" x="48" y="384.5">verify_until</text>
+<text class="c-type" x="290" y="384" text-anchor="end">TIME?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="391" y2="391"/>
+<g class="row"><title>partial_refund — 부분 성공 시 비례 환급 옵션</title>
+<rect class="hit" x="0" y="391" width="300" height="21"/>
+<text class="c-name" x="48" y="405.5">partial_refund</text>
+<text class="c-type" x="290" y="405" text-anchor="end">BOOLEAN</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="412" y2="412"/>
+<g class="row"><title>status — RECRUITING · ONGOING · ENDED · SETTLED</title>
+<rect class="hit" x="0" y="412" width="300" height="21"/>
+<text class="c-name" x="48" y="426.5">status</text>
+<text class="c-type" x="290" y="426" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="435" y2="435"/>
+<text class="c-foot" x="12" y="448">CHECK (min_bet ≤ entry_fee ≤ max_bet)</text>
+<text class="c-foot" x="12" y="462">IDX (category_id, status) · IDX (end_date)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="challenge_participants" data-rel="challenges users verifications settlement_items" transform="translate(1240,184)" style="--h:38">
+<title>challenge_participants — 챌린지 참가자</title>
+<rect class="tb-body" width="300" height="267" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">challenge_participants</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">챌린지 참가자</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">challenge_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="90">→users</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>deposit_amount — 참가 시점 예치 포인트 스냅샷</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">deposit_amount</text>
+<text class="c-type" x="290" y="111" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>status — ACTIVE · COMPLETED · FAILED · LEFT</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">status</text>
+<text class="c-type" x="290" y="132" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>success_days — 인증 성공 일수 (승인 시 증가)</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">success_days</text>
+<text class="c-type" x="290" y="153" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">current_streak</text>
+<text class="c-type" x="290" y="174" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">max_streak</text>
+<text class="c-type" x="290" y="195" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row">
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">joined_at</text>
+<text class="c-type" x="290" y="216" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="225" y2="225"/>
+<text class="c-foot" x="12" y="238">UK (challenge_id, user_id)</text>
+<text class="c-foot" x="12" y="252">IDX (challenge_id, success_days DESC)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="verifications" data-rel="challenge_participants ai_inference_results image_embeddings review_queue reports comments" transform="translate(1658,184)" style="--h:150">
+<title>verifications — 인증 제출</title>
+<rect class="tb-body" width="300" height="246" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">verifications</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">인증 제출</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">participant_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>verify_date — 서버 수신 시각 기준 날짜</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">verify_date</text>
+<text class="c-type" x="290" y="90" text-anchor="end">DATE</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>received_at — 서버 수신 시각. 클라이언트 시각은 신뢰하지 않음</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">received_at</text>
+<text class="c-type" x="290" y="111" text-anchor="end">DATETIME(3)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>image_url — 카메라 직촬 사진 (갤러리 업로드 차단)</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">image_url</text>
+<text class="c-type" x="290" y="132" text-anchor="end">VARCHAR(500)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>image_hash — SHA-256. 바이트 단위 동일 사진 즉시 탐지</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">image_hash</text>
+<text class="c-type" x="290" y="153" text-anchor="end">CHAR(64)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>status — PENDING · APPROVED · REJECTED · IN_REVIEW</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">status</text>
+<text class="c-type" x="290" y="174" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">reject_reason</text>
+<text class="c-type" x="290" y="195" text-anchor="end">VARCHAR(100)?</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="204" y2="204"/>
+<text class="c-foot" x="12" y="217">UK (participant_id, verify_date)</text>
+<text class="c-foot" x="12" y="231">IDX (image_hash)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="ai_inference_results" data-rel="verifications" transform="translate(2002,184)" style="--h:150">
+<title>ai_inference_results — AI 판정 결과</title>
+<rect class="tb-body" width="300" height="252" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">ai_inference_results</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">AI 판정 결과</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<rect class="bd bd-uk" x="29" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="37.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">verification_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>model_version — 파인튜닝 모델 버전 (직접 학습, ai-server 서빙)</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">model_version</text>
+<text class="c-type" x="290" y="90" text-anchor="end">VARCHAR(30)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">predicted_label</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(50)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">confidence</text>
+<text class="c-type" x="290" y="132" text-anchor="end">DECIMAL(5,4)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>category_match — 예측 라벨 == 챌린지 카테고리 ai_label</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">category_match</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BOOLEAN</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>max_similarity — 기존 임베딩과의 최대 코사인 유사도</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">max_similarity</text>
+<text class="c-type" x="290" y="174" text-anchor="end">DECIMAL(5,4)?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row"><title>duplicate_of_id — 가장 유사했던 과거 인증 (재사용 의심)</title>
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="185" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="194.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="195.5">duplicate_of_id</text>
+<text class="c-tag" x="152" y="195">→verifications</text>
+<text class="c-type" x="290" y="195" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row"><title>decision — AUTO_PASS · AUTO_REJECT · NEED_REVIEW</title>
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">decision</text>
+<text class="c-type" x="290" y="216" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="223" y2="223"/>
+<g class="row">
+<rect class="hit" x="0" y="223" width="300" height="21"/>
+<text class="c-name" x="48" y="237.5">inferred_at</text>
+<text class="c-type" x="290" y="237" text-anchor="end">DATETIME</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="image_embeddings" data-rel="verifications" transform="translate(2002,468)" style="--h:150">
+<title>image_embeddings — 이미지 임베딩</title>
+<rect class="tb-body" width="300" height="105" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">image_embeddings</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">이미지 임베딩</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="47.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="48.5">verification_id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>embedding — MobileNetV2 중간층 벡터(float32). 코사인 유사도 비교용</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<text class="c-name" x="48" y="69.5">embedding</text>
+<text class="c-type" x="290" y="69" text-anchor="end">VARBINARY</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">model_version</text>
+<text class="c-type" x="290" y="90" text-anchor="end">VARCHAR(30)</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="review_queue" data-rel="verifications users" transform="translate(1658,462)" style="--h:150">
+<title>review_queue — 관리자 검토 큐</title>
+<rect class="tb-body" width="300" height="189" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">review_queue</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">관리자 검토 큐</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<rect class="bd bd-uk" x="29" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="37.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">verification_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>reason — LOW_CONFIDENCE · DUPLICATE_SUSPECT · REPORTED</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">reason</text>
+<text class="c-type" x="290" y="90" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>status — OPEN · APPROVED · REJECTED</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">status</text>
+<text class="c-type" x="290" y="111" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="122" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="131.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="132.5">reviewer_id</text>
+<text class="c-tag" x="126.4" y="132">→users</text>
+<text class="c-type" x="290" y="132" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">reviewed_at</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DATETIME?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">memo</text>
+<text class="c-type" x="290" y="174" text-anchor="end">VARCHAR(200)?</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="reports" data-rel="verifications users" transform="translate(1658,683)" style="--h:150">
+<title>reports — 신고</title>
+<rect class="tb-body" width="300" height="190" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">reports</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">신고</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">verification_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">reporter_id</text>
+<text class="c-tag" x="126.4" y="90">→users</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">reason</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(200)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>status — OPEN · ACCEPTED · DISMISSED</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">status</text>
+<text class="c-type" x="290" y="132" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">created_at</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="162" y2="162"/>
+<text class="c-foot" x="12" y="175">UK (verification_id, reporter_id)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="wallets" data-rel="users point_transactions" transform="translate(552,1158)" style="--h:50">
+<title>wallets — 포인트 지갑</title>
+<rect class="tb-body" width="300" height="126" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">wallets</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">포인트 지갑</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<rect class="bd bd-uk" x="29" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="37.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>balance — 캐시 값. 진실의 원천은 point_transactions 합계. SELECT … FOR UPDATE 락 앵커</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">balance</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">updated_at</text>
+<text class="c-type" x="290" y="111" text-anchor="end">DATETIME</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="point_transactions" data-rel="wallets settlement_items payments orders" transform="translate(552,1316)" style="--h:50">
+<title>point_transactions — 거래 원장</title>
+<rect class="tb-body" width="300" height="267" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">point_transactions</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">거래 원장</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">wallet_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>type — CHARGE · ENTRY_FEE · REFUND · REWARD · PURCHASE · SEASON_BONUS · ADJUST</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">type</text>
+<text class="c-type" x="290" y="90" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>amount — 부호 있는 증감액 (+/−)</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">amount</text>
+<text class="c-type" x="290" y="111" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">balance_after</text>
+<text class="c-type" x="290" y="132" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>ref_type — 다형 참조 (participants / settlement_items / payments / orders)</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">ref_type</text>
+<text class="c-type" x="290" y="153" text-anchor="end">VARCHAR(20)?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>ref_id — FK 없음 — 원장은 참조 대상이 삭제돼도 남아야 함</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">ref_id</text>
+<text class="c-type" x="290" y="174" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row"><title>idempotency_key — 같은 요청 재시도 시 이중 지급/차감 방지</title>
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="185" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="194.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="195.5">idempotency_key</text>
+<text class="c-type" x="290" y="195" text-anchor="end">VARCHAR(80)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row">
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">created_at</text>
+<text class="c-type" x="290" y="216" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="225" y2="225"/>
+<text class="c-foot" x="12" y="238">IDX (wallet_id, created_at)</text>
+<text class="c-foot" x="12" y="252">INSERT-only · UPDATE/DELETE 금지</text>
+</g>
+<g class="tbl" tabindex="0" data-name="settlements" data-rel="challenges settlement_items" transform="translate(896,1158)" style="--h:50">
+<title>settlements — 챌린지 정산</title>
+<rect class="tb-body" width="300" height="210" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">settlements</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">챌린지 정산</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>challenge_id — 챌린지당 정산 1회 — 배치가 두 번 돌아도 중복 정산 불가</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<rect class="bd bd-uk" x="29" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="37.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">challenge_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>status — PENDING · DONE</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">status</text>
+<text class="c-type" x="290" y="90" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>total_pool — 전체 예치금 합계</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">total_pool</text>
+<text class="c-type" x="290" y="111" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>forfeited_pool — 실패자 몰수분 (재분배 원천)</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">forfeited_pool</text>
+<text class="c-type" x="290" y="132" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">distributed</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>reward_cap — 적용된 1회 정산당 최대 획득 상한</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">reward_cap</text>
+<text class="c-type" x="290" y="174" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row"><title>settled_at — 매일 자정 cron 배치가 기록</title>
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">settled_at</text>
+<text class="c-type" x="290" y="195" text-anchor="end">DATETIME?</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="settlement_items" data-rel="settlements challenge_participants point_transactions" transform="translate(896,1400)" style="--h:50">
+<title>settlement_items — 정산 상세</title>
+<rect class="tb-body" width="300" height="274" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">settlement_items</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">정산 상세</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">settlement_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">participant_id</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">success_rate</text>
+<text class="c-type" x="290" y="111" text-anchor="end">DECIMAL(5,2)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>refund_amount — 예치금 환급 (부분 성공 시 비례)</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">refund_amount</text>
+<text class="c-type" x="290" y="132" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>reward_amount — 실패자 포인트 성공률 비례 배분분</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">reward_amount</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">forfeit_amount</text>
+<text class="c-type" x="290" y="174" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row"><title>capped — 획득 상한에 걸렸는지</title>
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">capped</text>
+<text class="c-type" x="290" y="195" text-anchor="end">BOOLEAN</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row"><title>refund_tx_id — 지급 원장 추적</title>
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="206" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="215.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="216.5">refund_tx_id</text>
+<text class="c-type" x="290" y="216" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="223" y2="223"/>
+<g class="row">
+<rect class="hit" x="0" y="223" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="227" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="236.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="237.5">reward_tx_id</text>
+<text class="c-tag" x="132.8" y="237">→point_transactions</text>
+<text class="c-type" x="290" y="237" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="246" y2="246"/>
+<text class="c-foot" x="12" y="259">UK (settlement_id, participant_id)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="payments" data-rel="users point_transactions" transform="translate(134,1158)" style="--h:45">
+<title>payments — 충전 결제 (테스트)</title>
+<rect class="tb-body" width="300" height="273" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">payments</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">충전 결제 (테스트)</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>provider — TOSS · KAKAOPAY</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">provider</text>
+<text class="c-type" x="290" y="90" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>order_id — 멱등키 역할. 같은 주문 재처리 방지</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="101" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="110.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="111.5">order_id</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(64)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>payment_key — PG 결제키/토큰만 저장. 카드정보 컬럼 없음</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="122" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="131.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="132.5">payment_key</text>
+<text class="c-type" x="290" y="132" text-anchor="end">VARCHAR(200)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>amount — 결제 금액(원)</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">amount</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">points_granted</text>
+<text class="c-type" x="290" y="174" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row"><title>status — READY · PAID · FAILED · CANCELED</title>
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">status</text>
+<text class="c-type" x="290" y="195" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row"><title>is_test — 샌드박스 결제 여부 (항상 true)</title>
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">is_test</text>
+<text class="c-type" x="290" y="216" text-anchor="end">BOOLEAN</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="223" y2="223"/>
+<g class="row"><title>transaction_id — 충전 원장 연결</title>
+<rect class="hit" x="0" y="223" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="227" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="236.6" text-anchor="middle">FK</text>
+<rect class="bd bd-uk" x="29" y="227" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="37.5" y="236.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="237.5">transaction_id</text>
+<text class="c-type" x="290" y="237" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="244" y2="244"/>
+<g class="row">
+<rect class="hit" x="0" y="244" width="300" height="21"/>
+<text class="c-name" x="48" y="258.5">paid_at</text>
+<text class="c-type" x="290" y="258" text-anchor="end">DATETIME?</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="user_stats" data-rel="users" transform="translate(1314,1158)" style="--h:285">
+<title>user_stats — 개인 통계 (집계)</title>
+<rect class="tb-body" width="300" height="253" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">user_stats</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">개인 통계 (집계)</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="47.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="48.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="48">→users</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<text class="c-name" x="48" y="69.5">total_verifications</text>
+<text class="c-type" x="290" y="69" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">total_success</text>
+<text class="c-type" x="290" y="90" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">success_rate</text>
+<text class="c-type" x="290" y="111" text-anchor="end">DECIMAL(5,2)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">current_streak</text>
+<text class="c-type" x="290" y="132" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">max_streak</text>
+<text class="c-type" x="290" y="153" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>month_points — 이번 달 획득 포인트</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">month_points</text>
+<text class="c-type" x="290" y="174" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row"><title>month_key — 예: 2026-09</title>
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">month_key</text>
+<text class="c-type" x="290" y="195" text-anchor="end">CHAR(7)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row">
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">updated_at</text>
+<text class="c-type" x="290" y="216" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="225" y2="225"/>
+<text class="c-foot" x="12" y="238">IDX (success_rate DESC) · IDX (max_streak DESC)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="seasons" data-rel="season_rankings" transform="translate(1314,1443)" style="--h:285">
+<title>seasons — 시즌</title>
+<rect class="tb-body" width="300" height="190" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">seasons</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">시즌</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>type — WEEKLY · MONTHLY</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<text class="c-name" x="48" y="69.5">type</text>
+<text class="c-type" x="290" y="69" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">start_date</text>
+<text class="c-type" x="290" y="90" text-anchor="end">DATE</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">end_date</text>
+<text class="c-type" x="290" y="111" text-anchor="end">DATE</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>status — ACTIVE · CLOSED</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">status</text>
+<text class="c-type" x="290" y="132" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>bonus_paid — 시즌 종료 보너스 지급 완료 여부</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">bonus_paid</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BOOLEAN</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="162" y2="162"/>
+<text class="c-foot" x="12" y="175">UK (type, start_date)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="season_rankings" data-rel="seasons users" transform="translate(1314,1665)" style="--h:285">
+<title>season_rankings — 시즌 랭킹</title>
+<rect class="tb-body" width="300" height="204" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">season_rankings</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">시즌 랭킹</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">season_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="90">→users</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">score</text>
+<text class="c-type" x="290" y="111" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">rank_no</text>
+<text class="c-type" x="290" y="132" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row"><title>bonus_points — 상위권 보너스</title>
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">bonus_points</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="162" y2="162"/>
+<text class="c-foot" x="12" y="175">UK (season_id, user_id)</text>
+<text class="c-foot" x="12" y="189">IDX (season_id, rank_no)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="collusion_flags" data-rel="challenges users" transform="translate(1732,1158)" style="--h:0">
+<title>collusion_flags — 담합 의심 플래그</title>
+<rect class="tb-body" width="300" height="232" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">collusion_flags</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">담합 의심 플래그</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">challenge_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>user_a_id — 항상 user_a_id &lt; user_b_id 로 정규화</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">user_a_id</text>
+<text class="c-tag" x="113.6" y="90">→users</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="101" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="110.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="111.5">user_b_id</text>
+<text class="c-tag" x="113.6" y="111">→users</text>
+<text class="c-type" x="290" y="111" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>co_match_count — 같은 조합이 함께 매칭된 횟수</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">co_match_count</text>
+<text class="c-type" x="290" y="132" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">score</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DECIMAL(5,2)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>status — OPEN · CONFIRMED · DISMISSED</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">status</text>
+<text class="c-type" x="290" y="174" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">detected_at</text>
+<text class="c-type" x="290" y="195" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="204" y2="204"/>
+<text class="c-foot" x="12" y="217">UK (challenge_id, user_a_id, user_b_id)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="sponsors" data-rel="products" transform="translate(134,2039)" style="--h:25">
+<title>sponsors — 스폰서</title>
+<rect class="tb-body" width="300" height="126" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">sponsors</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">스폰서</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<text class="c-name" x="48" y="69.5">name</text>
+<text class="c-type" x="290" y="69" text-anchor="end">VARCHAR(100)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">contact_email</text>
+<text class="c-type" x="290" y="90" text-anchor="end">VARCHAR(255)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>status — ACTIVE · SUSPENDED</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">status</text>
+<text class="c-type" x="290" y="111" text-anchor="end">ENUM</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="product_categories" data-rel="products" transform="translate(134,2197)" style="--h:25">
+<title>product_categories — 상품 카테고리</title>
+<rect class="tb-body" width="300" height="84" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">product_categories</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">상품 카테고리</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row"><title>name — 운동용품 · 문구류 · 생활용품 …</title>
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">name</text>
+<text class="c-type" x="290" y="69" text-anchor="end">VARCHAR(30)</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="products" data-rel="sponsors product_categories wishlists order_items" transform="translate(134,2313)" style="--h:25">
+<title>products — 상품</title>
+<rect class="tb-body" width="300" height="231" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">products</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">상품</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">sponsor_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">category_id</text>
+<text class="c-type" x="290" y="90" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">name</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(150)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">description</text>
+<text class="c-type" x="290" y="132" text-anchor="end">TEXT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">image_url</text>
+<text class="c-type" x="290" y="153" text-anchor="end">VARCHAR(500)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">price_points</text>
+<text class="c-type" x="290" y="174" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">stock</text>
+<text class="c-type" x="290" y="195" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row"><title>status — ON_SALE · SOLD_OUT · HIDDEN</title>
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">status</text>
+<text class="c-type" x="290" y="216" text-anchor="end">ENUM</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="addresses" data-rel="users orders" transform="translate(478,2039)" style="--h:25">
+<title>addresses — 배송지</title>
+<rect class="tb-body" width="300" height="210" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">addresses</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">배송지</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">recipient</text>
+<text class="c-type" x="290" y="90" text-anchor="end">VARCHAR(50)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>phone_enc — AES 암호화 저장 (개인정보)</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">phone_enc</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARBINARY(255)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">zipcode</text>
+<text class="c-type" x="290" y="132" text-anchor="end">CHAR(5)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">address1</text>
+<text class="c-type" x="290" y="153" text-anchor="end">VARCHAR(200)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">address2</text>
+<text class="c-type" x="290" y="174" text-anchor="end">VARCHAR(200)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">is_default</text>
+<text class="c-type" x="290" y="195" text-anchor="end">BOOLEAN</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="wishlists" data-rel="users products" transform="translate(478,2281)" style="--h:25">
+<title>wishlists — 찜</title>
+<rect class="tb-body" width="300" height="105" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">wishlists</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">찜</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="47.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="48.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="48">→users</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="68.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="69.5">product_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">created_at</text>
+<text class="c-type" x="290" y="90" text-anchor="end">DATETIME</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="orders" data-rel="users addresses point_transactions order_items" transform="translate(478,2418)" style="--h:25">
+<title>orders — 주문</title>
+<rect class="tb-body" width="300" height="231" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">orders</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">주문</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">address_id</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row"><title>transaction_id — 포인트 차감 원장 연결</title>
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="101" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="110.6" text-anchor="middle">FK</text>
+<rect class="bd bd-uk" x="29" y="101" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="37.5" y="110.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="111.5">transaction_id</text>
+<text class="c-type" x="290" y="111" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>request_key — 멱등키. 주문 버튼 중복 클릭 방지</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="122" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="131.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="132.5">request_key</text>
+<text class="c-type" x="290" y="132" text-anchor="end">VARCHAR(80)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">total_points</text>
+<text class="c-type" x="290" y="153" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row"><title>status — PREPARING · SHIPPING · DELIVERED · CANCELED</title>
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">status</text>
+<text class="c-type" x="290" y="174" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">tracking_no</text>
+<text class="c-type" x="290" y="195" text-anchor="end">VARCHAR(50)?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="202" y2="202"/>
+<g class="row">
+<rect class="hit" x="0" y="202" width="300" height="21"/>
+<text class="c-name" x="48" y="216.5">ordered_at</text>
+<text class="c-type" x="290" y="216" text-anchor="end">DATETIME</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="order_items" data-rel="orders products" transform="translate(478,2681)" style="--h:25">
+<title>order_items — 주문 상품</title>
+<rect class="tb-body" width="300" height="147" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">order_items</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">주문 상품</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">order_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">product_id</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">quantity</text>
+<text class="c-type" x="290" y="111" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>unit_points — 주문 시점 가격 스냅샷</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">unit_points</text>
+<text class="c-type" x="290" y="132" text-anchor="end">BIGINT</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="notifications" data-rel="users" transform="translate(896,2039)" style="--h:165">
+<title>notifications — 알림</title>
+<rect class="tb-body" width="300" height="211" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">notifications</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">알림</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row"><title>type — SETTLEMENT · VERIFY_REMINDER · COMMENT · REPORT_RESULT</title>
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">type</text>
+<text class="c-type" x="290" y="90" text-anchor="end">ENUM</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">title</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(100)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">body</text>
+<text class="c-type" x="290" y="132" text-anchor="end">VARCHAR(300)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">read_at</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DATETIME?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">sent_at</text>
+<text class="c-type" x="290" y="174" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="183" y2="183"/>
+<text class="c-foot" x="12" y="196">IDX (user_id, read_at)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="push_tokens" data-rel="users devices" transform="translate(896,2282)" style="--h:165">
+<title>push_tokens — 푸시 토큰</title>
+<rect class="tb-body" width="300" height="147" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">push_tokens</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">푸시 토큰</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">device_id</text>
+<text class="c-tag" x="113.6" y="90">→devices</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="101" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="110.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="111.5">token</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(255)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>platform — WEB · ANDROID · IOS</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">platform</text>
+<text class="c-type" x="290" y="132" text-anchor="end">ENUM</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="weekly_reports" data-rel="users" transform="translate(896,2461)" style="--h:165">
+<title>weekly_reports — 주간 회고 리포트</title>
+<rect class="tb-body" width="300" height="232" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">weekly_reports</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">주간 회고 리포트</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">week_start</text>
+<text class="c-type" x="290" y="90" text-anchor="end">DATE</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">success_rate</text>
+<text class="c-type" x="290" y="111" text-anchor="end">DECIMAL(5,2)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>worst_weekday — 가장 자주 실패한 요일</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">worst_weekday</text>
+<text class="c-type" x="290" y="132" text-anchor="end">TINYINT?</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">stats_json</text>
+<text class="c-type" x="290" y="153" text-anchor="end">JSON</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="160" y2="160"/>
+<g class="row">
+<rect class="hit" x="0" y="160" width="300" height="21"/>
+<text class="c-name" x="48" y="174.5">coaching_text</text>
+<text class="c-type" x="290" y="174" text-anchor="end">TEXT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="181" y2="181"/>
+<g class="row">
+<rect class="hit" x="0" y="181" width="300" height="21"/>
+<text class="c-name" x="48" y="195.5">generated_at</text>
+<text class="c-type" x="290" y="195" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="204" y2="204"/>
+<text class="c-foot" x="12" y="217">UK (user_id, week_start)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="badges" data-rel="user_badges" transform="translate(1314,2039)" style="--h:300">
+<title>badges — 배지</title>
+<rect class="tb-body" width="300" height="147" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">badges</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">배지</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-uk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="68.6" text-anchor="middle">UK</text>
+<text class="c-name" x="48" y="69.5">code</text>
+<text class="c-type" x="290" y="69" text-anchor="end">VARCHAR(30)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">name</text>
+<text class="c-type" x="290" y="90" text-anchor="end">VARCHAR(50)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">description</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(200)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row"><title>rule_json — 획득 조건</title>
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">rule_json</text>
+<text class="c-type" x="290" y="132" text-anchor="end">JSON</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="user_badges" data-rel="users badges" transform="translate(1314,2218)" style="--h:300">
+<title>user_badges — 회원 배지</title>
+<rect class="tb-body" width="300" height="105" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">user_badges</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">회원 배지</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="47.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="48.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="48">→users</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="68.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="69.5">badge_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">INT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">earned_at</text>
+<text class="c-type" x="290" y="90" text-anchor="end">DATETIME</text>
+</g>
+</g>
+<g class="tbl" tabindex="0" data-name="follows" data-rel="users" transform="translate(1658,2039)" style="--h:300">
+<title>follows — 팔로우</title>
+<rect class="tb-body" width="300" height="141" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">follows</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">팔로우</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="47.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="48.5">follower_id</text>
+<text class="c-tag" x="126.4" y="48">→users</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="68.6" text-anchor="middle">PK</text>
+<rect class="bd bd-fk" x="29" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="37.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name is-pk" x="48" y="69.5">following_id</text>
+<text class="c-tag" x="132.8" y="69">→users</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<text class="c-name" x="48" y="90.5">created_at</text>
+<text class="c-type" x="290" y="90" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="99" y2="99"/>
+<text class="c-foot" x="12" y="112">CHECK (follower_id &lt;&gt; following_id)</text>
+<text class="c-foot" x="12" y="126">IDX (following_id)</text>
+</g>
+<g class="tbl" tabindex="0" data-name="comments" data-rel="verifications users" transform="translate(1658,2212)" style="--h:300">
+<title>comments — 응원 댓글</title>
+<rect class="tb-body" width="300" height="190" rx="6"/>
+<path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
+<text class="tb-name" x="12" y="21">comments</text>
+<text class="tb-ko" x="288" y="21" text-anchor="end">응원 댓글</text>
+<g class="row">
+<rect class="hit" x="0" y="34" width="300" height="21"/>
+<rect class="bd bd-pk" x="9" y="38" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="17.5" y="47.6" text-anchor="middle">PK</text>
+<text class="c-name is-pk" x="48" y="48.5">id</text>
+<text class="c-type" x="290" y="48" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="55" y2="55"/>
+<g class="row">
+<rect class="hit" x="0" y="55" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="59" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="68.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="69.5">verification_id</text>
+<text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
+<g class="row">
+<rect class="hit" x="0" y="76" width="300" height="21"/>
+<rect class="bd bd-fk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="17.5" y="89.6" text-anchor="middle">FK</text>
+<text class="c-name" x="48" y="90.5">user_id</text>
+<text class="c-tag" x="100.80000000000001" y="90">→users</text>
+<text class="c-type" x="290" y="90" text-anchor="end">BIGINT</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="97" y2="97"/>
+<g class="row">
+<rect class="hit" x="0" y="97" width="300" height="21"/>
+<text class="c-name" x="48" y="111.5">content</text>
+<text class="c-type" x="290" y="111" text-anchor="end">VARCHAR(300)</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="118" y2="118"/>
+<g class="row">
+<rect class="hit" x="0" y="118" width="300" height="21"/>
+<text class="c-name" x="48" y="132.5">is_deleted</text>
+<text class="c-type" x="290" y="132" text-anchor="end">BOOLEAN</text>
+</g>
+<line class="tb-sep" x1="8" x2="292" y1="139" y2="139"/>
+<g class="row">
+<rect class="hit" x="0" y="139" width="300" height="21"/>
+<text class="c-name" x="48" y="153.5">created_at</text>
+<text class="c-type" x="290" y="153" text-anchor="end">DATETIME</text>
+</g>
+<line class="tb-sep foot" x1="0" x2="300" y1="162" y2="162"/>
+<text class="c-foot" x="12" y="175">IDX (verification_id, created_at)</text>
+</g>
+</g>
+<g class="note" style="--h:38"><rect class="note-box" x="896" y="845" width="644" height="82" rx="6"/>
+<text class="note-t" x="908" y="865">챌린지별 실시간 랭킹은 별도 테이블 없이 challenge_participants 의 IDX (challenge_id, success_days DESC, max_s</text>
+<text class="note-t" x="908" y="880">treak DESC) 로 바로 조회한다.</text>
+<text class="note-t" x="908" y="895">일일/월간 총 베팅 상한 = tiers 한도 대비 point_transactions(ENTRY_FEE) 당일/당월 합계를 실시간 조회해 검사.</text>
+<text class="note-t" x="908" y="910">D-day · 진행률은 start/end_date 와 success_days 로 계산 (저장 안 함).</text>
+</g>
+<g class="note" style="--h:150"><rect class="note-box" x="1658" y="899" width="644" height="52" rx="6"/>
+<text class="note-t" x="1670" y="919">판정 흐름: 사진 제출 → ai-server(FastAPI, 직접 파인튜닝한 모델) 추론 → category_match / max_similarity → AU</text>
+<text class="note-t" x="1670" y="934">TO_PASS · AUTO_REJECT · NEED_REVIEW(→ review_queue).</text>
+</g>
+<g class="note" style="--h:45"><rect class="note-box" x="134" y="1457" width="300" height="67" rx="6"/>
+<text class="note-t" x="146" y="1477">카드번호/CVC 컬럼 없음. PG 토큰(payment_key)만 보</text>
+<text class="note-t" x="146" y="1492">관.</text>
+<text class="note-t" x="146" y="1507">충전 포인트는 앱 내 사용 전용.</text>
+</g>
+<g class="note" style="--h:50"><rect class="note-box" x="552" y="1700" width="644" height="52" rx="6"/>
+<text class="note-t" x="564" y="1720">✕ 출금 · 환전 테이블 없음 — 폐쇄형 가상 포인트 경제 (프로젝트 규칙 2).</text>
+<text class="note-t" x="564" y="1735">동시성: wallets 행을 SELECT … FOR UPDATE 로 잠근 뒤 원장 INSERT, idempotency_key 로 재시도 무해화.</text>
+</g>
+<g class="note" style="--h:0"><rect class="note-box" x="1732" y="1416" width="300" height="127" rx="6"/>
+<text class="note-t" x="1744" y="1436">다른 방어선이 이미 들어 있는 곳</text>
+<text class="note-t" x="1744" y="1451">· users.phone_hash UNIQUE → 1인 1계정</text>
+<text class="note-t" x="1744" y="1466">· devices 지문/IP 인덱스 → 대량가입 탐지</text>
+<text class="note-t" x="1744" y="1481">· image_embeddings → 사진 재사용 탐지</text>
+<text class="note-t" x="1744" y="1496">· reports → review_queue → 관리자</text>
+<text class="note-t" x="1744" y="1511">· settlements.reward_cap → 획득 상한</text>
+<text class="note-t" x="1744" y="1526">· *.idempotency_key UNIQUE → 이중 지급 방지</text>
+</g>
+<g class="titleblock ink">
+  <rect x="1968" y="2916" width="520" height="150" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <rect x="1968" y="2916" width="520" height="64" fill="none" stroke="currentColor" stroke-width=".8" opacity=".7"/><text class="tb-lab" x="1976" y="2930">도면명 · DRAWING</text><text class="tb-big" x="1976" y="2970">GODLIFE — ENTITY RELATIONSHIP DIAGRAM</text>
+  <rect x="1968" y="2980" width="190" height="43" fill="none" stroke="currentColor" stroke-width=".8" opacity=".7"/><text class="tb-lab" x="1976" y="2994">프로젝트</text><text class="tb-val" x="1976" y="3013">갓생살기 (GodLife)</text>
+  <rect x="2158" y="2980" width="190" height="43" fill="none" stroke="currentColor" stroke-width=".8" opacity=".7"/><text class="tb-lab" x="2166" y="2994">DB</text><text class="tb-val" x="2166" y="3013">MySQL 8 · InnoDB · utf8mb4</text>
+  <rect x="2348" y="2980" width="140" height="43" fill="none" stroke="currentColor" stroke-width=".8" opacity=".7"/><text class="tb-lab" x="2356" y="2994">범위</text><text class="tb-val" x="2356" y="3013">1 ~ 3차 전체</text>
+  <rect x="1968" y="3023" width="190" height="43" fill="none" stroke="currentColor" stroke-width=".8" opacity=".7"/><text class="tb-lab" x="1976" y="3037">작성일</text><text class="tb-val" x="1976" y="3056">2026-09-28 · 초안 v0.1</text>
+  <rect x="2158" y="3023" width="190" height="43" fill="none" stroke="currentColor" stroke-width=".8" opacity=".7"/><text class="tb-lab" x="2166" y="3037">규모</text><text class="tb-val" x="2166" y="3056">테이블 38 · 관계 54</text>
+  <rect x="2348" y="3023" width="140" height="43" fill="none" stroke="currentColor" stroke-width=".8" opacity=".7"/><text class="tb-lab" x="2356" y="3037">검토</text><text class="tb-val" x="2356" y="3056"></text>
+</g>
+<g class="legend ink">
+  <rect x="74" y="2916" width="560" height="150" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <text class="tb-lab" x="86" y="2936">범례 · LEGEND</text>
+  <g transform="translate(88,2956)">
+    <rect class="bd bd-pk" width="17" height="13" rx="3"/><text class="bd-t bd-t-pk" x="8.5" y="9.6" text-anchor="middle">PK</text>
+    <text class="lg-t" x="26" y="10">기본키</text>
+    <rect class="bd bd-fk" x="100" width="17" height="13" rx="3"/><text class="bd-t bd-t-fk" x="108.5" y="9.6" text-anchor="middle">FK</text>
+    <text class="lg-t" x="126" y="10">외래키</text>
+    <rect class="bd bd-uk" x="200" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="208.5" y="9.6" text-anchor="middle">UK</text>
+    <text class="lg-t" x="226" y="10">유니크</text>
+    <text class="lg-t" x="300" y="10">타입 뒤 “?” = NULL 허용</text>
+  </g>
+  <g transform="translate(88,2986)">
+    <path d="M0 8H60" stroke="currentColor" stroke-width="1.3" marker-start="url(#m-many)" marker-end="url(#m-one-e)"/>
+    <text class="lg-t" x="74" y="12">N : 1 (까마귀발 쪽이 자식 = FK 보유)</text>
+  </g>
+  <g transform="translate(88,3008)">
+    <path d="M0 8H60" stroke="currentColor" stroke-width="1.3" marker-start="url(#m-one-s)" marker-end="url(#m-one-e)"/>
+    <text class="lg-t" x="74" y="12">1 : 1 (FK 에 UNIQUE)</text>
+  </g>
+  <text class="lg-t" x="88" y="3048">FK 옆 “→users” 는 선을 생략한 참조 (회원 테이블 참조가 너무 많아서). 표에 마우스를 올리면 연결된 표가 강조됨.</text>
+</g>
+
+    </svg>
+  </div>
+
+  <h2>설계 메모</h2>
+  <div class="grid">
+    <div class="card"><h3>잔액은 원장이 진실</h3><p>point_transactions 는 INSERT-only 이고 잔액은 항상 SUM(amount). wallets.balance 는 조회 성능용 캐시이자 SELECT … FOR UPDATE 를 거는 락 앵커.</p></div>
+    <div class="card"><h3>이중 지급을 스키마가 막는다</h3><p>point_transactions.idempotency_key · payments.order_id · orders.request_key · settlements.challenge_id 가 모두 UNIQUE. 재시도나 배치 재실행이 와도 두 번째 INSERT 는 제약 위반으로 실패한다.</p></div>
+    <div class="card"><h3>정산 추적성</h3><p>settlement_items 가 지급 원장(refund_tx_id / reward_tx_id)을 직접 가리켜, “누가 왜 얼마를 받았는지”를 정산 → 원장 순으로 따라갈 수 있다.</p></div>
+    <div class="card"><h3>현금화 경로 없음</h3><p>출금·환전·계좌 관련 테이블을 일부러 두지 않았다. 충전(CHARGE)과 소비(ENTRY_FEE · PURCHASE)만 존재하는 폐쇄형 경제 — 도박이 아니라는 설계 근거.</p></div>
+    <div class="card"><h3>개인정보</h3><p>비밀번호 BCrypt, 휴대폰 번호는 HMAC 해시(UNIQUE 로 1계정 제한)만 저장, 배송지 전화번호는 AES 암호화, 카드정보는 컬럼 자체가 없음(PG 토큰만).</p></div>
+    <div class="card"><h3>AI 검증 데이터</h3><p>ai_inference_results 는 모델 버전과 함께 판정을 보존해 재현 가능하고, image_embeddings 는 코사인 유사도 비교용 벡터. 애매한 건은 review_queue 로 넘어간다.</p></div>
+  </div>
+
+  <h2>확인이 필요한 가정</h2>
+  <ul class="as">
+    <li>참가비: challenges.entry_fee(개설자 지정)와 min_bet/max_bet(허용 범위)을 모두 두고 CHECK 로 묶었습니다. 참가 시점 금액은 challenge_participants.deposit_amount 에 스냅샷.</li>
+    <li>몰수(FORFEIT)는 지갑 잔액이 변하지 않으므로 원장 타입이 아니라 settlement_items.forfeit_amount 로 기록합니다 (참가 시 ENTRY_FEE 로 이미 차감됨).</li>
+    <li>일일/월간 베팅 상한 사용량은 별도 테이블 없이 원장에서 실시간 집계합니다. 트래픽이 커지면 캐시 테이블을 추가할 수 있습니다.</li>
+    <li>주간 리포트의 코칭 문구(weekly_reports.coaching_text)는 생성 방식이 미정이라 컬럼만 잡았습니다. 인증 검증과 달리 과제 필수 요건 대상은 아닙니다.</li>
+  </ul>
+</div>
+<script>
+(function () {
+  var sheet = document.getElementById('sheet'), svg = document.getElementById('erd');
+  var W = +svg.dataset.w, scale = 1, zval = document.getElementById('zval');
+  function setScale(s) { scale = Math.max(0.2, Math.min(2, s)); svg.style.width = (W * scale) + 'px'; zval.textContent = Math.round(scale * 100) + '%'; }
+  function fit() { setScale((sheet.clientWidth - 2) / W); sheet.scrollTo(0, 0); }
+  document.getElementById('zin').onclick = function () { setScale(scale + 0.15); };
+  document.getElementById('zout').onclick = function () { setScale(scale - 0.15); };
+  document.getElementById('zfit').onclick = fit;
+  document.getElementById('z100').onclick = function () { setScale(1); };
+  document.querySelectorAll('.chip').forEach(function (c) {
+    c.onclick = function () { setScale(1); sheet.scrollTo({ left: +c.dataset.x - 40, top: +c.dataset.y - 40, behavior: 'smooth' }); };
+  });
+  document.getElementById('theme').onclick = function () {
+    var r = document.documentElement, paper = r.dataset.theme === 'paper';
+    r.dataset.theme = paper ? 'blueprint' : 'paper';
+    this.textContent = paper ? '제도지 모드' : '청사진 모드';
+  };
+  // hover / focus highlight
+  var tbls = svg.querySelectorAll('.tbl'), edges = svg.querySelectorAll('.edge');
+  function focusOn(name, rel) {
+    svg.classList.add('focus');
+    var set = {}; set[name] = 1; rel.split(' ').forEach(function (r) { if (r) set[r] = 1; });
+    tbls.forEach(function (t) { t.classList.toggle('hl', !!set[t.dataset.name]); });
+    edges.forEach(function (e) { e.classList.toggle('hl', e.dataset.a === name || e.dataset.b === name); });
+  }
+  function clear() { svg.classList.remove('focus'); tbls.forEach(function (t) { t.classList.remove('hl'); }); edges.forEach(function (e) { e.classList.remove('hl'); }); }
+  tbls.forEach(function (t) {
+    t.addEventListener('mouseenter', function () { focusOn(t.dataset.name, t.dataset.rel); });
+    t.addEventListener('mouseleave', clear);
+    t.addEventListener('focus', function () { focusOn(t.dataset.name, t.dataset.rel); });
+    t.addEventListener('blur', clear);
+  });
+  // drag to pan
+  var drag = null;
+  sheet.addEventListener('pointerdown', function (e) { if (e.button !== 0) return; drag = { x: e.clientX, y: e.clientY, l: sheet.scrollLeft, t: sheet.scrollTop }; });
+  window.addEventListener('pointermove', function (e) { if (!drag) return; sheet.classList.add('drag'); sheet.scrollLeft = drag.l - (e.clientX - drag.x); sheet.scrollTop = drag.t - (e.clientY - drag.y); });
+  window.addEventListener('pointerup', function () { drag = null; sheet.classList.remove('drag'); });
+  fit();
+  window.addEventListener('resize', function () { if (scale < 1) fit(); });
+})();
+</script>
+</body>
+</html>
