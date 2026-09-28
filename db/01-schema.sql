@@ -48,7 +48,7 @@ CREATE TABLE users (
 CREATE TABLE social_accounts (
   id               BIGINT       NOT NULL AUTO_INCREMENT,
   user_id          BIGINT       NOT NULL,
-  provider         ENUM('KAKAO','GOOGLE') NOT NULL,
+  provider         ENUM('KAKAO','GOOGLE','NAVER') NOT NULL,
   provider_user_id VARCHAR(100) NOT NULL,
   linked_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
