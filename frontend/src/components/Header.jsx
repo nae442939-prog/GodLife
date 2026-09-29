@@ -1,5 +1,6 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
+import { UserMenu } from './UserMenu.jsx'
 
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
 const MENU = [
@@ -11,13 +12,7 @@ const MENU = [
 ]
 
 export function Header() {
-  const { user, status, logout } = useAuth()
-  const navigate = useNavigate()
-
-  async function onLogout() {
-    await logout()
-    navigate('/', { replace: true })
-  }
+  const { status } = useAuth()
 
   return (
     <header className="site-header">
@@ -44,14 +39,7 @@ export function Header() {
 
         <div className="header-auth">
           {status === 'loading' ? null : status === 'authed' ? (
-            <>
-              <Link to="/me" className="header-user">
-                {user.nickname}님
-              </Link>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={onLogout}>
-                로그아웃
-              </button>
-            </>
+            <UserMenu />
           ) : (
             // 회원가입은 로그인 화면 아래 링크로 들어간다.
             <Link to="/login" className="btn btn-ghost btn-sm">
