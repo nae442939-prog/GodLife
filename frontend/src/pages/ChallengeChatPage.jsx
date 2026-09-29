@@ -354,22 +354,25 @@ export function ChallengeChatPage() {
                       <div className="chat-body">
                         {showSender && <span className="chat-name">{m.senderNickname}</span>}
                         <div className="chat-bubble-line">
-                          {m.hidden ? (
-                            <p className="chat-bubble is-hidden">(내보내진 참가자의 메시지예요)</p>
-                          ) : (
-                            <p className="chat-bubble">{m.content}</p>
-                          )}
+                          {/* ⋯ 메뉴는 말풍선 오른쪽 위 모서리에 걸쳐 둔다 */}
+                          <span className="chat-bubble-wrap">
+                            {m.hidden ? (
+                              <p className="chat-bubble is-hidden">(내보내진 참가자의 메시지예요)</p>
+                            ) : (
+                              <p className="chat-bubble">{m.content}</p>
+                            )}
+                            {!m.mine && !m.hidden && (
+                              <MessageMenu
+                                isHost={isHost}
+                                onReport={() => setDialog({ kind: 'report', message: m })}
+                                onBlock={() => setDialog({ kind: 'block', user: senderOf(m) })}
+                                onKick={() => setDialog({ kind: 'kick', user: senderOf(m) })}
+                              />
+                            )}
+                          </span>
                           <time className="chat-time" dateTime={m.createdAt}>
                             {timeOf(m.createdAt)}
                           </time>
-                          {!m.mine && !m.hidden && (
-                            <MessageMenu
-                              isHost={isHost}
-                              onReport={() => setDialog({ kind: 'report', message: m })}
-                              onBlock={() => setDialog({ kind: 'block', user: senderOf(m) })}
-                              onKick={() => setDialog({ kind: 'kick', user: senderOf(m) })}
-                            />
-                          )}
                         </div>
                       </div>
                     </div>
