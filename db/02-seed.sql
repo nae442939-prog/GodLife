@@ -11,7 +11,11 @@ INSERT INTO tiers (id, name, min_score, daily_bet_limit, monthly_bet_limit, high
   (5, 'DIAMOND',   1500, 100000,  1000000, TRUE);
 
 -- 챌린지 카테고리: ai_label 은 ai-server 분류 모델의 클래스 라벨과 반드시 일치해야 한다.
+-- 'other'(기타)는 운동·공부·독서·요리 밖의 생활 습관(일찍 일어나기, 밖에 나가 산책하기 등)이다.
+-- 사진 모양이 제각각이라 AI 학습은 세부 라벨(예: wake_up, walk)로 나눠서 한다. (2차 AI 인증 때 세부 종류 선택 추가)
 INSERT INTO categories (id, name, ai_label) VALUES
   (1, '운동', 'exercise'),
   (2, '공부', 'study'),
-  (3, '독서', 'reading');
+  (3, '독서', 'reading'),
+  (4, '요리', 'cooking'),
+  (5, '기타', 'other');
