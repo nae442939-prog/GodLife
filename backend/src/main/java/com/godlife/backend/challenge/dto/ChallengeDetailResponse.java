@@ -7,6 +7,7 @@ import com.godlife.backend.challenge.ChallengeVisibility;
 import com.godlife.backend.challenge.FrequencyType;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -18,7 +19,8 @@ import java.util.List;
  * @param inviteCode 개설자·참가자에게만 준다(초대 링크 복사용). 그 외에는 null
  * @param member     개설자이거나 참여 중인 사람 (오픈채팅을 볼 수 있음)
  */
-public record ChallengeDetailResponse(Long id, String title, String description, CategoryResponse category,
+public record ChallengeDetailResponse(Long id, String title, String description, String notice,
+                                      LocalDateTime noticeUpdatedAt, CategoryResponse category,
                                       ChallengeMode mode, ChallengeVisibility visibility, String inviteCode,
                                       long entryFee, boolean partialRefund,
                                       LocalDate startDate, LocalDate endDate, long totalDays,
@@ -31,7 +33,8 @@ public record ChallengeDetailResponse(Long id, String title, String description,
 
     public static ChallengeDetailResponse of(Challenge c, LocalDate today, String hostNickname, boolean joined,
                                              boolean host, boolean member, List<ParticipantResponse> participants) {
-        return new ChallengeDetailResponse(c.getId(), c.getTitle(), c.getDescription(),
+        return new ChallengeDetailResponse(c.getId(), c.getTitle(), c.getDescription(), c.getNotice(),
+                c.getNoticeUpdatedAt(),
                 CategoryResponse.from(c.getCategory()), c.getMode(), c.getVisibility(),
                 member ? c.getInviteCode() : null, c.getEntryFee(), c.isPartialRefund(),
                 c.getStartDate(), c.getEndDate(), c.totalDays(), c.getFrequencyType(), c.getWeeklyCount(),

@@ -37,6 +37,12 @@ public enum ErrorCode {
     ALREADY_JOINED(HttpStatus.CONFLICT, "이미 참여 중인 챌린지입니다."),
     NOT_JOINED(HttpStatus.CONFLICT, "참여 중인 챌린지가 아닙니다."),
     CHALLENGE_ALREADY_STARTED(HttpStatus.CONFLICT, "이미 시작된 챌린지는 참여를 취소할 수 없습니다."),
+    KICKED_FROM_CHALLENGE(HttpStatus.FORBIDDEN, "방장이 내보낸 챌린지에는 다시 참여할 수 없어요."),
+    CANNOT_KICK(HttpStatus.BAD_REQUEST, "내보낼 수 없는 참가자예요."),
+    MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "메시지를 찾을 수 없어요."),
+    CANNOT_REPORT(HttpStatus.BAD_REQUEST, "내 메시지나 안내 메시지는 신고할 수 없어요."),
+    ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 신고한 메시지예요."),
+    CANNOT_BLOCK(HttpStatus.BAD_REQUEST, "나 자신은 차단할 수 없어요."),
     CHALLENGE_CANNOT_DELETE(HttpStatus.CONFLICT, "시작된 챌린지는 삭제할 수 없어요. 시작일 전날까지만 삭제할 수 있어요."),
     POINT_CHALLENGE_NOT_READY(HttpStatus.CONFLICT, "포인트 챌린지 참여는 준비 중입니다. 포인트 지갑이 열리면 참여할 수 있어요.");
 

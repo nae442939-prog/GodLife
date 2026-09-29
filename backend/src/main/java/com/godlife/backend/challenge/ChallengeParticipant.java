@@ -67,6 +67,14 @@ public class ChallengeParticipant {
         return status == ParticipantStatus.ACTIVE;
     }
 
+    public boolean isKicked() {
+        return status == ParticipantStatus.KICKED;
+    }
+
+    void kick() {
+        status = ParticipantStatus.KICKED;
+    }
+
     void leave() {
         status = ParticipantStatus.LEFT;
     }

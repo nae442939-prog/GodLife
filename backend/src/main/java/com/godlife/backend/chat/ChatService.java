@@ -33,7 +33,7 @@ public class ChatService {
     private int sendLimit;
 
     /**
-     * 메시지 읽기. 모두 오래된 순으로 돌려준다.
+     * 메시지 읽기. 모두 오래된 순으로 돌려준다. 내가 차단한 사람의 메시지는 빠진다.
      * - afterId: 폴링. 그보다 새 메시지
      * - beforeId: 위로 스크롤. 그보다 오래된 메시지
      * - 둘 다 없으면: 가장 최근 메시지
@@ -44,10 +44,10 @@ public class ChatService {
         PageRequest limit = PageRequest.of(0, PAGE_SIZE);
         List<ChatMessageRow> rows;
         if (afterId != null) {
-            rows = messageRepository.findAfter(challengeId, afterId, limit);
+            rows = messageRepository.findAfter(challengeId, userId, afterId, limit);
         } else {
             long before = beforeId != null ? beforeId : Long.MAX_VALUE;
-            rows = messageRepository.findBefore(challengeId, before, limit).reversed();
+            rows = messageRepository.findBefore(challengeId, userId, before, limit).reversed();
         }
         return rows.stream().map(row -> ChatMessageResponse.of(row, userId)).toList();
     }
@@ -56,10 +56,21 @@ public class ChatService {
     public ChatMessageResponse send(Long challengeId, Long userId, String content) {
         challengeService.requireMember(challengeId, userId);
         throttle.check("chat:" + userId, sendLimit, SEND_WINDOW);
-        ChatMessage saved = messageRepository.saveAndFlush(ChatMessage.of(challengeId, userId, content.strip()));
-        // 닉네임·보낸 시각(DB 기본값)을 같이 돌려주려고 방금 저장한 한 건을 다시 읽는다.
-        return messageRepository.findAfter(challengeId, saved.getId() - 1, PageRequest.of(0, 1)).stream()
-                .map(row -> ChatMessageResponse.of(row, userId))
+        return saveAndRead(ChatMessage.of(challengeId, userId, content.strip()), userId);
+    }
+
+    /** 강퇴·공지 같은 안내 메시지. 권한 확인은 부르는 쪽(방장 기능)이 한다. */
+    @Transactional
+    public void postSystem(Long challengeId, Long hostId, String content) {
+        messageRepository.save(ChatMessage.system(challengeId, hostId, content));
+    }
+
+    /** 닉네임·보낸 시각(DB 기본값)을 같이 돌려주려고 방금 저장한 한 건을 다시 읽는다. */
+    private ChatMessageResponse saveAndRead(ChatMessage message, Long viewerId) {
+        ChatMessage saved = messageRepository.saveAndFlush(message);
+        return messageRepository.findAfter(saved.getChallengeId(), viewerId, saved.getId() - 1, PageRequest.of(0, 1))
+                .stream()
+                .map(row -> ChatMessageResponse.of(row, viewerId))
                 .findFirst()
                 .orElseThrow();
     }

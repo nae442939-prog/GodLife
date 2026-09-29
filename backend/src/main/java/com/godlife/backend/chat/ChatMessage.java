@@ -2,6 +2,8 @@ package com.godlife.backend.chat;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,6 +33,10 @@ public class ChatMessage {
     @Column(name = "sender_id", nullable = false, updatable = false)
     private Long senderId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, updatable = false)
+    private ChatMessageType type;
+
     @Column(nullable = false, updatable = false)
     private String content;
 
@@ -43,6 +49,14 @@ public class ChatMessage {
         m.challengeId = challengeId;
         m.senderId = senderId;
         m.content = content;
+        m.type = ChatMessageType.USER;
+        return m;
+    }
+
+    /** 강퇴·공지 같은 안내. 보낸 사람은 방장으로 둔다. */
+    public static ChatMessage system(Long challengeId, Long hostId, String content) {
+        ChatMessage m = of(challengeId, hostId, content);
+        m.type = ChatMessageType.SYSTEM;
         return m;
     }
 }
