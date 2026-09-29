@@ -6,15 +6,16 @@ import com.godlife.backend.challenge.FrequencyType;
 
 import java.time.LocalDate;
 
-/** 챌린지 목록 카드 */
-public record ChallengeSummaryResponse(Long id, String title, CategoryResponse category, ChallengeMode mode,
-                                       long entryFee, LocalDate startDate, LocalDate endDate, long totalDays,
-                                       FrequencyType frequencyType, Integer weeklyCount, int participantCount,
-                                       int maxParticipants) {
+/** 챌린지 목록 카드. 설명은 카드에서 두 줄까지만 보여 준다(자르기는 프론트). */
+public record ChallengeSummaryResponse(Long id, String title, String description, CategoryResponse category,
+                                       ChallengeMode mode, long entryFee, LocalDate startDate, LocalDate endDate,
+                                       long totalDays, FrequencyType frequencyType, Integer weeklyCount,
+                                       int participantCount, int maxParticipants) {
 
     public static ChallengeSummaryResponse from(Challenge c) {
-        return new ChallengeSummaryResponse(c.getId(), c.getTitle(), CategoryResponse.from(c.getCategory()),
-                c.getMode(), c.getEntryFee(), c.getStartDate(), c.getEndDate(), c.totalDays(),
-                c.getFrequencyType(), c.getWeeklyCount(), c.getParticipantCount(), c.getMaxParticipants());
+        return new ChallengeSummaryResponse(c.getId(), c.getTitle(), c.getDescription(),
+                CategoryResponse.from(c.getCategory()), c.getMode(), c.getEntryFee(), c.getStartDate(),
+                c.getEndDate(), c.totalDays(), c.getFrequencyType(), c.getWeeklyCount(), c.getParticipantCount(),
+                c.getMaxParticipants());
     }
 }

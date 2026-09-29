@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { challengeApi } from '../api/client.js'
 import { ChallengeCard } from '../challenge/ChallengeCard.jsx'
 import { MODE_LABEL, SORT_OPTIONS } from '../challenge/format.js'
+import { CategoryIcon, GridIcon, PlusIcon, SearchIcon } from '../challenge/icons.jsx'
 
 const MODES = [
   { value: '', label: '전체' },
@@ -72,23 +73,23 @@ export function ChallengeListPage() {
 
   return (
     <div className="container page">
-      <div className="page-head">
-        <div>
-          <h1 className="page-title">챌린지</h1>
-          <p className="page-sub">지금 모집 중인 챌린지에 참여하거나, 직접 만들어 보세요.</p>
+      <div>
+        <div className="ch-head cl-head">
+          <div>
+            <h1 className="page-title">챌린지</h1>
+            <p className="page-sub">지금 모집 중인 챌린지에 참여하거나, 직접 만들어 보세요.</p>
+          </div>
+          <Link to="/challenges/new" className="btn btn-dark-outline">
+            챌린지 만들기
+          </Link>
         </div>
-        <Link to="/challenges/new" className="btn btn-primary">
-          챌린지 만들기
-        </Link>
-      </div>
 
-      <div className="filters">
-        <div className="chips" role="group" aria-label="챌린지 종류">
+        <div className="cl-tabs" role="group" aria-label="챌린지 종류">
           {MODES.map((m) => (
             <button
               key={m.value}
               type="button"
-              className={`chip ${mode === m.value ? 'is-active' : ''}`}
+              className={`cl-tab ${mode === m.value ? 'is-active' : ''}`}
               aria-pressed={mode === m.value}
               onClick={() => update('mode', m.value)}
             >
@@ -97,30 +98,33 @@ export function ChallengeListPage() {
           ))}
         </div>
 
-        <div className="chips" role="group" aria-label="카테고리">
+        <div className="cl-cats" role="group" aria-label="카테고리">
           <button
             type="button"
-            className={`chip ${categoryId === '' ? 'is-active' : ''}`}
+            className={`cl-cat ${categoryId === '' ? 'is-active' : ''}`}
             aria-pressed={categoryId === ''}
             onClick={() => update('categoryId', '')}
           >
-            전체 카테고리
+            <GridIcon size={14} />
+            전체
           </button>
           {categories.map((c) => (
             <button
               key={c.id}
               type="button"
-              className={`chip ${categoryId === String(c.id) ? 'is-active' : ''}`}
+              className={`cl-cat ${categoryId === String(c.id) ? 'is-active' : ''}`}
               aria-pressed={categoryId === String(c.id)}
               onClick={() => update('categoryId', String(c.id))}
             >
+              <CategoryIcon id={c.id} size={14} />
               {c.name}
             </button>
           ))}
         </div>
 
-        <div className="filter-row">
-          <form className="search" role="search" onSubmit={onSearch}>
+        <div className="cl-toolbar">
+          <form className="cl-search" role="search" onSubmit={onSearch}>
+            <SearchIcon />
             <input
               type="search"
               placeholder="챌린지 제목으로 검색"
@@ -128,11 +132,8 @@ export function ChallengeListPage() {
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
             />
-            <button type="submit" className="btn btn-outline btn-sm">
-              검색
-            </button>
           </form>
-          <select aria-label="정렬" className="select" value={sort} onChange={(e) => update('sort', e.target.value)}>
+          <select aria-label="정렬" className="cl-sort" value={sort} onChange={(e) => update('sort', e.target.value)}>
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -140,35 +141,39 @@ export function ChallengeListPage() {
             ))}
           </select>
         </div>
-      </div>
 
-      {loading ? (
-        <p className="loading">불러오는 중…</p>
-      ) : result.error ? (
-        <p className="form-error">{result.error}</p>
-      ) : result.items.length === 0 ? (
-        <div className="empty">
-          <p>조건에 맞는 모집 중인 챌린지가 없어요.</p>
-          <Link to="/challenges/new" className="btn btn-outline btn-sm">
-            첫 챌린지 만들기
-          </Link>
-        </div>
-      ) : (
-        <>
-          <ul className="challenge-grid">
-            {result.items.map((c) => (
-              <ChallengeCard key={c.id} challenge={c} />
-            ))}
-          </ul>
-          {result.page + 1 < result.totalPages && (
-            <div className="more">
-              <button type="button" className="btn btn-outline" onClick={loadMore} disabled={loadingMore}>
-                {loadingMore ? '불러오는 중…' : '더 보기'}
-              </button>
-            </div>
-          )}
-        </>
-      )}
+        {loading ? (
+          <p className="loading">불러오는 중…</p>
+        ) : result.error ? (
+          <p className="form-error">{result.error}</p>
+        ) : result.items.length === 0 ? (
+          <div className="cl-empty">
+            <span className="cl-empty-icon">
+              <PlusIcon />
+            </span>
+            <h3>조건에 맞는 모집 중인 챌린지가 없어요</h3>
+            <p>필터를 바꿔 보거나, 원하는 챌린지가 없다면 직접 만들어 보세요.</p>
+            <Link to="/challenges/new" className="btn btn-dark-outline">
+              첫 챌린지 만들기
+            </Link>
+          </div>
+        ) : (
+          <>
+            <ul className="cl-grid">
+              {result.items.map((c) => (
+                <ChallengeCard key={c.id} challenge={c} />
+              ))}
+            </ul>
+            {result.page + 1 < result.totalPages && (
+              <div className="more">
+                <button type="button" className="btn btn-outline" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? '불러오는 중…' : '더 보기'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
