@@ -37,17 +37,6 @@ export function ChallengeDetailView({
 
       {notice}
 
-      {c.member && (
-        <nav className="dt-tabs" aria-label="챌린지 메뉴">
-          <span className="dt-tab is-active" aria-current="page">
-            정보
-          </span>
-          <Link to={`/challenges/${c.id}/chat`} className="dt-tab">
-            오픈채팅
-          </Link>
-        </nav>
-      )}
-
       <article className="card dt-card">
         <div className="dt-top">
           <div className="dt-tags">
@@ -77,6 +66,17 @@ export function ChallengeDetailView({
           <Avatar size={24} />
           <span>개설자 {c.hostNickname}</span>
         </div>
+
+        {(c.member || c.inviteCode) && (
+          <DetailActions
+            challengeId={c.id}
+            inviteCode={c.inviteCode}
+            canChat={c.member}
+            canRegenerate={c.host && Boolean(onRegenerateInvite)}
+            busy={busy}
+            onRegenerate={onRegenerateInvite}
+          />
+        )}
 
         <dl className="mc-rows dt-rows">
           <div>
@@ -109,16 +109,6 @@ export function ChallengeDetailView({
           <h2>챌린지 소개</h2>
           <p className="dt-description">{c.description}</p>
         </section>
-
-        {c.inviteCode && (
-          <InviteBox
-            code={c.inviteCode}
-            isPrivate={c.visibility === 'PRIVATE'}
-            canRegenerate={c.host && Boolean(onRegenerateInvite)}
-            busy={busy}
-            onRegenerate={onRegenerateInvite}
-          />
-        )}
 
         <div className="dt-action">
           <JoinAction
@@ -192,18 +182,21 @@ function DeleteBox({ canDelete, busy, onDelete }) {
   )
 }
 
-/** 개설자·참가자에게만 보이는 초대 링크. 복사해서 친구에게 보내면 그 링크로 참여한다. */
-function InviteBox({ code, isPrivate, canRegenerate, busy, onRegenerate }) {
-  const link = `${window.location.origin}/challenges/join/${code}`
+/**
+ * 개설자 줄 아래 버튼 줄: [오픈채팅] (멤버만) · [초대 링크 복사] (멤버에게만 코드가 온다).
+ * 방장은 링크가 새어 나갔을 때 새로 만들 수 있다 (이전 링크는 막힘).
+ */
+function DetailActions({ challengeId, inviteCode, canChat, canRegenerate, busy, onRegenerate }) {
   const [copied, setCopied] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
   async function copy() {
+    const link = `${window.location.origin}/challenges/join/${inviteCode}`
     try {
       await navigator.clipboard.writeText(link)
     } catch {
-      // 클립보드 권한이 없으면(오래된 브라우저 등) 선택해 두어 직접 복사하게 한다.
-      document.getElementById('invite-link')?.select()
+      // 클립보드 권한이 없으면(오래된 브라우저 등) 링크를 보여 주고 직접 복사하게 한다.
+      window.prompt('아래 초대 링크를 복사해 주세요', link)
       return
     }
     setCopied(true)
@@ -211,18 +204,37 @@ function InviteBox({ code, isPrivate, canRegenerate, busy, onRegenerate }) {
   }
 
   return (
-    <section className="dt-section invite-box">
-      <h2>친구 초대</h2>
-      <p className="invite-help">
-        {isPrivate
-          ? '비공개 챌린지라 이 링크를 받은 사람만 참여할 수 있어요.'
-          : '링크를 보내면 친구가 바로 이 챌린지로 들어와요.'}
-      </p>
-      <div className="invite-row">
-        <input id="invite-link" className="invite-link" value={link} readOnly aria-label="초대 링크" />
-        <button type="button" className="btn btn-dark invite-copy" onClick={copy}>
-          {copied ? '복사했어요' : '초대 링크 복사'}
-        </button>
+    <div className="dt-buttons">
+      <div className="dt-buttons-row">
+        {canChat && (
+          <Link to={`/challenges/${challengeId}/chat`} className="dt-pill-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path
+                d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"
+                strokeWidth="1.7"
+                strokeLinejoin="round"
+              />
+            </svg>
+            오픈채팅
+          </Link>
+        )}
+        {inviteCode && (
+          <button type="button" className="dt-pill-btn" onClick={copy}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path
+                d="M9.5 13.5a4 4 0 0 0 5.7 0.3l2.6-2.6a4 4 0 1 0-5.6-5.6L10.8 6"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+              <path
+                d="M14.5 10.5a4 4 0 0 0-5.7-0.3l-2.6 2.6a4 4 0 1 0 5.6 5.6l1.4-1.4"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+            {copied ? '복사했어요' : '초대 링크 복사'}
+          </button>
+        )}
       </div>
       {canRegenerate &&
         (confirming ? (
@@ -246,11 +258,11 @@ function InviteBox({ code, isPrivate, canRegenerate, busy, onRegenerate }) {
         ) : (
           <p className="invite-regen">
             <button type="button" className="link-button is-muted" onClick={() => setConfirming(true)}>
-              링크가 새어 나갔나요? 초대 링크 새로 만들기
+              초대 링크가 새어 나갔나요? 새로 만들기
             </button>
           </p>
         ))}
-    </section>
+    </div>
   )
 }
 

@@ -2207,58 +2207,48 @@ a.back-button:hover {
 
 /* ---------- 비공개 챌린지 · 초대 링크 ---------- */
 
-.dt-tag.is-private {
-  color: var(--header-nav);
-  background: var(--surface-alt);
-  border-color: transparent;
+/* 상세: 개설자 줄 아래 [오픈채팅] [초대 링크 복사] */
+.dt-host:has(+ .dt-buttons) {
+  margin-bottom: 18px;
 }
 
-.dt-tag.is-private svg {
-  color: var(--header-nav);
+.dt-buttons {
+  margin-bottom: 28px;
 }
 
-.invite-box {
-  padding: 22px 24px;
-  background: var(--surface-alt);
-  border-radius: 14px;
-}
-
-.invite-box h2 {
-  margin-bottom: 6px;
-}
-
-.invite-help {
-  margin: 0 0 14px;
-  font-size: 0.95rem;
-  color: var(--header-nav);
-}
-
-.invite-row {
+.dt-buttons-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.invite-link {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 14px;
+.dt-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
   font: inherit;
   font-size: 0.95rem;
+  font-weight: 700;
   color: var(--text);
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 10px;
+  cursor: pointer;
 }
 
-.invite-link:focus-visible {
-  outline: none;
+.dt-pill-btn svg {
+  color: var(--header-nav);
+}
+
+.dt-pill-btn:hover {
+  text-decoration: none;
   border-color: color-mix(in srgb, var(--text) 40%, transparent);
 }
 
-.invite-copy {
-  flex-shrink: 0;
-  padding: 12px 20px;
-  font-size: 0.95rem;
+.dt-pill-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
 .invite-regen {
@@ -2303,12 +2293,6 @@ a.back-button:hover {
 
 .cf .segment + .field-hint {
   margin-top: 10px;
-}
-
-@media (max-width: 760px) {
-  .invite-row {
-    flex-direction: column;
-  }
 }
 
 /* ---------- 챌린지 삭제 (개설자) ---------- */
@@ -2371,33 +2355,6 @@ a.back-button:hover {
 }
 
 /* ---------- 챌린지 오픈채팅 ---------- */
-
-.dt-tabs {
-  display: flex;
-  gap: 26px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid var(--border);
-}
-
-.dt-tab {
-  margin-bottom: -1px;
-  padding: 0 0 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
-}
-
-.dt-tab:hover {
-  color: var(--text);
-  text-decoration: none;
-}
-
-.dt-tab.is-active {
-  font-weight: 800;
-  color: var(--text);
-  border-bottom-color: var(--text);
-}
 
 .chat-card {
   display: flex;
