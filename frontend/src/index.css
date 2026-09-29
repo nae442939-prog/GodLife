@@ -696,22 +696,29 @@ a:focus-visible,
   margin-bottom: 0;
 }
 
-/* ---------- 홈: 진행 중인 챌린지 미리보기 ---------- */
+/* ---------- 홈: 모집 중인 챌린지 (카드는 목록 화면의 .cl-* 를 같이 쓴다) ---------- */
 
-.challenge-grid {
-  display: grid;
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  grid-template-columns: repeat(3, 1fr);
+.section-more {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--header-nav);
 }
 
-.challenge-card {
-  padding: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+.section-more:hover {
+  color: var(--text);
+}
+
+.home-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 0;
+  color: var(--muted);
+}
+
+.home-empty p {
+  margin: 0;
 }
 
 .challenge-category {
@@ -723,46 +730,6 @@ a:focus-visible,
   color: var(--primary);
   background: color-mix(in srgb, var(--primary) 12%, transparent);
   border-radius: 999px;
-}
-
-.challenge-grid .challenge-card:nth-child(2) .challenge-category {
-  color: var(--accent-blue);
-  background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
-}
-
-.challenge-grid .challenge-card:nth-child(3) .challenge-category {
-  color: var(--accent-mint);
-  background: color-mix(in srgb, var(--accent-mint) 14%, transparent);
-}
-
-.challenge-card h3 {
-  margin: 0 0 14px;
-  font-size: 1.05rem;
-}
-
-.challenge-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 0;
-}
-
-.challenge-meta div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.challenge-meta dt {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.challenge-meta dd {
-  margin: 0;
-  font-weight: 700;
-  font-size: 0.92rem;
 }
 
 /* ---------- 홈: 실시간 랭킹 / 커뮤니티 인기글 미리보기 ---------- */
@@ -3340,7 +3307,6 @@ a.back-button:hover {
 
   .features,
   .hub,
-  .challenge-grid,
   .cl-grid,
   .form-grid,
   .field-pair {

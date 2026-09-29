@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { challengeApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
+import { ChallengeCard } from '../challenge/ChallengeCard.jsx'
 
 // body 의 \n 은 문장 단위 줄바꿈이다. (.step-body p 가 white-space: pre-line)
 const STEPS = [
@@ -27,13 +30,9 @@ const FEATURES = [
   { title: '안전한 포인트', body: '포인트는 챌린지 참여와 포인트 상점에서만 쓰여요. 직접 충전하고 쓰지 않은 금액만 결제 취소로 환불되고, 챌린지·이벤트로 얻은 포인트는 현금화할 수 없어요.' },
 ]
 
-// 아래 세 목록(CHALLENGES / RANKING / COMMUNITY)은 챌린지·랭킹·커뮤니티 API가 아직 없어서 넣은
-// 목업 데이터다. 각 기능이 만들어지면 이 배열을 실제 API 응답으로 바꾸면 된다.
-const CHALLENGES = [
-  { category: '운동', title: '아침 6시 기상 러닝', period: '10.01 - 10.14 (14일)', participants: 32, points: 10000 },
-  { category: '공부', title: '매일 알고리즘 1문제', period: '10.01 - 10.31 (31일)', participants: 21, points: 15000 },
-  { category: '독서', title: '한 달 3권 완독', period: '10.05 - 11.04 (30일)', participants: 14, points: 8000 },
-]
+// 아래 목록(HERO_CHALLENGE / RANKING / COMMUNITY)은 랭킹·커뮤니티 API가 아직 없어서 넣은 목업 데이터다.
+// HERO_CHALLENGE 는 첫 화면 오른쪽 장식 그림용. ('지금 모집 중인 챌린지' 칸은 실제 API 를 쓴다)
+const HERO_CHALLENGE = { category: '운동', title: '아침 6시 기상 러닝', participants: 32, points: 10000 }
 
 const RANKING = [
   { rank: 1, nickname: '갓생러123', streak: 28, successRate: 96 },
@@ -47,9 +46,24 @@ const COMMUNITY = [
   { title: '포기하고 싶을 때 저는 이렇게 버텨요', author: '습관마스터', comments: 15, likes: 40 },
 ]
 
+const HOME_CHALLENGE_COUNT = 3
+
 export function HomePage() {
   const { user, status } = useAuth()
   const authed = status === 'authed'
+  // 모집 중인 공개 챌린지 중 참가자 많은 순 3개 (누르면 상세로). 실패하면 빈 목록으로 둔다.
+  const [popular, setPopular] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    challengeApi
+      .list({ sort: 'popular' })
+      .then((data) => !cancelled && setPopular(data.items.slice(0, HOME_CHALLENGE_COUNT)))
+      .catch(() => !cancelled && setPopular([]))
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <>
@@ -89,11 +103,11 @@ export function HomePage() {
           <div className="hero-preview" aria-hidden="true">
             <div className="hero-preview-bg" />
             <div className="hero-preview-card hero-preview-card-challenge">
-              <span className="challenge-category">{CHALLENGES[0].category}</span>
-              <h3>{CHALLENGES[0].title}</h3>
+              <span className="challenge-category">{HERO_CHALLENGE.category}</span>
+              <h3>{HERO_CHALLENGE.title}</h3>
               <div className="hero-preview-meta">
-                <span>{CHALLENGES[0].participants}명 참여</span>
-                <span>{CHALLENGES[0].points.toLocaleString()}P</span>
+                <span>{HERO_CHALLENGE.participants}명 참여</span>
+                <span>{HERO_CHALLENGE.points.toLocaleString()}P</span>
               </div>
             </div>
             <div className="hero-preview-card hero-preview-card-ranking">
@@ -113,31 +127,27 @@ export function HomePage() {
       <section className="section section-alt">
         <div className="container">
           <div className="section-head">
-            <h2>진행 중인 챌린지</h2>
-            <span className="badge">준비 중</span>
+            <h2>지금 모집 중인 챌린지</h2>
+            <Link to="/challenges" className="section-more">
+              전체 보기 →
+            </Link>
           </div>
-          <ul className="challenge-grid">
-            {CHALLENGES.map((c) => (
-              <li key={c.title} className="challenge-card">
-                <span className="challenge-category">{c.category}</span>
-                <h3>{c.title}</h3>
-                <dl className="challenge-meta">
-                  <div>
-                    <dt>기간</dt>
-                    <dd>{c.period}</dd>
-                  </div>
-                  <div>
-                    <dt>참가자</dt>
-                    <dd>{c.participants}명</dd>
-                  </div>
-                  <div>
-                    <dt>포인트</dt>
-                    <dd>{c.points.toLocaleString()}P</dd>
-                  </div>
-                </dl>
-              </li>
-            ))}
-          </ul>
+          {popular === null ? (
+            <p className="muted">불러오는 중…</p>
+          ) : popular.length === 0 ? (
+            <div className="home-empty">
+              <p>지금 모집 중인 챌린지가 없어요.</p>
+              <Link to="/challenges/new" className="btn btn-dark-outline">
+                첫 챌린지 만들기
+              </Link>
+            </div>
+          ) : (
+            <ul className="cl-grid">
+              {popular.map((c) => (
+                <ChallengeCard key={c.id} challenge={c} />
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
