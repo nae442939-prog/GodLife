@@ -140,3 +140,16 @@ export const challengeApi = {
     apiFetch(`/api/challenges/invite/${encodeURIComponent(code)}/participants`, { method: 'POST' }),
   regenerateInvite: (id) => apiFetch(`/api/challenges/${id}/invite-code`, { method: 'POST' }),
 }
+
+// 챌린지 오픈채팅 (개설자·참가자만). 3초마다 after 로 새 메시지를 가져온다.
+export const chatApi = {
+  list: (challengeId, { after, before } = {}) => {
+    const params = new URLSearchParams()
+    if (after) params.set('after', after)
+    if (before) params.set('before', before)
+    const qs = params.toString()
+    return apiFetch(`/api/challenges/${challengeId}/messages${qs ? `?${qs}` : ''}`)
+  },
+  send: (challengeId, content) =>
+    apiFetch(`/api/challenges/${challengeId}/messages`, { method: 'POST', body: { content } }),
+}

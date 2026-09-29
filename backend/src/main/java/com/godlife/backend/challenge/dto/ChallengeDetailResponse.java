@@ -16,6 +16,7 @@ import java.util.List;
  * @param joined     로그인한 사람이 참여 중인지. 비로그인이면 false
  * @param host       로그인한 사람이 개설자인지
  * @param inviteCode 개설자·참가자에게만 준다(초대 링크 복사용). 그 외에는 null
+ * @param member     개설자이거나 참여 중인 사람 (오픈채팅을 볼 수 있음)
  */
 public record ChallengeDetailResponse(Long id, String title, String description, CategoryResponse category,
                                       ChallengeMode mode, ChallengeVisibility visibility, String inviteCode,
@@ -25,16 +26,17 @@ public record ChallengeDetailResponse(Long id, String title, String description,
                                       LocalTime verifyFrom, LocalTime verifyUntil,
                                       int participantCount, int maxParticipants, ChallengeStatus status,
                                       String hostNickname, boolean recruiting, boolean canLeave,
-                                      boolean joined, boolean host, List<ParticipantResponse> participants) {
+                                      boolean joined, boolean host, boolean member,
+                                      List<ParticipantResponse> participants) {
 
     public static ChallengeDetailResponse of(Challenge c, LocalDate today, String hostNickname, boolean joined,
-                                             boolean host, boolean showInvite, List<ParticipantResponse> participants) {
+                                             boolean host, boolean member, List<ParticipantResponse> participants) {
         return new ChallengeDetailResponse(c.getId(), c.getTitle(), c.getDescription(),
                 CategoryResponse.from(c.getCategory()), c.getMode(), c.getVisibility(),
-                showInvite ? c.getInviteCode() : null, c.getEntryFee(), c.isPartialRefund(),
+                member ? c.getInviteCode() : null, c.getEntryFee(), c.isPartialRefund(),
                 c.getStartDate(), c.getEndDate(), c.totalDays(), c.getFrequencyType(), c.getWeeklyCount(),
                 c.getVerifyFrom(), c.getVerifyUntil(), c.getParticipantCount(), c.getMaxParticipants(),
-                c.getStatus(), hostNickname, c.isRecruiting(today), c.canLeave(today), joined, host,
+                c.getStatus(), hostNickname, c.isRecruiting(today), c.canLeave(today), joined, host, member,
                 participants);
     }
 }

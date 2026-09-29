@@ -3,6 +3,7 @@ import { Layout } from './components/Layout.jsx'
 import { RequireAuth } from './components/RequireAuth.jsx'
 import { FindIdPage } from './pages/FindIdPage.jsx'
 import { FindPasswordPage } from './pages/FindPasswordPage.jsx'
+import { ChallengeChatPage } from './pages/ChallengeChatPage.jsx'
 import { ChallengeCreatePage } from './pages/ChallengeCreatePage.jsx'
 import { ChallengeDetailPage } from './pages/ChallengeDetailPage.jsx'
 import { ChallengeInvitePage } from './pages/ChallengeInvitePage.jsx'
@@ -31,6 +32,7 @@ export default function App() {
         {/* 로그인해야 볼 수 있는 화면 */}
         <Route element={<RequireAuth />}>
           <Route path="/challenges/new" element={<ChallengeCreatePage />} />
+          <Route path="/challenges/:id/chat" element={<ChallengeChatPage />} />
           <Route path="/me" element={<MyPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/verify-phone" element={<VerifyPhonePage />} />

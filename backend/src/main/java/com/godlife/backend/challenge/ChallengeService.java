@@ -150,6 +150,17 @@ public class ChallengeService {
     }
 
     /**
+     * 개설자·참가자(참여 취소 제외)만 통과. 채팅처럼 멤버 전용 기능이 쓴다.
+     * 아니면 챌린지가 없는 것처럼 404 (비공개 챌린지가 있다는 것도 알리지 않게).
+     */
+    @Transactional(readOnly = true)
+    public void requireMember(Long challengeId, Long userId) {
+        challengeRepository.findById(challengeId)
+                .filter(c -> isMember(c, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+    }
+
+    /**
      * 참여 공통. 챌린지 행을 잠근 채로 정원을 확인하고 참가자 수를 올린다. (동시에 여러 명이 눌러도 정원 초과 없음)
      * 포인트 챌린지는 지갑(충전/보상 포인트 분리)이 만들어진 뒤 연다.
      */
