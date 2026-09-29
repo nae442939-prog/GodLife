@@ -31,10 +31,13 @@ INSERT INTO users (email, nickname) VALUES
   ('salad@dummy.godlife',    '샐러드한접시');
 
 -- ---------- 챌린지 10개 (운동·공부·독서·요리·기타 / 무료·포인트) ----------
+-- '한 달 3권 완독' 만 비공개(초대 링크 전용) 예시. 초대 코드는 더미라 UUID 앞 8자리로 채운다.
 INSERT INTO challenges
-  (host_id, category_id, title, description, mode, start_date, end_date, frequency_type, weekly_count,
-   entry_fee, min_bet, max_bet, max_participants, verify_from, verify_until, partial_refund)
+  (host_id, category_id, title, description, mode, visibility, invite_code, start_date, end_date,
+   frequency_type, weekly_count, entry_fee, min_bet, max_bet, max_participants, verify_from, verify_until,
+   partial_refund)
 SELECT u.id, d.category_id, d.title, d.description, d.mode,
+       IF(d.title = '한 달 3권 완독', 'PRIVATE', 'PUBLIC'), UPPER(SUBSTRING(REPLACE(UUID(), '-', ''), 1, 8)),
        CURDATE() + INTERVAL d.start_in DAY, CURDATE() + INTERVAL (d.start_in + d.days - 1) DAY,
        d.frequency_type, d.weekly_count, d.fee, d.fee, d.fee, d.max_p, d.v_from, d.v_until, d.partial
 FROM (

@@ -7,6 +7,7 @@ import com.godlife.backend.challenge.dto.ChallengeCreateRequest;
 import com.godlife.backend.challenge.dto.ChallengeDetailResponse;
 import com.godlife.backend.challenge.dto.ChallengeSummaryResponse;
 import com.godlife.backend.challenge.dto.PageResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -59,6 +60,28 @@ public class ChallengeController {
     @PostMapping("/api/challenges/{id}/participants")
     public ChallengeDetailResponse join(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
         challengeService.join(id, authUser.id());
+        return challengeService.detail(id, authUser.id());
+    }
+
+    /** 초대 링크 미리보기. 비로그인도 볼 수 있다(참여할 때 로그인). */
+    @GetMapping("/api/challenges/invite/{code}")
+    public ChallengeDetailResponse invite(@PathVariable String code, @AuthenticationPrincipal AuthUser authUser,
+                                          HttpServletRequest http) {
+        return challengeService.detailByInvite(code, authUser == null ? null : authUser.id(), http.getRemoteAddr());
+    }
+
+    @PostMapping("/api/challenges/invite/{code}/participants")
+    public ChallengeDetailResponse joinByInvite(@PathVariable String code, @AuthenticationPrincipal AuthUser authUser,
+                                                HttpServletRequest http) {
+        Long challengeId = challengeService.joinByInvite(code, authUser.id(), http.getRemoteAddr());
+        return challengeService.detail(challengeId, authUser.id());
+    }
+
+    /** 개설자만. 초대 코드를 새로 만들어 이전 링크를 막는다. */
+    @PostMapping("/api/challenges/{id}/invite-code")
+    public ChallengeDetailResponse regenerateInviteCode(@PathVariable Long id,
+                                                        @AuthenticationPrincipal AuthUser authUser) {
+        challengeService.regenerateInviteCode(id, authUser.id());
         return challengeService.detail(id, authUser.id());
     }
 

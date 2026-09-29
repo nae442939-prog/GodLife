@@ -31,6 +31,7 @@ public enum ErrorCode {
 
     CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 카테고리입니다."),
     CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "챌린지를 찾을 수 없습니다."),
+    INVITE_NOT_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 초대 링크입니다. 링크가 바뀌었는지 개설자에게 물어보세요."),
     CHALLENGE_NOT_RECRUITING(HttpStatus.CONFLICT, "모집이 끝난 챌린지입니다."),
     CHALLENGE_FULL(HttpStatus.CONFLICT, "참여 인원이 모두 찼습니다."),
     ALREADY_JOINED(HttpStatus.CONFLICT, "이미 참여 중인 챌린지입니다."),

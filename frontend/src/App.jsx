@@ -5,6 +5,7 @@ import { FindIdPage } from './pages/FindIdPage.jsx'
 import { FindPasswordPage } from './pages/FindPasswordPage.jsx'
 import { ChallengeCreatePage } from './pages/ChallengeCreatePage.jsx'
 import { ChallengeDetailPage } from './pages/ChallengeDetailPage.jsx'
+import { ChallengeInvitePage } from './pages/ChallengeInvitePage.jsx'
 import { ChallengeListPage } from './pages/ChallengeListPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/find-password" element={<FindPasswordPage />} />
         <Route path="/challenges" element={<ChallengeListPage />} />
         <Route path="/challenges/:id" element={<ChallengeDetailPage />} />
+        <Route path="/challenges/join/:code" element={<ChallengeInvitePage />} />
 
         {/* 로그인해야 볼 수 있는 화면 */}
         <Route element={<RequireAuth />}>

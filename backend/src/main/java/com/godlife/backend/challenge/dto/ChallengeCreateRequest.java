@@ -1,6 +1,7 @@
 package com.godlife.backend.challenge.dto;
 
 import com.godlife.backend.challenge.ChallengeMode;
+import com.godlife.backend.challenge.ChallengeVisibility;
 import com.godlife.backend.challenge.FrequencyType;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
@@ -17,7 +18,9 @@ import java.time.temporal.ChronoUnit;
  * 챌린지 개설. 여러 값을 함께 봐야 하는 규칙은 @AssertTrue 로 검사한다.
  * (오류 필드 이름은 "endDateValid" 처럼 끝에 Valid 가 붙는다. 시작일이 오늘 이후인지는 서버 시각으로 서비스에서 본다)
  *
- * @param entryFee 포인트 챌린지(BET)만. 무료 챌린지는 무시하고 0 으로 저장한다.
+ * @param visibility    없으면 PUBLIC. PRIVATE 는 목록에 안 나오고 초대 링크로만 참여한다.
+ * @param entryFee      포인트 챌린지(BET)만. 무료 챌린지는 무시하고 0 으로 저장한다.
+ * @param partialRefund 없으면 false (포인트 챌린지만 의미 있음)
  */
 public record ChallengeCreateRequest(
         @NotNull(message = "카테고리를 골라 주세요.")
@@ -33,6 +36,8 @@ public record ChallengeCreateRequest(
 
         @NotNull(message = "무료 챌린지와 포인트 챌린지 중 하나를 골라 주세요.")
         ChallengeMode mode,
+
+        ChallengeVisibility visibility,
 
         @NotNull(message = "시작일을 골라 주세요.")
         LocalDate startDate,
@@ -56,7 +61,7 @@ public record ChallengeCreateRequest(
 
         LocalTime verifyUntil,
 
-        boolean partialRefund) {
+        Boolean partialRefund) {
 
     public static final int MAX_TITLE = 50;
     public static final int MAX_DESCRIPTION = 1000;

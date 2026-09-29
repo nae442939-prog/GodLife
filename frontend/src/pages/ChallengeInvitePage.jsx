@@ -1,41 +1,44 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { challengeApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { ChallengeDetailView } from '../challenge/ChallengeDetailView.jsx'
 
-export function ChallengeDetailPage() {
-  const { id } = useParams()
+/**
+ * 초대 링크(/challenges/join/:code)로 들어온 화면. 비공개 챌린지도 이 코드로 보여 주고 참여시킨다.
+ * 로그인 안 했으면 로그인 후 이 주소로 돌아온다.
+ */
+export function ChallengeInvitePage() {
+  const { code } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const { status } = useAuth()
-  // 로그인 상태가 정해진 뒤에 불러와야 참여 여부(joined)가 맞게 온다.
   const [state, setState] = useState({ key: null, challenge: null, error: '' })
   const [actionError, setActionError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const loadKey = `${id}|${status}`
+  const loadKey = `${code}|${status}`
 
   useEffect(() => {
     if (status === 'loading') return
     let cancelled = false
     challengeApi
-      .get(id)
+      .getByInvite(code)
       .then((challenge) => !cancelled && setState({ key: loadKey, challenge, error: '' }))
       .catch((err) => !cancelled && setState({ key: loadKey, challenge: null, error: err.message }))
     return () => {
       cancelled = true
     }
-  }, [id, status, loadKey])
+  }, [code, status, loadKey])
 
-  async function act(fn) {
+  async function join() {
     setBusy(true)
     setActionError('')
     try {
-      const challenge = await fn(id)
-      setState((s) => ({ ...s, challenge }))
+      const joined = await challengeApi.joinByInvite(code)
+      navigate(`/challenges/${joined.id}`, { replace: true })
     } catch (err) {
       setActionError(err.message)
-    } finally {
       setBusy(false)
     }
   }
@@ -44,8 +47,13 @@ export function ChallengeDetailPage() {
   if (state.error) {
     return (
       <div className="container page detail-page">
-        <p className="form-error">{state.error}</p>
-        <Link to="/challenges">챌린지 목록으로</Link>
+        <div className="invite-missing card">
+          <h1>초대 링크를 열 수 없어요</h1>
+          <p>{state.error}</p>
+          <Link to="/challenges" className="btn btn-dark-outline">
+            다른 챌린지 둘러보기
+          </Link>
+        </div>
       </div>
     )
   }
@@ -57,9 +65,13 @@ export function ChallengeDetailPage() {
       from={location.pathname}
       busy={busy}
       actionError={actionError}
-      onJoin={() => act(challengeApi.join)}
-      onLeave={() => act(challengeApi.leave)}
-      onRegenerateInvite={() => act(challengeApi.regenerateInvite)}
+      onJoin={join}
+      joinLabel="초대받은 챌린지 참여하기"
+      notice={
+        <p className="invite-notice">
+          <strong>{state.challenge.hostNickname}</strong>님이 챌린지에 초대했어요
+        </p>
+      }
     />
   )
 }
