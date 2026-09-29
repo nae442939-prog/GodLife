@@ -67,6 +67,12 @@ export function ChallengeDetailView({
         </div>
 
         <h1 className="dt-title">{c.title}</h1>
+        {c.member && c.notice && (
+          <p className="dt-notice">
+            <span aria-hidden="true">📢</span> <span className="sr-only">방장 공지: </span>
+            {c.notice}
+          </p>
+        )}
         <div className="dt-host">
           <Avatar size={24} />
           <span>개설자 {c.hostNickname}</span>

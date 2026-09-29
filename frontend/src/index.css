@@ -2578,6 +2578,387 @@ a.back-button:hover {
   }
 }
 
+/* ---------- 오픈채팅 관리: 공지 · 안내 · 메뉴 · 신고 · 차단 ---------- */
+
+/* 브라우저의 스크롤 앵커링이 '맨 아래 유지'와 싸우지 않게 끈다 */
+.chat-list {
+  overflow-anchor: none;
+}
+
+.chat-host-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--header-nav);
+  background: var(--surface-alt);
+  border-radius: 999px;
+}
+
+.notice-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 26px;
+  background: color-mix(in srgb, var(--accent-amber) 12%, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+
+.notice-bar.is-empty {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background: var(--surface);
+}
+
+.notice-icon {
+  flex-shrink: 0;
+}
+
+.notice-text {
+  flex: 1;
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notice-edit {
+  flex-shrink: 0;
+}
+
+.notice-bar.is-editing {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.notice-bar textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 0.98rem;
+  color: var(--text);
+  resize: vertical;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+}
+
+.notice-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dt-notice {
+  margin: -4px 0 22px;
+  padding: 12px 16px;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  background: color-mix(in srgb, var(--accent-amber) 12%, var(--surface));
+  border-radius: 12px;
+}
+
+.chat-system {
+  width: fit-content;
+  max-width: 90%;
+  margin: 14px auto;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--header-nav);
+  background: color-mix(in srgb, var(--text) 7%, var(--surface));
+  border-radius: 999px;
+}
+
+.chat-bubble.is-hidden {
+  font-style: italic;
+  color: var(--muted);
+  background: transparent;
+  border-style: dashed;
+}
+
+.msg-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.msg-menu-btn {
+  width: 28px;
+  height: 28px;
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+/* 마우스를 올렸을 때만 보이게 (터치 화면은 항상 보이게) */
+.chat-row:hover .msg-menu-btn,
+.msg-menu-btn:focus-visible,
+.msg-menu-btn[aria-expanded='true'] {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .msg-menu-btn {
+    opacity: 1;
+  }
+}
+
+.msg-menu-btn:hover {
+  background: var(--surface-alt);
+}
+
+.msg-menu-panel {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -12px rgba(43, 32, 20, 0.3);
+}
+
+.msg-menu-panel button {
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.msg-menu-panel button:hover {
+  background: var(--surface-alt);
+}
+
+.msg-menu-panel button.is-danger {
+  color: var(--danger);
+}
+
+.report-alerts {
+  padding: 12px 26px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+
+.report-alerts-title {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.report-alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 0.95rem;
+  border-top: 1px solid color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+.report-reasons {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  color: var(--header-nav);
+}
+
+.report-details {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.report-alert-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.dlg-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 16, 12, 0.45);
+}
+
+.dlg {
+  width: min(440px, 100%);
+  padding: 26px;
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.4);
+}
+
+.dlg h2 {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+}
+
+.dlg-body,
+.dlg-help {
+  margin: 0 0 18px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--header-nav);
+}
+
+.dlg-help {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.dlg-quote {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+  background: var(--surface-alt);
+  border-radius: 10px;
+}
+
+.dlg-reasons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+
+.dlg-reason {
+  position: relative;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--header-nav);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.dlg-reason.is-active {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 8%, var(--surface));
+  border-color: var(--text);
+}
+
+.dlg-reason:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.dlg-textarea {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  resize: vertical;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+}
+
+.dlg-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chat-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  z-index: 90;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  color: var(--bg);
+  background: var(--text);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+}
+
+.chat-toast.is-error {
+  background: var(--danger);
+  color: #fff;
+}
+
+.settings-block {
+  margin-bottom: 24px;
+  padding: 26px 28px;
+}
+
+.settings-block h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.settings-help {
+  margin: 0 0 16px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.blocked-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.blocked-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.blocked-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .notice-bar,
+  .report-alerts {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .report-alert {
+    flex-direction: column;
+  }
+}
+
 /* ---------- 큰 달력 (DatePicker): 브라우저 기본 달력 대신 ---------- */
 
 .dp {
