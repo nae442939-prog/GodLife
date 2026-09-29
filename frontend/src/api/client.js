@@ -75,6 +75,26 @@ export async function apiFetch(path, options = {}) {
   }
 }
 
+/**
+ * JSON 이 아닌 요청(파일 올리기 · 사진 받기)용. 토큰을 붙이고, 만료(401)면 한 번 재발급 후 다시 보낸다.
+ * 성공하면 Response 를 그대로 돌려준다.
+ */
+async function authRaw(path, init = {}) {
+  const send = () =>
+    fetch(path, {
+      ...init,
+      headers: { ...(init.headers ?? {}), ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      credentials: 'same-origin',
+    })
+  let res = await send()
+  if (res.status === 401) {
+    await refreshAccessToken()
+    res = await send()
+  }
+  if (!res.ok) throw new ApiError(res.status, await parse(res))
+  return res
+}
+
 export const authApi = {
   signup: (payload) => request('/api/auth/signup', { method: 'POST', body: payload, auth: false }),
   async login(payload) {
@@ -154,6 +174,19 @@ export const chatApi = {
   },
   send: (challengeId, content) =>
     apiFetch(`/api/challenges/${challengeId}/messages`, { method: 'POST', body: { content } }),
+  // 사진 보내기 (JPG·PNG 5MB 이하). content 는 사진에 붙일 글(선택)
+  async sendImage(challengeId, file, content) {
+    const form = new FormData()
+    form.append('file', file)
+    if (content) form.append('content', content)
+    const res = await authRaw(`/api/challenges/${challengeId}/messages/image`, { method: 'POST', body: form })
+    return res.json()
+  },
+  // 사진은 참가자만 받을 수 있어 <img src> 로 바로 못 불러온다 → 토큰을 붙여 받아 Blob 으로
+  async imageBlob(challengeId, messageId) {
+    const res = await authRaw(`/api/challenges/${challengeId}/messages/${messageId}/image`)
+    return res.blob()
+  },
   // 신고: reason = ABUSE | SPAM | INAPPROPRIATE | OTHER
   report: (challengeId, messageId, reason, detail) =>
     apiFetch(`/api/challenges/${challengeId}/messages/${messageId}/reports`, {
