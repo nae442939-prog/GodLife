@@ -154,4 +154,25 @@ export const chatApi = {
   },
   send: (challengeId, content) =>
     apiFetch(`/api/challenges/${challengeId}/messages`, { method: 'POST', body: { content } }),
+  // 신고: reason = ABUSE | SPAM | INAPPROPRIATE | OTHER
+  report: (challengeId, messageId, reason, detail) =>
+    apiFetch(`/api/challenges/${challengeId}/messages/${messageId}/reports`, {
+      method: 'POST',
+      body: { reason, detail },
+    }),
+  // 방장 전용: 공지(빈 내용이면 내림) · 내보내기 · 신고 누적 알림
+  setNotice: (challengeId, content) =>
+    apiFetch(`/api/challenges/${challengeId}/notice`, { method: 'PUT', body: { content } }),
+  kick: (challengeId, userId) =>
+    apiFetch(`/api/challenges/${challengeId}/participants/${userId}/kick`, { method: 'POST' }),
+  reportAlerts: (challengeId) => apiFetch(`/api/challenges/${challengeId}/report-alerts`),
+  dismissAlert: (challengeId, userId) =>
+    apiFetch(`/api/challenges/${challengeId}/report-alerts/${userId}/dismiss`, { method: 'POST' }),
+}
+
+// 차단: 나에게만 적용 (차단한 사람의 채팅이 내 화면에서 안 보인다)
+export const blockApi = {
+  list: () => apiFetch('/api/users/me/blocks'),
+  block: (userId) => apiFetch(`/api/users/me/blocks/${userId}`, { method: 'PUT' }),
+  unblock: (userId) => apiFetch(`/api/users/me/blocks/${userId}`, { method: 'DELETE' }),
 }
