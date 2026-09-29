@@ -36,6 +36,17 @@ export function ChallengeDetailView({
 
       {notice}
 
+      {c.member && (
+        <nav className="dt-tabs" aria-label="챌린지 메뉴">
+          <span className="dt-tab is-active" aria-current="page">
+            정보
+          </span>
+          <Link to={`/challenges/${c.id}/chat`} className="dt-tab">
+            오픈채팅
+          </Link>
+        </nav>
+      )}
+
       <article className="card dt-card">
         <div className="dt-top">
           <div className="dt-tags">

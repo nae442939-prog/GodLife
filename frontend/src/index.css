@@ -2311,6 +2311,214 @@ a.back-button:hover {
   }
 }
 
+/* ---------- 챌린지 오픈채팅 ---------- */
+
+.dt-tabs {
+  display: flex;
+  gap: 26px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dt-tab {
+  margin-bottom: -1px;
+  padding: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+
+.dt-tab:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.dt-tab.is-active {
+  font-weight: 800;
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  height: max(460px, calc(100vh - 290px));
+  padding: 0;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.chat-head {
+  padding: 20px 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-head h1 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.chat-head p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.chat-list {
+  flex: 1;
+  padding: 18px 26px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--surface-alt) 55%, var(--surface));
+}
+
+.chat-older {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.chat-empty {
+  margin: 40px 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.chat-day {
+  margin: 14px 0 12px;
+  font-size: 0.82rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.chat-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.chat-row.has-sender {
+  margin-top: 14px;
+}
+
+.chat-row.is-mine {
+  justify-content: flex-end;
+}
+
+.chat-avatar {
+  flex: 0 0 34px;
+}
+
+.chat-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: min(560px, 75%);
+}
+
+.chat-name {
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--header-nav);
+}
+
+.chat-bubble-line {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.chat-row.is-mine .chat-bubble-line {
+  flex-direction: row-reverse;
+}
+
+.chat-bubble {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 1rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px 16px 16px 16px;
+}
+
+/* 내 말풍선: 검정·주황 대신 옅은 민트 */
+.chat-row.is-mine .chat-bubble {
+  background: color-mix(in srgb, var(--accent-mint) 18%, var(--surface));
+  border-color: transparent;
+  border-radius: 16px 4px 16px 16px;
+}
+
+.chat-time {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.chat-input {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-input textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text);
+  resize: none;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+}
+
+.chat-input textarea:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+.chat-input-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.chat-count {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.chat-input .btn-dark {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+}
+
+.chat-error {
+  margin: 0;
+  padding: 0 18px 12px;
+}
+
+@media (max-width: 760px) {
+  .chat-list,
+  .chat-head {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .chat-body {
+    max-width: 82%;
+  }
+}
+
 /* ---------- 큰 달력 (DatePicker): 브라우저 기본 달력 대신 ---------- */
 
 .dp {
