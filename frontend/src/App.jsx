@@ -1,10 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout.jsx'
 import { RequireAuth } from './components/RequireAuth.jsx'
+import { FindIdPage } from './pages/FindIdPage.jsx'
+import { FindPasswordPage } from './pages/FindPasswordPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { MyPage } from './pages/MyPage.jsx'
 import { SignupPage } from './pages/SignupPage.jsx'
+import { VerifyPhonePage } from './pages/VerifyPhonePage.jsx'
 
 export default function App() {
   return (
@@ -14,10 +17,13 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/find-id" element={<FindIdPage />} />
+        <Route path="/find-password" element={<FindPasswordPage />} />
 
         {/* 로그인해야 볼 수 있는 화면 */}
         <Route element={<RequireAuth />}>
           <Route path="/me" element={<MyPage />} />
+          <Route path="/verify-phone" element={<VerifyPhonePage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

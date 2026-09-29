@@ -3,9 +3,12 @@ package com.godlife.backend.auth;
 import com.godlife.backend.auth.dto.IssuedTokens;
 import com.godlife.backend.auth.dto.LoginRequest;
 import com.godlife.backend.auth.dto.SignupRequest;
+import com.godlife.backend.common.crypto.Hashing;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.config.JwtProperties;
+import com.godlife.backend.phone.PhoneVerification;
+import com.godlife.backend.phone.PhoneVerificationService;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserStatus;
@@ -15,15 +18,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Locale;
 
 @Service
@@ -33,14 +31,14 @@ public class AuthService {
     /** 회전 직후 다른 탭이 옛 토큰으로 동시에 요청하는 경우는 탈취로 보지 않는 유예 시간. */
     private static final long REUSE_GRACE_SECONDS = 10;
 
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final JwtProperties jwtProperties;
     private final Clock clock;
+    private final PhoneVerificationService phoneVerificationService;
+    private final TransactionTemplate transactionTemplate;
 
     /** 존재하지 않는 이메일로 로그인할 때도 BCrypt 비교를 한 번 수행해 응답 시간 차이로 가입 여부를 알 수 없게 한다. */
     private String dummyHash;
@@ -51,7 +49,8 @@ public class AuthService {
     }
 
     /**
-     * 트랜잭션을 걸지 않는다: 유니크 제약 위반이 나도 깨끗한 새 트랜잭션에서 원인을 다시 조회하기 위해서다.
+     * 휴대폰 인증 증표 사용과 회원 저장을 한 트랜잭션으로 묶는다. (가입이 실패하면 증표도 다시 쓸 수 있게)
+     * 메서드 자체에는 트랜잭션을 걸지 않는다: 유니크 제약 위반이 나면 롤백된 뒤 깨끗한 새 트랜잭션에서 원인을 다시 조회한다.
      */
     public User signup(SignupRequest req) {
         String email = normalizeEmail(req.email());
@@ -61,15 +60,27 @@ public class AuthService {
         if (userRepository.existsByNickname(req.nickname())) {
             throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
         }
-        User user = User.createWithPassword(email, passwordEncoder.encode(req.password()), req.nickname());
+        String passwordHash = passwordEncoder.encode(req.password());
         try {
-            return userRepository.saveAndFlush(user);
+            return transactionTemplate.execute(tx -> {
+                PhoneVerification phone = phoneVerificationService.consumeProof(req.phoneProof());
+                if (userRepository.existsByPhoneHash(phone.getPhoneHash())) {
+                    throw new BusinessException(ErrorCode.PHONE_ALREADY_REGISTERED);
+                }
+                User user = userRepository.saveAndFlush(
+                        User.createWithPassword(email, passwordHash, req.nickname(), phone.getPhoneHash()));
+                phone.linkUser(user.getId());
+                return user;
+            });
         } catch (DataIntegrityViolationException e) {
             // 동시 가입으로 사전 검사를 통과한 뒤 DB 유니크 제약에 걸린 경우
             if (userRepository.existsByEmail(email)) {
                 throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
             }
-            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+            if (userRepository.existsByNickname(req.nickname())) {
+                throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+            }
+            throw new BusinessException(ErrorCode.PHONE_ALREADY_REGISTERED);
         }
     }
 
@@ -100,7 +111,7 @@ public class AuthService {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
-        RefreshToken stored = refreshTokenRepository.findByTokenHashForUpdate(sha256Hex(rawRefreshToken))
+        RefreshToken stored = refreshTokenRepository.findByTokenHashForUpdate(Hashing.sha256Hex(rawRefreshToken))
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
         LocalDateTime now = LocalDateTime.now(clock);
 
@@ -130,36 +141,20 @@ public class AuthService {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             return;
         }
-        refreshTokenRepository.findByTokenHashForUpdate(sha256Hex(rawRefreshToken))
+        refreshTokenRepository.findByTokenHashForUpdate(Hashing.sha256Hex(rawRefreshToken))
                 .ifPresent(t -> t.revoke(LocalDateTime.now(clock)));
     }
 
     /** 인증을 마친 사용자에게 액세스 토큰과 리프레시 토큰을 발급한다. (소셜 로그인도 여기로 모인다) */
     public IssuedTokens issueTokens(User user) {
         String access = jwtProvider.createAccessToken(user.getId(), user.getRole().name());
-        String rawRefresh = newRandomToken();
+        String rawRefresh = Hashing.randomToken();
         LocalDateTime expiresAt = LocalDateTime.now(clock).plusDays(jwtProperties.refreshTokenDays());
-        refreshTokenRepository.save(RefreshToken.issue(user.getId(), sha256Hex(rawRefresh), expiresAt));
+        refreshTokenRepository.save(RefreshToken.issue(user.getId(), Hashing.sha256Hex(rawRefresh), expiresAt));
         return new IssuedTokens(access, jwtProvider.accessTtlSeconds(), rawRefresh);
     }
 
     private static String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
-    }
-
-    /** 256비트 난수. JWT 가 아니라 서버가 DB 로 검증하는 불투명 토큰이다. */
-    private static String newRandomToken() {
-        byte[] bytes = new byte[32];
-        RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    static String sha256Hex(String value) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

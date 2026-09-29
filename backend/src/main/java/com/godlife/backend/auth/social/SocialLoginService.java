@@ -2,6 +2,7 @@ package com.godlife.backend.auth.social;
 
 import com.godlife.backend.auth.AuthService;
 import com.godlife.backend.auth.dto.IssuedTokens;
+import com.godlife.backend.common.crypto.Hashing;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.user.User;
@@ -78,23 +79,23 @@ public class SocialLoginService {
                 + "@" + VIRTUAL_EMAIL_DOMAIN;
     }
 
-    /** 닉네임 규칙(한글/영문/숫자/_ 2~20자)에 맞게 다듬고, 겹치면 _숫자4자리를 붙인다. */
+    /** 닉네임 규칙(한글/영문/숫자 2~20자)에 맞게 다듬고, 겹치면 숫자 4자리를 붙인다. */
     private String availableNickname(String raw) {
         String base = sanitizeNickname(raw);
         if (!userRepository.existsByNickname(base)) {
             return base;
         }
         for (int i = 0; i < NICKNAME_ATTEMPTS; i++) {
-            String candidate = base + "_" + String.format("%04d", RANDOM.nextInt(10_000));
+            String candidate = base + String.format("%04d", RANDOM.nextInt(10_000));
             if (!userRepository.existsByNickname(candidate)) {
                 return candidate;
             }
         }
-        return DEFAULT_NICKNAME + "_" + Long.toString(RANDOM.nextLong() >>> 1, 36);
+        return DEFAULT_NICKNAME + Hashing.randomDigits(8);
     }
 
     static String sanitizeNickname(String raw) {
-        String cleaned = raw == null ? "" : raw.replaceAll("[^가-힣a-zA-Z0-9_]", "");
+        String cleaned = raw == null ? "" : raw.replaceAll("[^가-힣a-zA-Z0-9]", "");
         if (cleaned.length() > NICKNAME_BASE_MAX) {
             cleaned = cleaned.substring(0, NICKNAME_BASE_MAX);
         }

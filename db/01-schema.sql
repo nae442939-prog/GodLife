@@ -64,8 +64,11 @@ CREATE TABLE phone_verifications (
   attempt_count TINYINT  NOT NULL DEFAULT 0 COMMENT '시도 횟수 제한',
   expires_at    DATETIME NOT NULL,
   verified_at   DATETIME NULL,
+  proof_hash    CHAR(64) NULL COMMENT '인증 완료 후 발급하는 1회용 증표 해시. 가입/아이디 찾기/번호 등록에 제출',
+  proof_used_at DATETIME NULL COMMENT '증표 사용 시각 (재사용 방지)',
   user_id       BIGINT   NULL COMMENT '가입 도중에는 아직 user 가 없을 수 있어 NULL 허용',
   PRIMARY KEY (id),
+  UNIQUE KEY uk_phone_ver_proof (proof_hash),
   KEY idx_phone_ver_phone (phone_hash, expires_at),
   KEY idx_phone_ver_user (user_id),
   CONSTRAINT fk_phone_ver_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
@@ -102,11 +105,13 @@ CREATE TABLE refresh_tokens (
 ) ENGINE=InnoDB COMMENT='리프레시 토큰';
 
 CREATE TABLE password_reset_tokens (
-  id         BIGINT   NOT NULL AUTO_INCREMENT,
-  user_id    BIGINT   NOT NULL,
-  token_hash CHAR(64) NOT NULL COMMENT '이메일 링크용 1회성 토큰',
-  expires_at DATETIME NOT NULL,
-  used_at    DATETIME NULL,
+  id            BIGINT   NOT NULL AUTO_INCREMENT,
+  user_id       BIGINT   NOT NULL,
+  code_hash     CHAR(64) NOT NULL COMMENT '이메일로 보낸 6자리 인증번호 해시',
+  attempt_count TINYINT  NOT NULL DEFAULT 0 COMMENT '인증번호 시도 횟수 제한',
+  token_hash    CHAR(64) NULL COMMENT '인증번호 확인 후 발급하는 1회용 재설정 토큰 해시',
+  expires_at    DATETIME NOT NULL,
+  used_at       DATETIME NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uk_pwreset_token_hash (token_hash),
   KEY idx_pwreset_user (user_id),

@@ -17,7 +17,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Query("select t from RefreshToken t where t.tokenHash = :hash")
     Optional<RefreshToken> findByTokenHashForUpdate(@Param("hash") String hash);
 
-    @Modifying(clearAutomatically = true)
+    /** 실행 전에 flush 한다: clear 로 아직 쓰이지 않은 변경(예: 비밀번호 변경)이 버려지지 않게. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update RefreshToken t set t.revokedAt = :now where t.userId = :userId and t.revokedAt is null")
     int revokeAllByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 }

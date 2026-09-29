@@ -93,4 +93,26 @@ export const authApi = {
 
 export const userApi = {
   me: () => apiFetch('/api/users/me'),
+  registerPhone: (phoneProof) => apiFetch('/api/users/me/phone', { method: 'POST', body: { phoneProof } }),
+}
+
+// 휴대폰 인증: 인증번호 발송 → 확인하면 1회용 증표(phoneProof)를 받아 가입/아이디 찾기/번호 등록에 제출한다.
+export const phoneApi = {
+  send: (phone) => request('/api/phone-verifications', { method: 'POST', body: { phone }, auth: false }),
+  confirm: (phone, code) =>
+    request('/api/phone-verifications/confirm', { method: 'POST', body: { phone, code }, auth: false }),
+}
+
+export const accountApi = {
+  findId: (phoneProof) => request('/api/account/find-id', { method: 'POST', body: { phoneProof }, auth: false }),
+  requestPasswordReset: (email) =>
+    request('/api/account/password-reset', { method: 'POST', body: { email }, auth: false }),
+  confirmPasswordReset: (email, code) =>
+    request('/api/account/password-reset/confirm', { method: 'POST', body: { email, code }, auth: false }),
+  completePasswordReset: (resetToken, newPassword) =>
+    request('/api/account/password-reset/complete', {
+      method: 'POST',
+      body: { resetToken, newPassword },
+      auth: false,
+    }),
 }

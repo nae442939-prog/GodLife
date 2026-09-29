@@ -41,9 +41,12 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // 휴대폰 등록처럼 내 정보가 바뀐 뒤 서버 응답으로 갱신한다.
+  const updateUser = useCallback((next) => setUser(next), [])
+
   const value = useMemo(
-    () => ({ user, status, login, signup: authApi.signup, logout }),
-    [user, status, login, logout],
+    () => ({ user, status, login, signup: authApi.signup, logout, updateUser }),
+    [user, status, login, logout, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

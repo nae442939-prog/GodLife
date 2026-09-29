@@ -52,7 +52,7 @@ public class SecurityConfig {
                         .successHandler(oauth2Handlers)
                         .failureHandler(oauth2Handlers))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/phone-verifications/**", "/api/account/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e

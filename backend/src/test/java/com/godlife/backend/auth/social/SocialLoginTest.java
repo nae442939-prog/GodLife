@@ -4,6 +4,7 @@ import com.godlife.backend.auth.AuthService;
 import com.godlife.backend.auth.dto.SignupRequest;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.support.TestSenders;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserStatus;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -36,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestSenders.class)
 @Transactional
 class SocialLoginTest {
 
@@ -45,6 +48,7 @@ class SocialLoginTest {
     @Autowired AuthService authService;
     @Autowired UserRepository userRepository;
     @Autowired SocialAccountRepository socialAccountRepository;
+    @Autowired TestSenders.PhoneProofs phoneProofs;
 
     // ---------- 제공자 응답 파싱 ----------
 
@@ -88,7 +92,7 @@ class SocialLoginTest {
     @Test
     @DisplayName("검증된 이메일이 기존 회원과 같으면 그 회원에 연결한다")
     void verifiedEmailLinksExistingUser() {
-        User existing = authService.signup(new SignupRequest("me@example.com", "Passw0rd!", "기존회원"));
+        User existing = authService.signup(new SignupRequest("me@example.com", "Passw0rd!", "기존회원", phoneProofs.newProof()));
 
         socialLoginService.login(new SocialProfile(SocialProvider.KAKAO, "k-1", "me@example.com", true, "카톡닉"));
 
@@ -99,7 +103,7 @@ class SocialLoginTest {
     @Test
     @DisplayName("검증되지 않은 이메일은 기존 회원에 연결하지 않고 가상 이메일로 따로 가입시킨다")
     void unverifiedEmailDoesNotLink() {
-        User existing = authService.signup(new SignupRequest("me@example.com", "Passw0rd!", "기존회원"));
+        User existing = authService.signup(new SignupRequest("me@example.com", "Passw0rd!", "기존회원", phoneProofs.newProof()));
 
         socialLoginService.login(new SocialProfile(SocialProvider.NAVER, "n-1", "me@example.com", false, "네이버닉"));
 
@@ -110,13 +114,13 @@ class SocialLoginTest {
     }
 
     @Test
-    @DisplayName("이메일이 없으면 가상 이메일, 닉네임이 겹치면 뒤에 숫자를 붙이고, 규칙에 안 맞는 글자는 지운다")
+    @DisplayName("이메일이 없으면 가상 이메일, 닉네임이 겹치면 뒤에 숫자를 붙이고, 특수문자/공백은 지운다")
     void nicknameAndVirtualEmail() {
-        authService.signup(new SignupRequest("other@example.com", "Passw0rd!", "홍길동"));
+        authService.signup(new SignupRequest("other@example.com", "Passw0rd!", "홍길동", phoneProofs.newProof()));
 
         socialLoginService.login(new SocialProfile(SocialProvider.KAKAO, "777", null, false, "홍길동"));
         User user = userRepository.findByEmail("kakao_777@social.godlife.local").orElseThrow();
-        assertThat(user.getNickname()).matches("홍길동_\\d{4}");
+        assertThat(user.getNickname()).matches("홍길동\\d{4}");
 
         assertThat(SocialLoginService.sanitizeNickname("🌟 별 빛 🌟")).isEqualTo("별빛");
         assertThat(SocialLoginService.sanitizeNickname("!")).isEqualTo(SocialLoginService.DEFAULT_NICKNAME);

@@ -392,7 +392,7 @@
 <text class="c-foot" x="12" y="154">UK (provider, provider_user_id)</text>
 </g>
 <g class="tbl" tabindex="0" data-name="phone_verifications" data-rel="users" transform="translate(134,690)" style="--h:195">
-<title>phone_verifications — 휴대폰 본인인증</title>
+<title>phone_verifications — 휴대폰 본인인증 (proof_hash · proof_used_at 컬럼 추가됨)</title>
 <rect class="tb-body" width="300" height="211" rx="6"/>
 <path class="tb-head" d="M0 6a6 6 0 0 1 6-6H294a6 6 0 0 1 6 6V34H0Z"/>
 <text class="tb-name" x="12" y="21">phone_verifications</text>
@@ -553,7 +553,7 @@
 <text class="c-type" x="290" y="69" text-anchor="end">BIGINT</text>
 </g>
 <line class="tb-sep" x1="8" x2="292" y1="76" y2="76"/>
-<g class="row"><title>token_hash — 이메일 링크용 1회성 토큰</title>
+<g class="row"><title>token_hash — 인증번호 확인 후 발급하는 1회용 재설정 토큰 (code_hash · attempt_count 컬럼 추가됨)</title>
 <rect class="hit" x="0" y="76" width="300" height="21"/>
 <rect class="bd bd-uk" x="9" y="80" width="17" height="13" rx="3"/><text class="bd-t bd-t-uk" x="17.5" y="89.6" text-anchor="middle">UK</text>
 <text class="c-name" x="48" y="90.5">token_hash</text>
