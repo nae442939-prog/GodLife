@@ -44,6 +44,10 @@ public class User {
 
     private String bio;
 
+    /** 휴대폰 번호 HMAC 해시(원문 미저장). 계정당 1개, 번호당 1계정. 소셜 가입 직후에는 null. */
+    @Column(name = "phone_hash")
+    private String phoneHash;
+
     @Column(name = "tier_id", nullable = false)
     private Integer tierId;
 
@@ -60,15 +64,28 @@ public class User {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public static User createWithPassword(String email, String passwordHash, String nickname) {
+    public static User createWithPassword(String email, String passwordHash, String nickname, String phoneHash) {
         User user = create(email, nickname);
         user.passwordHash = passwordHash;
+        user.phoneHash = phoneHash;
         return user;
     }
 
     /** 소셜 전용 가입자. 비밀번호가 없어 이메일 로그인은 할 수 없다. */
     public static User createSocial(String email, String nickname) {
         return create(email, nickname);
+    }
+
+    public boolean hasPhone() {
+        return phoneHash != null;
+    }
+
+    public void registerPhone(String phoneHash) {
+        this.phoneHash = phoneHash;
+    }
+
+    public void changePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     private static User create(String email, String nickname) {

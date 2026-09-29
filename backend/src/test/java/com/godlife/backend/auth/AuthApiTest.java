@@ -1,5 +1,6 @@
 package com.godlife.backend.auth;
 
+import com.godlife.backend.support.TestSenders;
 import com.godlife.backend.user.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestSenders.class)
 @Transactional
 class AuthApiTest {
 
@@ -38,6 +41,7 @@ class AuthApiTest {
     @Autowired MockMvc mvc;
     @Autowired UserRepository userRepository;
     @Autowired RefreshTokenRepository refreshTokenRepository;
+    @Autowired TestSenders.PhoneProofs phoneProofs;
 
     // ---------- 회원가입 ----------
 
@@ -85,6 +89,18 @@ class AuthApiTest {
         signup(EMAIL, "onlyletters", "테스터").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.password").exists());
         signup(EMAIL, "한글비밀번호1234", "테스터").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("닉네임에 특수문자(_ 포함)는 안 되고, 비밀번호에는 특수문자를 쓸 수 있다")
+    void nicknameAndPasswordCharacters() throws Exception {
+        for (String nick : new String[]{"갓생!", "god_life", "공 백", "ㅋㅋ"}) {
+            signup(EMAIL, PASSWORD, nick).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.nickname").value("특수문자는 닉네임에 사용할 수 없습니다."));
+        }
+        signup(EMAIL, "p@ss!W0rd#", "특수비번").andExpect(status().isCreated());
+        signup("long@example.com", "a1" + "x".repeat(19), "긴비번").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.password").value("비밀번호는 20자 이하여야 합니다."));
     }
 
     // ---------- 로그인 ----------
@@ -235,7 +251,8 @@ class AuthApiTest {
     // ---------- helpers ----------
 
     private org.springframework.test.web.servlet.ResultActions signup(String email, String pw, String nick) throws Exception {
-        String json = "{\"email\":\"%s\",\"password\":\"%s\",\"nickname\":\"%s\"}".formatted(email, pw, nick);
+        String json = "{\"email\":\"%s\",\"password\":\"%s\",\"nickname\":\"%s\",\"phoneProof\":\"%s\"}"
+                .formatted(email, pw, nick, phoneProofs.newProof());
         return mvc.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON).content(json));
     }
 

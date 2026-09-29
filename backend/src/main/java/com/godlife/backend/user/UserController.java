@@ -1,12 +1,14 @@
 package com.godlife.backend.user;
 
 import com.godlife.backend.auth.AuthUser;
-import com.godlife.backend.common.error.BusinessException;
-import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.user.dto.PhoneRegisterRequest;
 import com.godlife.backend.user.dto.UserResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,13 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal AuthUser authUser) {
-        User user = userRepository.findById(authUser.id())
-                .filter(u -> u.getStatus() == UserStatus.ACTIVE)
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
-        return UserResponse.from(user);
+        return UserResponse.from(userService.getActive(authUser.id()));
+    }
+
+    @PostMapping("/me/phone")
+    public UserResponse registerPhone(@AuthenticationPrincipal AuthUser authUser,
+                                      @Valid @RequestBody PhoneRegisterRequest request) {
+        return UserResponse.from(userService.registerPhone(authUser.id(), request.phoneProof()));
     }
 }

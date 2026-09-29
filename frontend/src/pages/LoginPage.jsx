@@ -44,14 +44,12 @@ export function LoginPage() {
     <div className="container auth-wrap">
       <section className="card auth-card">
         <h1>로그인</h1>
-        <p className="sub">소셜 계정이나 이메일로 로그인하세요.</p>
+        <p className="sub">이메일과 비밀번호로 로그인하세요.</p>
         {socialError && !error && (
           <p className="form-error" role="alert">
             {socialError}
           </p>
         )}
-        <SocialLoginButtons />
-        <div className="divider">또는 이메일로 로그인</div>
         <form onSubmit={onSubmit} noValidate>
           <Field
             label="이메일"
@@ -80,6 +78,13 @@ export function LoginPage() {
             {submitting ? '로그인 중…' : '로그인'}
           </button>
         </form>
+        <p className="find-links">
+          <Link to="/find-id">아이디 찾기</Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/find-password">비밀번호 찾기</Link>
+        </p>
+        <div className="divider">SNS 계정으로 로그인</div>
+        <SocialLoginButtons />
         <p className="switch">
           계정이 없으신가요? <Link to="/signup">회원가입</Link>
         </p>

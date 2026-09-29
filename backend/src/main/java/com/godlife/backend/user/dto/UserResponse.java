@@ -4,10 +4,14 @@ import com.godlife.backend.user.User;
 
 import java.time.LocalDateTime;
 
-public record UserResponse(Long id, String email, String nickname, String role, LocalDateTime createdAt) {
+/**
+ * @param phoneVerified false 면 프론트가 휴대폰 인증 화면으로 보낸다. (소셜 가입 직후)
+ */
+public record UserResponse(Long id, String email, String nickname, String role, boolean phoneVerified,
+                           LocalDateTime createdAt) {
 
     public static UserResponse from(User user) {
         return new UserResponse(user.getId(), user.getEmail(), user.getNickname(),
-                user.getRole().name(), user.getCreatedAt());
+                user.getRole().name(), user.hasPhone(), user.getCreatedAt());
     }
 }
