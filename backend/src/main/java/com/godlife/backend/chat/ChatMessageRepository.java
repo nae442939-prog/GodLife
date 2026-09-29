@@ -18,7 +18,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     String ROW = """
             SELECT new com.godlife.backend.chat.dto.ChatMessageRow(
-                m.id, m.type, m.senderId, u.nickname, u.profileImageUrl, m.content, m.createdAt,
+                m.id, m.type, m.senderId, u.nickname, u.profileImageUrl, m.content, m.imageKey, m.createdAt,
                 CASE WHEN p.status = com.godlife.backend.challenge.ParticipantStatus.KICKED THEN true ELSE false END)
             FROM ChatMessage m
             JOIN User u ON u.id = m.senderId

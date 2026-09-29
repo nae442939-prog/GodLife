@@ -3,13 +3,20 @@ package com.godlife.backend.chat;
 import com.godlife.backend.challenge.ChallengeService;
 import com.godlife.backend.chat.dto.ChatMessageResponse;
 import com.godlife.backend.chat.dto.ChatMessageRow;
+import com.godlife.backend.chat.dto.ChatSendRequest;
+import com.godlife.backend.common.error.BusinessException;
+import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
+import com.godlife.backend.common.upload.ImageStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 
@@ -27,6 +34,7 @@ public class ChatService {
     private final ChatMessageRepository messageRepository;
     private final ChallengeService challengeService;
     private final RequestThrottle throttle;
+    private final ImageStore imageStore;
 
     /** 한 사람이 10초 동안 보낼 수 있는 메시지 수 (도배 방지) */
     @Value("${app.chat.send-limit:5}")
@@ -57,6 +65,45 @@ public class ChatService {
         challengeService.requireMember(challengeId, userId);
         throttle.check("chat:" + userId, sendLimit, SEND_WINDOW);
         return saveAndRead(ChatMessage.of(challengeId, userId, content.strip()), userId);
+    }
+
+    /**
+     * 사진 보내기 (글은 붙여도 되고 없어도 된다). 사진은 ImageStore 가 검사·정리해서 저장한다.
+     * DB 저장이 실패하면 방금 저장한 파일을 지운다.
+     */
+    @Transactional
+    public ChatMessageResponse sendImage(Long challengeId, Long userId, String caption, MultipartFile file) {
+        challengeService.requireMember(challengeId, userId);
+        if (caption != null && caption.strip().length() > ChatSendRequest.MAX_LENGTH) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "메시지는 500자까지 보낼 수 있어요.");
+        }
+        throttle.check("chat:" + userId, sendLimit, SEND_WINDOW);
+        String key = imageStore.storeChatImage(challengeId, file);
+        try {
+            return saveAndRead(ChatMessage.image(challengeId, userId, caption, key), userId);
+        } catch (RuntimeException e) {
+            imageStore.delete(key);
+            throw e;
+        }
+    }
+
+    /**
+     * 사진 파일. 목록과 같은 규칙으로 보이는 메시지일 때만 준다
+     * (참가자만 · 내가 차단한 사람 것은 안 줌 · 강퇴된 사람 것은 가려져서 안 줌).
+     */
+    @Transactional(readOnly = true)
+    public Path imageFile(Long challengeId, Long userId, Long messageId) {
+        challengeService.requireMember(challengeId, userId);
+        String key = messageRepository.findAfter(challengeId, userId, messageId - 1, PageRequest.of(0, 1)).stream()
+                .filter(row -> row.id().equals(messageId) && row.imageKey() != null && !row.senderKicked())
+                .map(ChatMessageRow::imageKey)
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.MESSAGE_NOT_FOUND));
+        Path path = imageStore.resolve(key);
+        if (!Files.isReadable(path)) {
+            throw new BusinessException(ErrorCode.MESSAGE_NOT_FOUND);
+        }
+        return path;
     }
 
     /** 강퇴·공지 같은 안내 메시지. 권한 확인은 부르는 쪽(방장 기능)이 한다. */

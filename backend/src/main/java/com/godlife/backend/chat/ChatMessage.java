@@ -37,8 +37,13 @@ public class ChatMessage {
     @Column(nullable = false, updatable = false)
     private ChatMessageType type;
 
-    @Column(nullable = false, updatable = false)
+    /** 글. 사진만 보낸 메시지는 null */
+    @Column(updatable = false)
     private String content;
+
+    /** 사진 파일 키 (ImageStore). 글만 보낸 메시지는 null */
+    @Column(name = "image_key", updatable = false)
+    private String imageKey;
 
     @Generated(event = EventType.INSERT)
     @Column(name = "created_at", insertable = false, updatable = false)
@@ -50,6 +55,13 @@ public class ChatMessage {
         m.senderId = senderId;
         m.content = content;
         m.type = ChatMessageType.USER;
+        return m;
+    }
+
+    /** 사진 메시지. 글(caption)은 없어도 된다. */
+    public static ChatMessage image(Long challengeId, Long senderId, String caption, String imageKey) {
+        ChatMessage m = of(challengeId, senderId, caption == null || caption.isBlank() ? null : caption.strip());
+        m.imageKey = imageKey;
         return m;
     }
 

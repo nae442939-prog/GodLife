@@ -9,16 +9,18 @@ import java.time.LocalDateTime;
  *
  * @param senderId 신고·차단·내보내기 메뉴에 쓴다
  * @param mine     로그인한 사람이 보낸 메시지인지 (오른쪽 말풍선)
- * @param hidden   방장이 내보낸 참가자의 메시지라 가림. 이때 content 는 null
+ * @param hidden   방장이 내보낸 참가자의 메시지라 가림. 이때 content 는 null, hasImage 는 false
+ * @param content  글. 사진만 보낸 메시지는 null
+ * @param hasImage 사진이 있으면 GET /api/challenges/{challengeId}/messages/{id}/image 로 받는다 (참가자만)
  */
 public record ChatMessageResponse(Long id, ChatMessageType type, Long senderId, String senderNickname,
                                   String senderProfileImageUrl, boolean mine, boolean hidden, String content,
-                                  LocalDateTime createdAt) {
+                                  boolean hasImage, LocalDateTime createdAt) {
 
     public static ChatMessageResponse of(ChatMessageRow row, Long viewerId) {
         boolean hidden = row.type() == ChatMessageType.USER && row.senderKicked();
         return new ChatMessageResponse(row.id(), row.type(), row.senderId(), row.senderNickname(),
                 row.senderProfileImageUrl(), row.senderId().equals(viewerId), hidden,
-                hidden ? null : row.content(), row.createdAt());
+                hidden ? null : row.content(), !hidden && row.imageKey() != null, row.createdAt());
     }
 }

@@ -43,6 +43,8 @@ public enum ErrorCode {
     CANNOT_REPORT(HttpStatus.BAD_REQUEST, "내 메시지나 안내 메시지는 신고할 수 없어요."),
     ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 신고한 메시지예요."),
     CANNOT_BLOCK(HttpStatus.BAD_REQUEST, "나 자신은 차단할 수 없어요."),
+    INVALID_IMAGE(HttpStatus.BAD_REQUEST, "JPG·PNG 사진만 보낼 수 있어요."),
+    IMAGE_TOO_BIG(HttpStatus.BAD_REQUEST, "사진이 너무 커요. 가로·세로 8000px 이하, 5MB 이하 사진을 보내 주세요."),
     CHALLENGE_CANNOT_DELETE(HttpStatus.CONFLICT, "시작된 챌린지는 삭제할 수 없어요. 시작일 전날까지만 삭제할 수 있어요."),
     POINT_CHALLENGE_NOT_READY(HttpStatus.CONFLICT, "포인트 챌린지 참여는 준비 중입니다. 포인트 지갑이 열리면 참여할 수 있어요.");
 

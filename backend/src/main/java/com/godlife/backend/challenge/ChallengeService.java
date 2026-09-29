@@ -10,6 +10,7 @@ import com.godlife.backend.chat.ChatReportRepository;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
+import com.godlife.backend.common.upload.ImageStore;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserService;
@@ -43,6 +44,7 @@ public class ChallengeService {
     private final UserService userService;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatReportRepository chatReportRepository;
+    private final ImageStore imageStore;
     private final InviteCodeGenerator inviteCodeGenerator;
     private final RequestThrottle throttle;
     private final Clock clock;
@@ -200,7 +202,7 @@ public class ChallengeService {
     }
 
     /**
-     * 개설자만, 시작일 전날까지 삭제할 수 있다. 참가 기록과 오픈채팅(신고 포함)도 함께 지운다.
+     * 개설자만, 시작일 전날까지 삭제할 수 있다. 참가 기록과 오픈채팅(신고·사진 파일 포함)도 함께 지운다.
      * (시작한 뒤에는 인증·정산 기록이 생기므로 막는다. 포인트 챌린지는 참여가 열릴 때 '예치 포인트 환급'을 여기에 더한다)
      */
     @Transactional
@@ -218,6 +220,7 @@ public class ChallengeService {
         chatMessageRepository.deleteByChallengeId(challengeId);
         participantRepository.deleteByChallengeId(challengeId);
         challengeRepository.delete(c);
+        imageStore.deleteChallenge(challengeId);
     }
 
     /**
