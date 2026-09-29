@@ -2680,46 +2680,57 @@ a.back-button:hover {
   border-style: dashed;
 }
 
-.msg-menu {
+/* 말풍선 + 오른쪽 위 모서리에 걸친 ⋯ 메뉴 */
+.chat-bubble-wrap {
   position: relative;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
+/* 버튼이 걸치는 만큼 말풍선 오른쪽 여백을 조금 더 준다 */
+.chat-bubble-wrap:has(.msg-menu) .chat-bubble {
+  padding-right: 20px;
+}
+
+.msg-menu {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  z-index: 2;
+}
+
+/* 채팅 배경과 헷갈리지 않게 항상 보이는 진한 점 + 테두리 있는 동그라미 */
 .msg-menu-btn {
-  width: 28px;
-  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0 0 4px;
   font: inherit;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  font-weight: 800;
   line-height: 1;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 50%;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
 }
 
-/* 마우스를 올렸을 때만 보이게 (터치 화면은 항상 보이게) */
-.chat-row:hover .msg-menu-btn,
-.msg-menu-btn:focus-visible,
+.msg-menu-btn:hover,
 .msg-menu-btn[aria-expanded='true'] {
-  opacity: 1;
+  background: color-mix(in srgb, var(--text) 10%, var(--surface));
+  border-color: var(--text);
 }
 
-@media (hover: none) {
-  .msg-menu-btn {
-    opacity: 1;
-  }
-}
-
-.msg-menu-btn:hover {
-  background: var(--surface-alt);
+.msg-menu-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
 .msg-menu-panel {
   position: absolute;
-  bottom: 100%;
+  top: calc(100% + 4px);
   left: 0;
   z-index: 20;
   display: flex;
