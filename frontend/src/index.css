@@ -588,6 +588,28 @@ a:focus-visible,
   border-radius: var(--radius);
 }
 
+/* 홈 '갓생살기 특징' 카드: 누르는 곳은 아니지만 마우스를 올리면 살짝 들어 올린다 */
+.feature {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.feature:hover {
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
+  box-shadow: 0 16px 30px -18px rgba(43, 32, 20, 0.35);
+  transform: translateY(-6px);
+}
+
+/* 움직임을 줄이도록 설정한 사람에게는 들어 올리지 않는다 */
+@media (prefers-reduced-motion: reduce) {
+  .feature {
+    transition: none;
+  }
+
+  .feature:hover {
+    transform: none;
+  }
+}
+
 .feature h3,
 .hub-card h3 {
   margin: 0 0 8px;
