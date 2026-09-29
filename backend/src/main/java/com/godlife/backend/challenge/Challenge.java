@@ -45,6 +45,12 @@ public class Challenge {
     @Column(nullable = false)
     private String description;
 
+    /** 방장 공지 (없으면 null). 채팅방 맨 위에 고정된다. */
+    private String notice;
+
+    @Column(name = "notice_updated_at")
+    private LocalDateTime noticeUpdatedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false)
     private ChallengeMode mode;
@@ -157,6 +163,12 @@ public class Challenge {
 
     public boolean isHost(Long userId) {
         return hostId.equals(userId);
+    }
+
+    /** 빈 공지는 내린다(null). */
+    void changeNotice(String notice, LocalDateTime now) {
+        this.notice = notice == null || notice.isBlank() ? null : notice.strip();
+        this.noticeUpdatedAt = this.notice == null ? null : now;
     }
 
     void changeInviteCode(String inviteCode) {

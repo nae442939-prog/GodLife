@@ -18,12 +18,13 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     @Query("DELETE FROM ChallengeParticipant p WHERE p.challengeId = :challengeId")
     void deleteByChallengeId(@Param("challengeId") Long challengeId);
 
-    /** 참여 중인 사람 (취소한 사람 제외), 먼저 참여한 순 */
+    /** 참여 중인 사람 (취소한 사람·내보낸 사람 제외), 먼저 참여한 순 */
     @Query("""
-            SELECT new com.godlife.backend.challenge.dto.ParticipantResponse(u.nickname, u.profileImageUrl)
+            SELECT new com.godlife.backend.challenge.dto.ParticipantResponse(u.id, u.nickname, u.profileImageUrl)
             FROM ChallengeParticipant p JOIN User u ON u.id = p.userId
             WHERE p.challengeId = :challengeId
-              AND p.status <> com.godlife.backend.challenge.ParticipantStatus.LEFT
+              AND p.status NOT IN (com.godlife.backend.challenge.ParticipantStatus.LEFT,
+                                   com.godlife.backend.challenge.ParticipantStatus.KICKED)
             ORDER BY p.id
             """)
     List<ParticipantResponse> findParticipants(@Param("challengeId") Long challengeId);

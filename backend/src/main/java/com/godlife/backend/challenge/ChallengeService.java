@@ -6,6 +6,7 @@ import com.godlife.backend.challenge.dto.ChallengeSummaryResponse;
 import com.godlife.backend.challenge.dto.PageResponse;
 import com.godlife.backend.challenge.dto.ParticipantResponse;
 import com.godlife.backend.chat.ChatMessageRepository;
+import com.godlife.backend.chat.ChatReportRepository;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,6 +42,7 @@ public class ChallengeService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatReportRepository chatReportRepository;
     private final InviteCodeGenerator inviteCodeGenerator;
     private final RequestThrottle throttle;
     private final Clock clock;
@@ -151,8 +154,53 @@ public class ChallengeService {
         c.changeInviteCode(newInviteCode());
     }
 
+    /** 방장 공지 올리기/바꾸기. 빈 내용이면 내린다. 올렸으면 true. */
+    @Transactional
+    public boolean changeNotice(Long challengeId, Long userId, String notice) {
+        Challenge c = requireHostForUpdate(challengeId, userId);
+        c.changeNotice(notice, LocalDateTime.now(clock));
+        return c.getNotice() != null;
+    }
+
     /**
-     * 개설자만, 시작일 전날까지 삭제할 수 있다. 참가 기록과 오픈채팅도 함께 지운다.
+     * 방장이 참가자를 내보낸다. 다시 참여할 수 없고 채팅·상세 접근도 막힌다. 내보낸 사람의 닉네임을 돌려준다.
+     * (포인트 챌린지 참여가 열리면: 본인 잘못으로 실패한 게 아니므로 예치 포인트를 돌려주는 것을 여기에 더한다)
+     */
+    @Transactional
+    public String kick(Long challengeId, Long hostId, Long targetUserId) {
+        Challenge c = requireHostForUpdate(challengeId, hostId);
+        if (c.isHost(targetUserId)) {
+            throw new BusinessException(ErrorCode.CANNOT_KICK);
+        }
+        ChallengeParticipant p = participantRepository.findByChallengeIdAndUserId(challengeId, targetUserId)
+                .filter(found -> found.getStatus().isMember())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
+        if (p.isActive()) {
+            c.removeParticipant();
+        }
+        p.kick();
+        return userRepository.findById(targetUserId).map(User::getNickname).orElse("알 수 없음");
+    }
+
+    /** 방장만 통과하고 챌린지 행을 잠근다. 멤버가 아니면서 비공개면 404, 멤버인데 방장이 아니면 403. */
+    private Challenge requireHostForUpdate(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (!c.isHost(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        return c;
+    }
+
+    /** 방장인지 (채팅 화면의 방장 메뉴용) */
+    @Transactional(readOnly = true)
+    public boolean isHost(Long challengeId, Long userId) {
+        return challengeRepository.findById(challengeId).map(c -> c.isHost(userId)).orElse(false);
+    }
+
+    /**
+     * 개설자만, 시작일 전날까지 삭제할 수 있다. 참가 기록과 오픈채팅(신고 포함)도 함께 지운다.
      * (시작한 뒤에는 인증·정산 기록이 생기므로 막는다. 포인트 챌린지는 참여가 열릴 때 '예치 포인트 환급'을 여기에 더한다)
      */
     @Transactional
@@ -166,6 +214,7 @@ public class ChallengeService {
         if (!c.canLeave(today())) {
             throw new BusinessException(ErrorCode.CHALLENGE_CANNOT_DELETE);
         }
+        chatReportRepository.deleteByChallengeId(challengeId);
         chatMessageRepository.deleteByChallengeId(challengeId);
         participantRepository.deleteByChallengeId(challengeId);
         challengeRepository.delete(c);
@@ -199,6 +248,9 @@ public class ChallengeService {
         if (existing != null && existing.isActive()) {
             throw new BusinessException(ErrorCode.ALREADY_JOINED);
         }
+        if (existing != null && existing.isKicked()) {
+            throw new BusinessException(ErrorCode.KICKED_FROM_CHALLENGE);
+        }
         if (c.isFull()) {
             throw new BusinessException(ErrorCode.CHALLENGE_FULL);
         }
@@ -227,13 +279,13 @@ public class ChallengeService {
                 isMember(c, viewerId), participants);
     }
 
-    /** 개설자이거나, 참여를 취소하지 않은 참가자. 초대 링크를 볼 수 있고 비공개 챌린지를 볼 수 있는 사람이다. */
+    /** 개설자이거나, 참여 취소·강퇴되지 않은 참가자. 초대 링크·비공개 상세·오픈채팅을 볼 수 있는 사람이다. */
     private boolean isMember(Challenge c, Long userId) {
         if (userId == null) {
             return false;
         }
         return c.isHost(userId) || participantRepository.findByChallengeIdAndUserId(c.getId(), userId)
-                .filter(p -> p.getStatus() != ParticipantStatus.LEFT)
+                .filter(p -> p.getStatus().isMember())
                 .isPresent();
     }
 

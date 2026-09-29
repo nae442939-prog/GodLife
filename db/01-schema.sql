@@ -1,4 +1,4 @@
--- GodLife 스키마 (MySQL 8.0 / InnoDB / utf8mb4) — 1~3차 전체, 테이블 39개
+-- GodLife 스키마 (MySQL 8.0 / InnoDB / utf8mb4) — 1~3차 전체, 테이블 41개
 -- 설계도: docs/erd.html
 -- 실행: mysql -u godlife_user -p godlife < db/01-schema.sql   (빈 DB 기준, DROP 문 없음)
 --
@@ -138,6 +138,8 @@ CREATE TABLE challenges (
   category_id       INT          NOT NULL,
   title             VARCHAR(100) NOT NULL,
   description       TEXT         NOT NULL,
+  notice            VARCHAR(300) NULL COMMENT '방장 공지. 채팅방 맨 위 고정',
+  notice_updated_at DATETIME     NULL,
   mode              ENUM('FREE','BET') NOT NULL COMMENT 'FREE(무료) · BET(베팅)',
   visibility        ENUM('PUBLIC','PRIVATE') NOT NULL DEFAULT 'PUBLIC' COMMENT 'PRIVATE = 목록에 안 나오고 초대 링크로만 참여',
   invite_code       CHAR(8)      NOT NULL COMMENT '초대 링크 코드. 헷갈리는 글자(0/O/1/I/L) 없는 영숫자',
@@ -181,7 +183,7 @@ CREATE TABLE challenge_participants (
   challenge_id   BIGINT   NOT NULL,
   user_id        BIGINT   NOT NULL,
   deposit_amount BIGINT   NOT NULL DEFAULT 0 COMMENT '참가 시점 예치 포인트 스냅샷',
-  status         ENUM('ACTIVE','COMPLETED','FAILED','LEFT') NOT NULL DEFAULT 'ACTIVE',
+  status         ENUM('ACTIVE','COMPLETED','FAILED','LEFT','KICKED') NOT NULL DEFAULT 'ACTIVE' COMMENT 'KICKED = 방장이 내보냄',
   success_days   INT      NOT NULL DEFAULT 0 COMMENT '인증 성공 일수 (승인 시 증가)',
   current_streak INT      NOT NULL DEFAULT 0,
   max_streak     INT      NOT NULL DEFAULT 0,
@@ -199,6 +201,7 @@ CREATE TABLE chat_messages (
   id           BIGINT       NOT NULL AUTO_INCREMENT,
   challenge_id BIGINT       NOT NULL COMMENT '챌린지 1개 = 채팅방 1개',
   sender_id    BIGINT       NOT NULL,
+  type         ENUM('USER','SYSTEM') NOT NULL DEFAULT 'USER' COMMENT 'SYSTEM = 강퇴·공지 알림 (sender 는 방장)',
   content      VARCHAR(500) NOT NULL COMMENT '텍스트만 (이미지/파일 없음)',
   created_at   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
@@ -206,6 +209,39 @@ CREATE TABLE chat_messages (
   CONSTRAINT fk_chat_challenge FOREIGN KEY (challenge_id) REFERENCES challenges (id),
   CONSTRAINT fk_chat_sender FOREIGN KEY (sender_id) REFERENCES users (id)
 ) ENGINE=InnoDB COMMENT='챌린지 오픈채팅 메시지';
+
+CREATE TABLE user_blocks (
+  id         BIGINT   NOT NULL AUTO_INCREMENT,
+  blocker_id BIGINT   NOT NULL,
+  blocked_id BIGINT   NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_user_blocks (blocker_id, blocked_id),
+  CONSTRAINT fk_user_blocks_blocker FOREIGN KEY (blocker_id) REFERENCES users (id),
+  CONSTRAINT fk_user_blocks_blocked FOREIGN KEY (blocked_id) REFERENCES users (id),
+  CONSTRAINT ck_user_blocks_self CHECK (blocker_id <> blocked_id)
+) ENGINE=InnoDB COMMENT='사용자 차단';
+
+
+CREATE TABLE chat_reports (
+  id               BIGINT       NOT NULL AUTO_INCREMENT,
+  challenge_id     BIGINT       NOT NULL,
+  message_id       BIGINT       NOT NULL,
+  reporter_id      BIGINT       NOT NULL,
+  reported_user_id BIGINT       NOT NULL,
+  reason           ENUM('ABUSE','SPAM','INAPPROPRIATE','OTHER') NOT NULL
+                     COMMENT '욕설·비방 / 스팸·광고 / 부적절한 내용 / 기타',
+  detail           VARCHAR(300) NULL,
+  status           ENUM('OPEN','RESOLVED') NOT NULL DEFAULT 'OPEN' COMMENT 'RESOLVED = 방장이 강퇴하거나 넘김',
+  created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_chat_reports_message_reporter (message_id, reporter_id),
+  KEY idx_chat_reports_target (challenge_id, reported_user_id, status),
+  CONSTRAINT fk_chat_reports_challenge FOREIGN KEY (challenge_id) REFERENCES challenges (id),
+  CONSTRAINT fk_chat_reports_message FOREIGN KEY (message_id) REFERENCES chat_messages (id),
+  CONSTRAINT fk_chat_reports_reporter FOREIGN KEY (reporter_id) REFERENCES users (id),
+  CONSTRAINT fk_chat_reports_reported FOREIGN KEY (reported_user_id) REFERENCES users (id)
+) ENGINE=InnoDB COMMENT='오픈채팅 신고';
 
 -- =====================================================================
 -- 03. 인증 · AI 검증
@@ -511,7 +547,7 @@ CREATE TABLE comments (
 CREATE TABLE notifications (
   id      BIGINT       NOT NULL AUTO_INCREMENT,
   user_id BIGINT       NOT NULL,
-  type    ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT') NOT NULL,
+  type    ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT','REPORT_ALERT') NOT NULL,
   title   VARCHAR(100) NOT NULL,
   body    VARCHAR(300) NOT NULL,
   read_at DATETIME     NULL,
