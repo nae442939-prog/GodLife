@@ -61,7 +61,7 @@ class ChallengeJoinConcurrencyTest {
         LocalDate today = LocalDate.now(clock);
         Long hostId = newUser();
         challengeId = challengeService.create(hostId, new ChallengeCreateRequest(1, "동시성", "테스트",
-                ChallengeMode.FREE, today.plusDays(1), today.plusDays(3), FrequencyType.DAILY, null, null,
+                ChallengeMode.FREE, null, today.plusDays(1), today.plusDays(3), FrequencyType.DAILY, null, null,
                 CAPACITY, null, null, false)).getId();
 
         List<Long> joiners = new ArrayList<>();

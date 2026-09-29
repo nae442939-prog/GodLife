@@ -14,13 +14,14 @@ import java.util.Optional;
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     /**
-     * 모집 중인 챌린지 탐색. 조건은 모두 선택(null 이면 무시).
+     * 모집 중인 공개 챌린지 탐색(비공개는 초대 링크로만). 조건은 모두 선택(null 이면 무시).
      * titlePattern 은 서비스가 % 와 _ 를 ! 로 이스케이프해 만든 LIKE 패턴이다.
      */
     @Query(value = """
             SELECT c FROM Challenge c JOIN FETCH c.category
             WHERE c.status = com.godlife.backend.challenge.ChallengeStatus.RECRUITING
               AND c.startDate >= :today
+              AND c.visibility = com.godlife.backend.challenge.ChallengeVisibility.PUBLIC
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
               AND (:mode IS NULL OR c.mode = :mode)
               AND (:titlePattern IS NULL OR c.title LIKE :titlePattern ESCAPE '!')
@@ -29,6 +30,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
             SELECT COUNT(c) FROM Challenge c
             WHERE c.status = com.godlife.backend.challenge.ChallengeStatus.RECRUITING
               AND c.startDate >= :today
+              AND c.visibility = com.godlife.backend.challenge.ChallengeVisibility.PUBLIC
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
               AND (:mode IS NULL OR c.mode = :mode)
               AND (:titlePattern IS NULL OR c.title LIKE :titlePattern ESCAPE '!')
@@ -41,6 +43,11 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     @Query("SELECT c FROM Challenge c JOIN FETCH c.category WHERE c.id = :id")
     Optional<Challenge> findWithCategory(@Param("id") Long id);
+
+    @Query("SELECT c FROM Challenge c JOIN FETCH c.category WHERE c.inviteCode = :inviteCode")
+    Optional<Challenge> findByInviteCode(@Param("inviteCode") String inviteCode);
+
+    boolean existsByInviteCode(String inviteCode);
 
     /** 참여/취소는 챌린지 행을 SELECT ... FOR UPDATE 로 잠가 정원과 참가자 수를 지킨다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -134,4 +134,9 @@ export const challengeApi = {
   create: (payload) => apiFetch('/api/challenges', { method: 'POST', body: payload }),
   join: (id) => apiFetch(`/api/challenges/${id}/participants`, { method: 'POST' }),
   leave: (id) => apiFetch(`/api/challenges/${id}/participants/me`, { method: 'DELETE' }),
+  // 초대 링크(/challenges/join/{code}): 비공개 챌린지는 이 코드로만 보고 참여한다.
+  getByInvite: (code) => apiFetch(`/api/challenges/invite/${encodeURIComponent(code)}`),
+  joinByInvite: (code) =>
+    apiFetch(`/api/challenges/invite/${encodeURIComponent(code)}/participants`, { method: 'POST' }),
+  regenerateInvite: (id) => apiFetch(`/api/challenges/${id}/invite-code`, { method: 'POST' }),
 }

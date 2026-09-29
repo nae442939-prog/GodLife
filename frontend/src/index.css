@@ -2205,6 +2205,112 @@ a.back-button:hover {
   background: color-mix(in srgb, var(--accent-amber) 20%, var(--surface));
 }
 
+/* ---------- 비공개 챌린지 · 초대 링크 ---------- */
+
+.dt-tag.is-private {
+  color: var(--header-nav);
+  background: var(--surface-alt);
+  border-color: transparent;
+}
+
+.dt-tag.is-private svg {
+  color: var(--header-nav);
+}
+
+.invite-box {
+  padding: 22px 24px;
+  background: var(--surface-alt);
+  border-radius: 14px;
+}
+
+.invite-box h2 {
+  margin-bottom: 6px;
+}
+
+.invite-help {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  color: var(--header-nav);
+}
+
+.invite-row {
+  display: flex;
+  gap: 8px;
+}
+
+.invite-link {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+}
+
+.invite-link:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+.invite-copy {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+}
+
+.invite-regen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 12px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.link-button.is-muted {
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.invite-notice {
+  margin: 0 0 14px;
+  padding: 14px 18px;
+  font-size: 1rem;
+  color: var(--header-nav);
+  background: color-mix(in srgb, var(--accent-mint) 12%, var(--surface));
+  border-radius: 12px;
+}
+
+.invite-missing {
+  padding: 48px 32px;
+  text-align: center;
+}
+
+.invite-missing h1 {
+  margin: 0 0 10px;
+  font-size: 1.4rem;
+}
+
+.invite-missing p {
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+
+.cf .segment + .field-hint {
+  margin-top: 10px;
+}
+
+@media (max-width: 760px) {
+  .invite-row {
+    flex-direction: column;
+  }
+}
+
 /* ---------- 큰 달력 (DatePicker): 브라우저 기본 달력 대신 ---------- */
 
 .dp {

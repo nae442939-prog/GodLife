@@ -36,6 +36,15 @@ const MODE_CHOICES = [
   },
 ]
 
+const VISIBILITY_CHOICES = [
+  { value: 'PUBLIC', label: '공개', hint: '챌린지 목록에 나와서 누구나 참여할 수 있어요.' },
+  {
+    value: 'PRIVATE',
+    label: '비공개 (친구만)',
+    hint: '목록에 나오지 않아요. 만든 뒤 초대 링크를 보내면 그 링크를 받은 사람만 참여할 수 있어요.',
+  },
+]
+
 function ModeIcon({ mode }) {
   if (mode === 'BET') {
     return (
@@ -71,6 +80,7 @@ function initialForm() {
     entryFee: '1000',
     partialRefund: false,
     useWindow: false,
+    visibility: 'PUBLIC',
     verifyFrom: '05:00',
     verifyUntil: '09:00',
   }
@@ -169,6 +179,7 @@ export function ChallengeCreatePage() {
         verifyFrom: form.useWindow ? form.verifyFrom : null,
         verifyUntil: form.useWindow ? form.verifyUntil : null,
         partialRefund: mode === 'BET' && form.partialRefund,
+        visibility: form.visibility,
       })
       navigate(`/challenges/${created.id}`, { replace: true })
     } catch (err) {
@@ -385,6 +396,26 @@ export function ChallengeCreatePage() {
               error={errors.maxParticipants}
               hint="2 ~ 100명"
             />
+
+            <fieldset className="field">
+              <legend className="field-label">공개 범위</legend>
+              <div className="segment segment-sm">
+                {VISIBILITY_CHOICES.map((v) => (
+                  <label key={v.value} className={`segment-item ${form.visibility === v.value ? 'is-active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value={v.value}
+                      checked={form.visibility === v.value}
+                      onChange={onChange}
+                      className="sr-only"
+                    />
+                    {v.label}
+                  </label>
+                ))}
+              </div>
+              <p className="field-hint">{VISIBILITY_CHOICES.find((v) => v.value === form.visibility).hint}</p>
+            </fieldset>
 
             {mode === 'BET' && (
               <>

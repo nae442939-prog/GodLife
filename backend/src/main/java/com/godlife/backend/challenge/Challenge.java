@@ -49,6 +49,14 @@ public class Challenge {
     @Column(nullable = false, updatable = false)
     private ChallengeMode mode;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, updatable = false)
+    private ChallengeVisibility visibility;
+
+    /** 초대 링크 코드. 모든 챌린지가 가진다(공개 챌린지도 링크로 공유 가능). 새어 나가면 개설자가 재발급한다. */
+    @Column(name = "invite_code", nullable = false, unique = true)
+    private String inviteCode;
+
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
@@ -104,7 +112,8 @@ public class Challenge {
     private LocalDateTime createdAt;
 
     public static Challenge create(Long hostId, Category category, String title, String description,
-                                   ChallengeMode mode, LocalDate startDate, LocalDate endDate,
+                                   ChallengeMode mode, ChallengeVisibility visibility, String inviteCode,
+                                   LocalDate startDate, LocalDate endDate,
                                    FrequencyType frequencyType, Integer weeklyCount, long entryFee,
                                    int maxParticipants, LocalTime verifyFrom, LocalTime verifyUntil,
                                    boolean partialRefund) {
@@ -114,6 +123,8 @@ public class Challenge {
         c.title = title;
         c.description = description;
         c.mode = mode;
+        c.visibility = visibility;
+        c.inviteCode = inviteCode;
         c.startDate = startDate;
         c.endDate = endDate;
         c.frequencyType = frequencyType;
@@ -138,6 +149,18 @@ public class Challenge {
     /** 시작일 전날까지만 참여를 취소할 수 있다. */
     public boolean canLeave(LocalDate today) {
         return status == ChallengeStatus.RECRUITING && today.isBefore(startDate);
+    }
+
+    public boolean isPrivate() {
+        return visibility == ChallengeVisibility.PRIVATE;
+    }
+
+    public boolean isHost(Long userId) {
+        return hostId.equals(userId);
+    }
+
+    void changeInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
     }
 
     public boolean isFull() {

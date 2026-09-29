@@ -55,7 +55,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/phone-verifications/**", "/api/account/**").permitAll()
                         // 챌린지 둘러보기는 비로그인도 가능. 개설/참여는 아래 authenticated 에 걸린다.
-                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/challenges", "/api/challenges/*")
+                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/challenges", "/api/challenges/*",
+                                "/api/challenges/invite/*")
                         .permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
