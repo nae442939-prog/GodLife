@@ -6,6 +6,7 @@ import { FindPasswordPage } from './pages/FindPasswordPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { MyPage } from './pages/MyPage.jsx'
+import { SettingsPage } from './pages/SettingsPage.jsx'
 import { SignupPage } from './pages/SignupPage.jsx'
 import { VerifyPhonePage } from './pages/VerifyPhonePage.jsx'
 
@@ -23,6 +24,7 @@ export default function App() {
         {/* 로그인해야 볼 수 있는 화면 */}
         <Route element={<RequireAuth />}>
           <Route path="/me" element={<MyPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/verify-phone" element={<VerifyPhonePage />} />
         </Route>
 
