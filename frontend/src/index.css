@@ -2402,7 +2402,8 @@ a.back-button:hover {
 .chat-card {
   display: flex;
   flex-direction: column;
-  height: max(460px, calc(100vh - 290px));
+  /* 위아래로 넉넉하게: 화면 높이에서 헤더·돌아가기 링크만 빼고 거의 다 (폭은 그대로) */
+  height: max(620px, calc(100vh - 200px));
   padding: 0;
   overflow: hidden;
   border-radius: 20px;
@@ -2698,6 +2699,32 @@ a.back-button:hover {
   z-index: 2;
 }
 
+/* 열린 메뉴는 아래 메시지의 ⋯ 버튼보다 위에 그려지게 */
+.msg-menu.is-open {
+  z-index: 30;
+}
+
+/* 모서리에 걸친 버튼이 옆 시간·위 닉네임과 겹치지 않게 여유를 둔다 */
+.chat-bubble-line:has(.msg-menu) .chat-time {
+  margin-left: 8px;
+}
+
+.chat-row:not(.is-mine) .chat-name {
+  margin-bottom: 10px;
+}
+
+/* 긴 글·띄어쓰기 없는 글도 말풍선 안에서 줄바꿈 (화면 밖으로 삐져나가지 않게) */
+.chat-body,
+.chat-bubble-line,
+.chat-bubble-wrap {
+  min-width: 0;
+}
+
+.chat-bubble {
+  max-width: 100%;
+  word-break: break-word;
+}
+
 /* 채팅 배경과 헷갈리지 않게 항상 보이는 진한 점 + 테두리 있는 동그라미 */
 .msg-menu-btn {
   display: inline-flex;
@@ -2726,6 +2753,11 @@ a.back-button:hover {
 .msg-menu-btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--focus);
+}
+
+.msg-menu-panel.is-up {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 
 .msg-menu-panel {

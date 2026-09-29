@@ -7,6 +7,7 @@ const REPORT_REASONS = [
   { value: 'OTHER', label: '기타' },
 ]
 const REASON_LABEL = Object.fromEntries(REPORT_REASONS.map((r) => [r.value, r.label]))
+const MENU_HEIGHT = 140 // ⋯ 메뉴가 펼쳐졌을 때 대략 높이 (항목 3개)
 
 /** 가운데 뜨는 창. 바깥(어두운 배경)을 누르거나 Esc 로 닫는다. */
 export function Dialog({ title, onClose, children }) {
@@ -106,7 +107,18 @@ export function ReportDialog({ message, busy, error, onSubmit, onClose }) {
 /** 남의 메시지 옆 ⋯ 메뉴: 신고 · 차단 (방장이면 내보내기도) */
 export function MessageMenu({ isHost, onReport, onBlock, onKick }) {
   const [open, setOpen] = useState(false)
+  const [up, setUp] = useState(false)
   const rootRef = useRef(null)
+
+  function toggle() {
+    if (!open) {
+      // 채팅창 아래쪽 공간이 모자라면(맨 아래 메시지) 메뉴를 위로 연다 — 채팅창 밖으로 잘리지 않게
+      const button = rootRef.current.getBoundingClientRect()
+      const box = rootRef.current.closest('.chat-list')?.getBoundingClientRect()
+      setUp(Boolean(box) && box.bottom - button.bottom < MENU_HEIGHT)
+    }
+    setOpen((v) => !v)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -123,19 +135,19 @@ export function MessageMenu({ isHost, onReport, onBlock, onKick }) {
   }
 
   return (
-    <span className="msg-menu" ref={rootRef}>
+    <span className={`msg-menu ${open ? 'is-open' : ''}`} ref={rootRef}>
       <button
         type="button"
         className="msg-menu-btn"
         aria-label="메시지 메뉴"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         ⋯
       </button>
       {open && (
-        <span className="msg-menu-panel" role="menu">
+        <span className={`msg-menu-panel ${up ? 'is-up' : ''}`} role="menu">
           <button type="button" role="menuitem" onClick={() => choose(onReport)}>
             신고하기
           </button>
