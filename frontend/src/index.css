@@ -2403,7 +2403,7 @@ a.back-button:hover {
   display: flex;
   flex-direction: column;
   /* 위아래로 넉넉하게: 화면 높이에서 헤더·돌아가기 링크만 빼고 거의 다 (폭은 그대로) */
-  height: max(620px, calc(100vh - 200px));
+  height: max(720px, calc(100vh - 150px));
   padding: 0;
   overflow: hidden;
   border-radius: 20px;
@@ -2596,13 +2596,48 @@ a.back-button:hover {
   border-radius: 999px;
 }
 
+/* 공지는 메시지 목록 위에 떠 있다 (목록 높이를 줄이지 않게) */
+.chat-list-wrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-list-wrap .chat-list {
+  flex: 1;
+}
+
+.notice-slot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  /* 자리 자체는 클릭을 받지 않고, 보이는 공지만 받는다 */
+  pointer-events: none;
+}
+
+.notice-slot .notice-bar {
+  pointer-events: auto;
+}
+
 .notice-bar {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 12px 26px;
-  background: color-mix(in srgb, var(--accent-amber) 12%, var(--surface));
+  background: color-mix(in srgb, var(--accent-amber) 14%, var(--surface));
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 14px -10px rgba(43, 32, 20, 0.3);
+  transition: opacity 0.2s;
+}
+
+/* 위로 스크롤해 지난 메시지를 보는 동안: 거의 투명 + 클릭은 아래 메시지로 통과. 맨 아래로 오면 다시 보인다 */
+.notice-slot .notice-bar.is-faded {
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 .notice-bar.is-empty {

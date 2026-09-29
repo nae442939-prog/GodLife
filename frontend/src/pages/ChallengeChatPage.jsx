@@ -53,6 +53,9 @@ export function ChallengeChatPage() {
 
   const listRef = useRef(null)
   const contentRef = useRef(null)
+  const noticeRef = useRef(null)
+  const [noticeHeight, setNoticeHeight] = useState(0)
+  const [scrolledUp, setScrolledUp] = useState(false)
   const pinBottom = useRef(true)
   const keepOffset = useRef(null)
   const prevLastId = useRef(0)
@@ -110,7 +113,10 @@ export function ChallengeChatPage() {
 
   // 방장: 신고 알림 (15초마다)
   const loadAlerts = useCallback(() => {
-    chatApi.reportAlerts(id).then(setAlerts).catch(() => {})
+    chatApi
+      .reportAlerts(id)
+      .then(setAlerts)
+      .catch(() => {})
   }, [id])
 
   useEffect(() => {
@@ -157,6 +163,26 @@ export function ChallengeChatPage() {
     observer.observe(contentRef.current)
     return () => observer.disconnect()
   }, [loaded, error, scrollToBottom])
+
+  // 떠 있는 공지 높이만큼 목록 위쪽을 비워 둬서, 맨 위 메시지가 공지에 가려지지 않게
+  useLayoutEffect(() => {
+    // 공지가 바뀐 직후 한 번 (ResizeObserver 가 늦게 불리는 환경 대비)
+    if (noticeRef.current) setNoticeHeight(noticeRef.current.offsetHeight)
+  }, [challenge?.notice, isHost, loaded])
+
+  useEffect(() => {
+    const el = noticeRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setNoticeHeight(el.offsetHeight))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loaded, error])
+
+  function onListScroll() {
+    const el = listRef.current
+    // 맨 아래에서 80px 넘게 올라가 있으면 '지난 메시지 보는 중'
+    setScrolledUp(el.scrollHeight - el.scrollTop - el.clientHeight > 80)
+  }
 
   async function loadOlder() {
     if (!messages.length) return
@@ -257,7 +283,9 @@ export function ChallengeChatPage() {
     run(async () => {
       const { userId } = dialog.user
       setChallenge(await chatApi.kick(id, userId))
-      setMessages((cur) => cur.map((m) => (m.senderId === userId && m.type === 'USER' ? { ...m, hidden: true, content: null } : m)))
+      setMessages((cur) =>
+        cur.map((m) => (m.senderId === userId && m.type === 'USER' ? { ...m, hidden: true, content: null } : m)),
+      )
       setAlerts((cur) => cur.filter((a) => a.userId !== userId))
       await poll()
     })
@@ -307,7 +335,6 @@ export function ChallengeChatPage() {
             </div>
           </header>
 
-          <NoticeBar notice={challenge.notice} isHost={isHost} busy={busy} onSave={saveNotice} />
           {isHost && (
             <ReportAlerts
               alerts={alerts}
@@ -317,68 +344,79 @@ export function ChallengeChatPage() {
             />
           )}
 
-          <div className="chat-list" ref={listRef} aria-live="polite">
-            <div ref={contentRef}>
-              {hasOlder && (
-                <div className="chat-older">
-                  <button type="button" className="link-button is-muted" onClick={loadOlder} disabled={loadingOlder}>
-                    {loadingOlder ? '불러오는 중…' : '이전 메시지 더 보기'}
-                  </button>
-                </div>
-              )}
-              {messages.length === 0 && <p className="chat-empty">첫 메시지를 남겨 보세요. 오늘의 다짐도 좋아요!</p>}
-              {messages.map((m, i) => {
-                const prev = messages[i - 1]
-                const newDay = !prev || prev.createdAt.slice(0, 10) !== m.createdAt.slice(0, 10)
-                if (m.type === 'SYSTEM') {
+          <div className="chat-list-wrap">
+            {/* 공지는 목록 위에 떠 있고, 위로 스크롤하는 동안에는 투명해진다 */}
+            <div className="notice-slot" ref={noticeRef}>
+              <NoticeBar notice={challenge.notice} isHost={isHost} busy={busy} onSave={saveNotice} faded={scrolledUp} />
+            </div>
+            <div
+              className="chat-list"
+              ref={listRef}
+              onScroll={onListScroll}
+              style={{ paddingTop: noticeHeight + 18 }}
+              aria-live="polite"
+            >
+              <div ref={contentRef}>
+                {hasOlder && (
+                  <div className="chat-older">
+                    <button type="button" className="link-button is-muted" onClick={loadOlder} disabled={loadingOlder}>
+                      {loadingOlder ? '불러오는 중…' : '이전 메시지 더 보기'}
+                    </button>
+                  </div>
+                )}
+                {messages.length === 0 && <p className="chat-empty">첫 메시지를 남겨 보세요. 오늘의 다짐도 좋아요!</p>}
+                {messages.map((m, i) => {
+                  const prev = messages[i - 1]
+                  const newDay = !prev || prev.createdAt.slice(0, 10) !== m.createdAt.slice(0, 10)
+                  if (m.type === 'SYSTEM') {
+                    return (
+                      <div key={m.id}>
+                        {newDay && <p className="chat-day">{dayLabel(m.createdAt)}</p>}
+                        <p className="chat-system">{m.content}</p>
+                      </div>
+                    )
+                  }
+                  // 같은 사람이 이어서 보내면 이름·사진은 첫 메시지에만
+                  const showSender =
+                    !m.mine && (newDay || !prev || prev.mine || prev.type === 'SYSTEM' || prev.senderId !== m.senderId)
                   return (
                     <div key={m.id}>
                       {newDay && <p className="chat-day">{dayLabel(m.createdAt)}</p>}
-                      <p className="chat-system">{m.content}</p>
-                    </div>
-                  )
-                }
-                // 같은 사람이 이어서 보내면 이름·사진은 첫 메시지에만
-                const showSender =
-                  !m.mine &&
-                  (newDay || !prev || prev.mine || prev.type === 'SYSTEM' || prev.senderId !== m.senderId)
-                return (
-                  <div key={m.id}>
-                    {newDay && <p className="chat-day">{dayLabel(m.createdAt)}</p>}
-                    <div className={`chat-row ${m.mine ? 'is-mine' : ''} ${showSender ? 'has-sender' : ''}`}>
-                      {!m.mine && (
-                        <span className="chat-avatar">
-                          {showSender && <Avatar src={m.senderProfileImageUrl} size={34} />}
-                        </span>
-                      )}
-                      <div className="chat-body">
-                        {showSender && <span className="chat-name">{m.senderNickname}</span>}
-                        <div className="chat-bubble-line">
-                          {/* ⋯ 메뉴는 말풍선 오른쪽 위 모서리에 걸쳐 둔다 */}
-                          <span className="chat-bubble-wrap">
-                            {m.hidden ? (
-                              <p className="chat-bubble is-hidden">(내보내진 참가자의 메시지예요)</p>
-                            ) : (
-                              <p className="chat-bubble">{m.content}</p>
-                            )}
-                            {!m.mine && !m.hidden && (
-                              <MessageMenu
-                                isHost={isHost}
-                                onReport={() => setDialog({ kind: 'report', message: m })}
-                                onBlock={() => setDialog({ kind: 'block', user: senderOf(m) })}
-                                onKick={() => setDialog({ kind: 'kick', user: senderOf(m) })}
-                              />
-                            )}
+                      <div className={`chat-row ${m.mine ? 'is-mine' : ''} ${showSender ? 'has-sender' : ''}`}>
+                        {!m.mine && (
+                          <span className="chat-avatar">
+                            {showSender && <Avatar src={m.senderProfileImageUrl} size={34} />}
                           </span>
-                          <time className="chat-time" dateTime={m.createdAt}>
-                            {timeOf(m.createdAt)}
-                          </time>
+                        )}
+                        <div className="chat-body">
+                          {showSender && <span className="chat-name">{m.senderNickname}</span>}
+                          <div className="chat-bubble-line">
+                            {/* ⋯ 메뉴는 말풍선 오른쪽 위 모서리에 걸쳐 둔다 */}
+                            <span className="chat-bubble-wrap">
+                              {m.hidden ? (
+                                <p className="chat-bubble is-hidden">(내보내진 참가자의 메시지예요)</p>
+                              ) : (
+                                <p className="chat-bubble">{m.content}</p>
+                              )}
+                              {!m.mine && !m.hidden && (
+                                <MessageMenu
+                                  isHost={isHost}
+                                  onReport={() => setDialog({ kind: 'report', message: m })}
+                                  onBlock={() => setDialog({ kind: 'block', user: senderOf(m) })}
+                                  onKick={() => setDialog({ kind: 'kick', user: senderOf(m) })}
+                                />
+                              )}
+                            </span>
+                            <time className="chat-time" dateTime={m.createdAt}>
+                              {timeOf(m.createdAt)}
+                            </time>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -412,7 +450,13 @@ export function ChallengeChatPage() {
       )}
 
       {dialog?.kind === 'report' && (
-        <ReportDialog message={dialog.message} busy={busy} error={dialogError} onSubmit={report} onClose={closeDialog} />
+        <ReportDialog
+          message={dialog.message}
+          busy={busy}
+          error={dialogError}
+          onSubmit={report}
+          onClose={closeDialog}
+        />
       )}
       {dialog?.kind === 'block' && (
         <ConfirmDialog
