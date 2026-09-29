@@ -139,6 +139,8 @@ export const challengeApi = {
   joinByInvite: (code) =>
     apiFetch(`/api/challenges/invite/${encodeURIComponent(code)}/participants`, { method: 'POST' }),
   regenerateInvite: (id) => apiFetch(`/api/challenges/${id}/invite-code`, { method: 'POST' }),
+  // 개설자만, 시작일 전날까지
+  remove: (id) => apiFetch(`/api/challenges/${id}`, { method: 'DELETE' }),
 }
 
 // 챌린지 오픈채팅 (개설자·참가자만). 3초마다 after 로 새 메시지를 가져온다.

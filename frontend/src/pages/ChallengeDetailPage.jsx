@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { challengeApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { ChallengeDetailView } from '../challenge/ChallengeDetailView.jsx'
@@ -7,6 +7,7 @@ import { ChallengeDetailView } from '../challenge/ChallengeDetailView.jsx'
 export function ChallengeDetailPage() {
   const { id } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const { status } = useAuth()
   // 로그인 상태가 정해진 뒤에 불러와야 참여 여부(joined)가 맞게 온다.
   const [state, setState] = useState({ key: null, challenge: null, error: '' })
@@ -40,6 +41,18 @@ export function ChallengeDetailPage() {
     }
   }
 
+  async function remove() {
+    setBusy(true)
+    setActionError('')
+    try {
+      await challengeApi.remove(id)
+      navigate('/challenges', { replace: true })
+    } catch (err) {
+      setActionError(err.message)
+      setBusy(false)
+    }
+  }
+
   if (state.key !== loadKey) return <p className="loading">불러오는 중…</p>
   if (state.error) {
     return (
@@ -60,6 +73,7 @@ export function ChallengeDetailPage() {
       onJoin={() => act(challengeApi.join)}
       onLeave={() => act(challengeApi.leave)}
       onRegenerateInvite={() => act(challengeApi.regenerateInvite)}
+      onDelete={remove}
     />
   )
 }
