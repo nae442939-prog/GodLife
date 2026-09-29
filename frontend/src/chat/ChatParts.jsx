@@ -165,8 +165,11 @@ export function MessageMenu({ isHost, onReport, onBlock, onKick }) {
   )
 }
 
-/** 채팅방 맨 위 고정 공지. 방장은 바로 고치거나 내릴 수 있다. */
-export function NoticeBar({ notice, isHost, busy, onSave }) {
+/**
+ * 채팅방 맨 위에 떠 있는 공지. 방장은 바로 고치거나 내릴 수 있다.
+ * faded = 지난 메시지를 보려고 위로 스크롤한 동안: 거의 투명해지고 클릭이 아래 메시지로 통과한다.
+ */
+export function NoticeBar({ notice, isHost, busy, onSave, faded }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
 
@@ -219,7 +222,7 @@ export function NoticeBar({ notice, isHost, busy, onSave }) {
 
   if (!notice) {
     return (
-      <div className="notice-bar is-empty">
+      <div className={`notice-bar is-empty ${faded ? 'is-faded' : ''}`}>
         <button
           type="button"
           className="link-button is-muted"
@@ -235,7 +238,7 @@ export function NoticeBar({ notice, isHost, busy, onSave }) {
   }
 
   return (
-    <div className="notice-bar">
+    <div className={`notice-bar ${faded ? 'is-faded' : ''}`}>
       <span className="notice-icon" aria-hidden="true">
         📢
       </span>
