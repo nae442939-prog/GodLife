@@ -4,7 +4,10 @@ import { useAuth } from '../auth/useAuth.js'
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
 const MENU = [
   { label: '챌린지', to: null },
+  { label: '갓생기록', to: null },
   { label: '랭킹', to: null },
+  { label: '포인트 상점', to: null },
+  { label: '커뮤니티', to: null },
 ]
 
 export function Header() {
@@ -50,14 +53,10 @@ export function Header() {
               </button>
             </>
           ) : (
-            <>
-              <Link to="/login" className="btn btn-ghost btn-sm">
-                로그인
-              </Link>
-              <Link to="/signup" className="btn btn-primary btn-sm">
-                회원가입
-              </Link>
-            </>
+            // 회원가입은 로그인 화면 아래 링크로 들어간다.
+            <Link to="/login" className="btn btn-ghost btn-sm">
+              로그인
+            </Link>
           )}
         </div>
       </div>
