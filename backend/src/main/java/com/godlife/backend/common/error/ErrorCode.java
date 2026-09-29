@@ -26,7 +26,17 @@ public enum ErrorCode {
     PHONE_VERIFICATION_REQUIRED(HttpStatus.BAD_REQUEST, "휴대폰 인증이 필요합니다. 다시 인증해 주세요."),
     PHONE_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 다른 계정에 등록된 휴대폰 번호입니다."),
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "이 번호로 가입된 계정이 없습니다."),
-    INVALID_RESET_TOKEN(HttpStatus.BAD_REQUEST, "비밀번호 재설정 시간이 지났습니다. 처음부터 다시 진행해 주세요.");
+    INVALID_RESET_TOKEN(HttpStatus.BAD_REQUEST, "비밀번호 재설정 시간이 지났습니다. 처음부터 다시 진행해 주세요."),
+    PHONE_NOT_REGISTERED(HttpStatus.FORBIDDEN, "휴대폰 인증을 마친 회원만 이용할 수 있습니다."),
+
+    CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 카테고리입니다."),
+    CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "챌린지를 찾을 수 없습니다."),
+    CHALLENGE_NOT_RECRUITING(HttpStatus.CONFLICT, "모집이 끝난 챌린지입니다."),
+    CHALLENGE_FULL(HttpStatus.CONFLICT, "참여 인원이 모두 찼습니다."),
+    ALREADY_JOINED(HttpStatus.CONFLICT, "이미 참여 중인 챌린지입니다."),
+    NOT_JOINED(HttpStatus.CONFLICT, "참여 중인 챌린지가 아닙니다."),
+    CHALLENGE_ALREADY_STARTED(HttpStatus.CONFLICT, "이미 시작된 챌린지는 참여를 취소할 수 없습니다."),
+    POINT_CHALLENGE_NOT_READY(HttpStatus.CONFLICT, "포인트 챌린지 참여는 준비 중입니다. 포인트 지갑이 열리면 참여할 수 있어요.");
 
     private final HttpStatus status;
     private final String message;

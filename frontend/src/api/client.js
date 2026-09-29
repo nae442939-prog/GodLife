@@ -116,3 +116,22 @@ export const accountApi = {
       auth: false,
     }),
 }
+
+// 챌린지: 목록/상세/카테고리는 비로그인도 볼 수 있다. (로그인 상태면 토큰을 같이 보내 참여 여부를 받는다)
+export const challengeApi = {
+  categories: () => apiFetch('/api/categories'),
+  list: ({ categoryId, mode, q, sort, page } = {}) => {
+    const params = new URLSearchParams()
+    if (categoryId) params.set('categoryId', categoryId)
+    if (mode) params.set('mode', mode)
+    if (q) params.set('q', q)
+    if (sort) params.set('sort', sort)
+    if (page) params.set('page', page)
+    const qs = params.toString()
+    return apiFetch(`/api/challenges${qs ? `?${qs}` : ''}`)
+  },
+  get: (id) => apiFetch(`/api/challenges/${id}`),
+  create: (payload) => apiFetch('/api/challenges', { method: 'POST', body: payload }),
+  join: (id) => apiFetch(`/api/challenges/${id}/participants`, { method: 'POST' }),
+  leave: (id) => apiFetch(`/api/challenges/${id}/participants/me`, { method: 'DELETE' }),
+}

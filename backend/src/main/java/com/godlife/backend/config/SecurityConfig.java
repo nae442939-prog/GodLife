@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -53,6 +54,9 @@ public class SecurityConfig {
                         .failureHandler(oauth2Handlers))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/phone-verifications/**", "/api/account/**").permitAll()
+                        // 챌린지 둘러보기는 비로그인도 가능. 개설/참여는 아래 authenticated 에 걸린다.
+                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/challenges", "/api/challenges/*")
+                        .permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
