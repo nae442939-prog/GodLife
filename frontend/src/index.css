@@ -1162,21 +1162,23 @@ a:focus-visible,
 
 /* ---------- 푸터 ---------- */
 
+/* 본문보다 눈에 덜 띄게: 얇은 높이 · 작은 흐린 글씨 */
 .site-footer {
-  padding: 32px 0;
+  padding: 16px 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
 }
 
 .footer-notice {
-  margin: 0 0 8px;
-  font-size: 0.88rem;
-  color: var(--text);
+  margin: 0 0 6px;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--muted);
 }
 
 .footer-meta {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   color: var(--muted);
 }
 
