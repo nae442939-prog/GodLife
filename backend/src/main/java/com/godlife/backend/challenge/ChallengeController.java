@@ -85,6 +85,13 @@ public class ChallengeController {
         return challengeService.detail(id, authUser.id());
     }
 
+    /** 개설자만, 시작일 전날까지. */
+    @DeleteMapping("/api/challenges/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
+        challengeService.delete(id, authUser.id());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/api/challenges/{id}/participants/me")
     public ChallengeDetailResponse leave(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
         challengeService.leave(id, authUser.id());

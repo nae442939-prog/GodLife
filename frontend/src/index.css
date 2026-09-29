@@ -2311,6 +2311,65 @@ a.back-button:hover {
   }
 }
 
+/* ---------- 챌린지 삭제 (개설자) ---------- */
+
+.dt-delete {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+.dt-delete-btn {
+  padding: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--danger);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.dt-delete-btn:hover {
+  text-decoration: underline;
+}
+
+.dt-delete.is-confirming {
+  padding: 20px 22px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: 14px;
+}
+
+.dt-delete.is-confirming p {
+  margin: 0 0 14px;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+
+.dt-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dt-delete-confirm {
+  color: #fff;
+  background: var(--danger);
+}
+
+.dt-delete-confirm:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 85%, #000);
+}
+
+.dt-delete-note {
+  margin: 30px 0 0;
+  padding-top: 22px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+
 /* ---------- 챌린지 오픈채팅 ---------- */
 
 .dt-tabs {

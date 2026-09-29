@@ -37,6 +37,7 @@ public enum ErrorCode {
     ALREADY_JOINED(HttpStatus.CONFLICT, "이미 참여 중인 챌린지입니다."),
     NOT_JOINED(HttpStatus.CONFLICT, "참여 중인 챌린지가 아닙니다."),
     CHALLENGE_ALREADY_STARTED(HttpStatus.CONFLICT, "이미 시작된 챌린지는 참여를 취소할 수 없습니다."),
+    CHALLENGE_CANNOT_DELETE(HttpStatus.CONFLICT, "시작된 챌린지는 삭제할 수 없어요. 시작일 전날까지만 삭제할 수 있어요."),
     POINT_CHALLENGE_NOT_READY(HttpStatus.CONFLICT, "포인트 챌린지 참여는 준비 중입니다. 포인트 지갑이 열리면 참여할 수 있어요.");
 
     private final HttpStatus status;

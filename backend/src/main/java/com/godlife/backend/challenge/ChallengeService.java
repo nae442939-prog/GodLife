@@ -5,6 +5,7 @@ import com.godlife.backend.challenge.dto.ChallengeDetailResponse;
 import com.godlife.backend.challenge.dto.ChallengeSummaryResponse;
 import com.godlife.backend.challenge.dto.PageResponse;
 import com.godlife.backend.challenge.dto.ParticipantResponse;
+import com.godlife.backend.chat.ChatMessageRepository;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
@@ -38,6 +39,7 @@ public class ChallengeService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final ChatMessageRepository chatMessageRepository;
     private final InviteCodeGenerator inviteCodeGenerator;
     private final RequestThrottle throttle;
     private final Clock clock;
@@ -147,6 +149,26 @@ public class ChallengeService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
         c.changeInviteCode(newInviteCode());
+    }
+
+    /**
+     * 개설자만, 시작일 전날까지 삭제할 수 있다. 참가 기록과 오픈채팅도 함께 지운다.
+     * (시작한 뒤에는 인증·정산 기록이 생기므로 막는다. 포인트 챌린지는 참여가 열릴 때 '예치 포인트 환급'을 여기에 더한다)
+     */
+    @Transactional
+    public void delete(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (!c.isHost(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        if (!c.canLeave(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_CANNOT_DELETE);
+        }
+        chatMessageRepository.deleteByChallengeId(challengeId);
+        participantRepository.deleteByChallengeId(challengeId);
+        challengeRepository.delete(c);
     }
 
     /**

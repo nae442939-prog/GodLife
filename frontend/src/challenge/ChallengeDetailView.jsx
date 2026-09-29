@@ -20,6 +20,7 @@ export function ChallengeDetailView({
   onJoin,
   onLeave,
   onRegenerateInvite,
+  onDelete,
   joinLabel = '참여하기',
   notice,
 }) {
@@ -147,7 +148,40 @@ export function ChallengeDetailView({
             </ul>
           )}
         </section>
+
+        {c.host && onDelete && <DeleteBox canDelete={c.canLeave} busy={busy} onDelete={onDelete} />}
       </article>
+    </div>
+  )
+}
+
+/** 개설자 전용. 시작일 전날까지만 지울 수 있고, 누르면 한 번 더 확인한다. */
+function DeleteBox({ canDelete, busy, onDelete }) {
+  const [confirming, setConfirming] = useState(false)
+
+  if (!canDelete) {
+    return <p className="dt-delete-note">시작된 챌린지는 삭제할 수 없어요.</p>
+  }
+  if (!confirming) {
+    return (
+      <div className="dt-delete">
+        <button type="button" className="dt-delete-btn" onClick={() => setConfirming(true)}>
+          챌린지 삭제
+        </button>
+      </div>
+    )
+  }
+  return (
+    <div className="dt-delete is-confirming" role="alert">
+      <p>정말 삭제할까요? 참가자 목록과 오픈채팅도 함께 지워지고 되돌릴 수 없어요.</p>
+      <div className="dt-delete-actions">
+        <button type="button" className="btn btn-outline" onClick={() => setConfirming(false)} disabled={busy}>
+          취소
+        </button>
+        <button type="button" className="btn dt-delete-confirm" onClick={onDelete} disabled={busy}>
+          {busy ? '삭제하는 중…' : '삭제하기'}
+        </button>
+      </div>
     </div>
   )
 }
