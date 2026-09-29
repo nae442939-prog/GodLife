@@ -58,7 +58,8 @@ export function ReportDialog({ message, busy, error, onSubmit, onClose }) {
   return (
     <Dialog title="메시지 신고" onClose={onClose}>
       <p className="dlg-quote">
-        <strong>{message.senderNickname}</strong> “{message.content}”
+        <strong>{message.senderNickname}</strong>{' '}
+        {message.hasImage ? `(사진)${message.content ? ` “${message.content}”` : ''}` : `“${message.content}”`}
       </p>
       <fieldset className="dlg-reasons">
         <legend className="sr-only">신고 사유</legend>

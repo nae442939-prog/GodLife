@@ -2,12 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, useParams } from 'react-router-dom'
 import { blockApi, challengeApi, chatApi } from '../api/client.js'
 import { ConfirmDialog, MessageMenu, NoticeBar, ReportAlerts, ReportDialog } from '../chat/ChatParts.jsx'
+import { ChatImage } from '../chat/ChatImage.jsx'
 import { Avatar } from '../components/UserMenu.jsx'
 
 const POLL_MS = 3000
 const ALERT_POLL_MS = 15000
 const PAGE_SIZE = 50 // 서버 ChatService.PAGE_SIZE 와 같게
 const MAX_LENGTH = 500
+const PHOTO_TYPES = ['image/jpeg', 'image/png']
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 서버 spring.servlet.multipart.max-file-size 와 같게
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 /** '2026-09-29T16:20:11.123' → '16:20' */
@@ -43,6 +46,7 @@ export function ChallengeChatPage() {
   const [hasOlder, setHasOlder] = useState(false)
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [text, setText] = useState('')
+  const [photo, setPhoto] = useState(null) // { file, preview } 보내기 전 고른 사진
   const [sending, setSending] = useState(false)
   const [notice, setNotice] = useState('') // 화면 아래 잠깐 뜨는 안내 (신고 완료 등)
   const [sendError, setSendError] = useState('')
@@ -204,19 +208,47 @@ export function ChallengeChatPage() {
   async function send(e) {
     e?.preventDefault()
     const content = text.trim()
-    if (!content || sending) return
+    if ((!content && !photo) || sending) return
     setSending(true)
     setSendError('')
     try {
-      const saved = await chatApi.send(id, content)
+      // 사진이 있으면 사진 + 글(선택)을 한 메시지로, 없으면 글만
+      const saved = photo ? await chatApi.sendImage(id, photo.file, content) : await chatApi.send(id, content)
       pinBottom.current = true
       setMessages((cur) => merge(cur, [saved]))
       setText('')
+      clearPhoto()
     } catch (err) {
       setSendError(err.fieldErrors?.content ?? err.message)
     } finally {
       setSending(false)
     }
+  }
+
+  // ---------- 사진 고르기 ----------
+
+  function pickPhoto(e) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // 같은 사진을 다시 골라도 onChange 가 불리게
+    if (!file) return
+    if (!PHOTO_TYPES.includes(file.type)) {
+      setSendError('JPG·PNG 사진만 보낼 수 있어요.')
+      return
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setSendError('사진은 5MB까지 보낼 수 있어요.')
+      return
+    }
+    setSendError('')
+    clearPhoto()
+    setPhoto({ file, preview: URL.createObjectURL(file) })
+  }
+
+  function clearPhoto() {
+    setPhoto((cur) => {
+      if (cur) URL.revokeObjectURL(cur.preview)
+      return null
+    })
   }
 
   function onKeyDown(e) {
@@ -395,6 +427,15 @@ export function ChallengeChatPage() {
                             <span className="chat-bubble-wrap">
                               {m.hidden ? (
                                 <p className="chat-bubble is-hidden">(내보내진 참가자의 메시지예요)</p>
+                              ) : m.hasImage ? (
+                                <div className="chat-bubble has-image">
+                                  <ChatImage
+                                    challengeId={id}
+                                    messageId={m.id}
+                                    onLoad={() => pinBottom.current && scrollToBottom()}
+                                  />
+                                  {m.content && <p className="chat-caption">{m.content}</p>}
+                                </div>
                               ) : (
                                 <p className="chat-bubble">{m.content}</p>
                               )}
@@ -420,7 +461,31 @@ export function ChallengeChatPage() {
             </div>
           </div>
 
+          {photo && (
+            <div className="chat-photo-preview">
+              <img src={photo.preview} alt="보낼 사진 미리보기" />
+              <span>사진에 붙일 말이 있으면 아래에 적어 주세요. (없어도 돼요)</span>
+              <button type="button" className="link-button is-muted" onClick={clearPhoto} disabled={sending}>
+                빼기
+              </button>
+            </div>
+          )}
           <form className="chat-input" onSubmit={send}>
+            <label className="chat-photo-btn" title="사진 보내기 (JPG·PNG, 5MB까지)">
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                className="sr-only"
+                onChange={pickPhoto}
+                disabled={sending}
+              />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="14" rx="3" strokeWidth="1.7" />
+                <path d="M8.5 6l1.4-2h4.2l1.4 2" strokeWidth="1.7" strokeLinejoin="round" />
+                <circle cx="12" cy="13" r="3.5" strokeWidth="1.7" />
+              </svg>
+              <span className="sr-only">사진 보내기</span>
+            </label>
             <textarea
               rows={2}
               value={text}
@@ -434,8 +499,8 @@ export function ChallengeChatPage() {
               <span className="chat-count">
                 {text.length}/{MAX_LENGTH}
               </span>
-              <button type="submit" className="btn btn-dark" disabled={sending || !text.trim()}>
-                보내기
+              <button type="submit" className="btn btn-dark" disabled={sending || (!text.trim() && !photo)}>
+                {sending ? '보내는 중…' : '보내기'}
               </button>
             </div>
           </form>
