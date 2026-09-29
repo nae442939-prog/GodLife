@@ -22,3 +22,6 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# 채팅 사진 등 업로드 파일 (서버 디스크에만 둔다)
+backend/uploads/
