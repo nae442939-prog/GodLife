@@ -1178,6 +1178,353 @@ a:focus-visible,
   color: var(--muted);
 }
 
+/* ---------- 챌린지 ---------- */
+
+.muted {
+  color: var(--muted);
+}
+
+.center {
+  text-align: center;
+}
+
+.page.narrow {
+  max-width: 720px;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.back-link {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+}
+
+.link-button {
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  font-weight: 600;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* 카테고리 색: 운동 코랄 · 공부 파랑 · 독서 민트 (홈 미리보기와 같은 색) */
+.challenge-category.cat-2 {
+  color: var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
+}
+
+.challenge-category.cat-3 {
+  color: var(--accent-mint);
+  background: color-mix(in srgb, var(--accent-mint) 14%, transparent);
+}
+
+.filters {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip {
+  /* 안에 숨긴 라디오(.sr-only)가 칩을 기준으로 놓이게 한다. 없으면 화면 밖으로 밀려 가로 스크롤이 생긴다. */
+  position: relative;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--primary);
+}
+
+.chip.is-active {
+  color: var(--on-primary);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.chip:focus-visible,
+.chip:has(input:focus-visible) {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.search {
+  display: flex;
+  flex: 1;
+  min-width: 220px;
+  gap: 8px;
+}
+
+.search input,
+.select,
+.field select,
+.field textarea {
+  padding: 9px 12px;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+}
+
+.field textarea {
+  width: 100%;
+  resize: vertical;
+  background: var(--bg);
+}
+
+.search input:focus-visible,
+.select:focus-visible,
+.field textarea:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.field textarea[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.challenge-card.is-link {
+  padding: 0;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.challenge-card.is-link:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.challenge-card-link {
+  display: block;
+  height: 100%;
+  padding: 24px;
+  color: inherit;
+  font-weight: inherit;
+}
+
+.challenge-card-link:hover {
+  text-decoration: none;
+}
+
+.challenge-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.challenge-card-top .challenge-category {
+  margin-bottom: 0;
+}
+
+.mode-badge {
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-alt);
+  border-radius: 999px;
+}
+
+.mode-badge.is-bet {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.dday {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.empty {
+  padding: 56px 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.more {
+  margin-top: 24px;
+  text-align: center;
+}
+
+/* 만들기: 무료 / 포인트 고르기 */
+.mode-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.mode-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.mode-choice strong {
+  font-size: 1.2rem;
+}
+
+.mode-choice span {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.mode-choice:hover,
+.mode-choice:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.mode-choice.is-BET strong {
+  color: var(--primary);
+}
+
+.form-card {
+  padding: 28px;
+}
+
+.form-card fieldset {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+}
+
+.field-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.check input {
+  margin-top: 3px;
+  accent-color: var(--primary);
+}
+
+/* 상세 */
+.detail-list {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 28px;
+  padding: 22px 24px;
+}
+
+.detail-list div {
+  display: flex;
+  gap: 16px;
+}
+
+.detail-list dt {
+  flex: 0 0 88px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.detail-list dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.detail-section {
+  margin-bottom: 28px;
+}
+
+.detail-section h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.detail-description {
+  margin: 0;
+  white-space: pre-line;
+  line-height: 1.7;
+}
+
+.detail-action {
+  margin-bottom: 32px;
+}
+
+.detail-action .form-error {
+  margin-top: 10px;
+}
+
+.joined-badge {
+  margin: 0 0 10px;
+  padding: 12px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--accent-mint);
+  background: color-mix(in srgb, var(--accent-mint) 12%, transparent);
+  border-radius: 10px;
+}
+
+.participant-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.participant-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+
 /* ---------- 모바일 ---------- */
 
 @media (max-width: 760px) {
@@ -1221,8 +1568,14 @@ a:focus-visible,
 
   .features,
   .hub,
-  .challenge-grid {
+  .challenge-grid,
+  .mode-choices,
+  .field-pair {
     grid-template-columns: 1fr;
+  }
+
+  .page-head {
+    flex-direction: column;
   }
 
   .step,

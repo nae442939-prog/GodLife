@@ -4,7 +4,7 @@ import { UserMenu } from './UserMenu.jsx'
 
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
 const MENU = [
-  { label: '챌린지', to: null },
+  { label: '챌린지', to: '/challenges' },
   { label: '갓생기록', to: null },
   { label: '랭킹', to: null },
   { label: '포인트 상점', to: null },
