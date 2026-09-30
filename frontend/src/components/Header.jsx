@@ -1,10 +1,17 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
+import { MegaMenu, TodayChallenges } from './MegaMenu.jsx'
 import { UserMenu } from './UserMenu.jsx'
+
+// 챌린지 메가 메뉴 항목. 나중에 항목을 더하려면 여기에 한 줄 추가한다.
+const CHALLENGE_LINKS = [
+  { label: '챌린지 둘러보기', to: '/challenges' },
+  { label: '내 챌린지', to: '/challenges/mine' },
+]
 
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
 const MENU = [
-  { label: '챌린지', to: '/challenges' },
+  { label: '챌린지', to: '/challenges', mega: true },
   { label: '갓생기록', to: null },
   { label: '랭킹', to: null },
   { label: '포인트 상점', to: null },
@@ -24,15 +31,23 @@ export function Header() {
 
         <nav className="menu" aria-label="주 메뉴">
           {MENU.map((item) =>
-            item.to ? (
-              <NavLink key={item.label} to={item.to}>
-                {item.label}
-              </NavLink>
-            ) : (
+            !item.to ? (
               <span key={item.label} className="menu-soon" title="준비 중입니다">
                 {item.label}
                 <small>준비 중</small>
               </span>
+            ) : item.mega ? (
+              <MegaMenu
+                key={item.label}
+                label={item.label}
+                to={item.to}
+                links={CHALLENGE_LINKS}
+                aside={(open) => <TodayChallenges open={open} />}
+              />
+            ) : (
+              <NavLink key={item.label} to={item.to}>
+                {item.label}
+              </NavLink>
             ),
           )}
         </nav>
