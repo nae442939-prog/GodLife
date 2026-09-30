@@ -38,7 +38,6 @@ export function RankingPage() {
   }
 
   return (
-    // 배경은 홈의 '지금 모집 중인 챌린지' 구역과 같은 색으로 화면 전체 폭을 채운다
     <div className="rn-page">
       <div className="container page">
         <div className="ch-head cl-head">

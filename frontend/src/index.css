@@ -5220,13 +5220,10 @@ a.back-button:hover {
 
 /* ---------- 랭킹 메뉴 ---------- */
 
-/* 화면 전체 배경: 홈 '지금 모집 중인 챌린지' 구역(section-alt)과 같은 색.
-   내 순위 카드·내 줄은 배경과 다른 민트('나' 표시와 같은 계열)로 눈에 띄게 */
+/* 배경은 챌린지 화면과 같은 기본 배경. 내 순위 카드·내 줄은 민트('나' 표시와 같은 계열)로 눈에 띄게 */
 .rn-page {
   --rank-me: #e3f5ec;
   --rank-me-line: #b9e4cd;
-  min-height: 100%;
-  background: var(--surface-alt);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -5240,9 +5237,6 @@ a.back-button:hover {
   background: var(--rank-me);
 }
 
-.rn-page .pd-avatar {
-  border-color: var(--surface-alt);
-}
 
 .rn-body {
   max-width: 860px;
