@@ -6110,3 +6110,66 @@ a.back-button:hover {
     transform: none;
   }
 }
+
+/* ---------- 팔로우 ---------- */
+
+.pf-follow:hover:not(:disabled) {
+  text-decoration: none;
+  background: color-mix(in srgb, var(--text) 85%, var(--bg));
+}
+
+/* 팔로잉 중: 흰 버튼, 마우스를 올리면 '언팔로우' */
+.pf-follow.is-following {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.pf-follow .pf-follow-off {
+  display: none;
+}
+
+.pf-follow.is-following:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+
+.pf-follow.is-following:hover .pf-follow-on {
+  display: none;
+}
+
+.pf-follow.is-following:hover .pf-follow-off {
+  display: inline;
+}
+
+.pf-name small.is-mutual {
+  color: #0f9c86;
+  background: #e4f8f3;
+}
+
+.pf-name small.is-follows-me {
+  color: var(--header-nav);
+  background: var(--surface-alt);
+}
+
+.pf-joined strong {
+  font-weight: 800;
+  color: var(--text);
+}
+
+.rn-hint {
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--header-nav);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+
+.rn-hint a {
+  font-weight: 800;
+  color: var(--text);
+}

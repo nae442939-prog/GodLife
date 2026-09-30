@@ -30,6 +30,7 @@ public enum ErrorCode {
     PHONE_NOT_REGISTERED(HttpStatus.FORBIDDEN, "휴대폰 인증을 마친 회원만 이용할 수 있습니다."),
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없어요."),
+    CANNOT_FOLLOW(HttpStatus.FORBIDDEN, "팔로우할 수 없는 회원이에요."),
 
     CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 카테고리입니다."),
     CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "챌린지를 찾을 수 없습니다."),

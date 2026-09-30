@@ -12,10 +12,13 @@ import java.util.List;
  * 챌린지는 공개 챌린지 중 참여 중인 것만 (비공개 챌린지는 보이지 않는다).
  * @param successRate 누적 성공률 (끝난 챌린지가 없으면 null)
  * @param mine        내 프로필인지
+ * @param following   내가 이 사람을 팔로우 중인지 (비로그인·내 프로필이면 false)
+ * @param followsMe   이 사람이 나를 팔로우하는지
  */
 public record ProfileResponse(Long id, String nickname, String profileImageUrl, String bio, LocalDate joinedAt,
                               long monthVerify, long maxStreak, Double successRate, long completedCount,
-                              List<ProfileChallenge> challenges, boolean mine) {
+                              List<ProfileChallenge> challenges, boolean mine,
+                              long followerCount, long followingCount, boolean following, boolean followsMe) {
 
     public record ProfileChallenge(Long id, String title, CategoryResponse category, ChallengeMode mode,
                                    LocalDate startDate, LocalDate endDate, long totalDays, boolean inProgress) {

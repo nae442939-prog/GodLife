@@ -6,6 +6,7 @@ import com.godlife.backend.challenge.ChallengeParticipantRepository;
 import com.godlife.backend.challenge.ChallengeRepository;
 import com.godlife.backend.challenge.ParticipantStatus;
 import com.godlife.backend.challenge.dto.CategoryResponse;
+import com.godlife.backend.follow.FollowRepository;
 import com.godlife.backend.ranking.dto.ChallengeRankingResponse;
 import com.godlife.backend.ranking.dto.UserRankingResponse;
 import com.godlife.backend.ranking.dto.UserRankingResponse.Entry;
@@ -21,13 +22,17 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 랭킹 메뉴.
  * - 전체(개인): 이번 달 인증 수 · 최장 연속 · 이번 달 보상 · 누적 성공률. 상위 N명 + 내 순위. 같은 값이면 같은 순위.
+ * - 친구: 같은 기준을 나 + 내가 팔로우한 사람 안에서만.
  * - 챌린지(팀): 진행 중인 공개 챌린지를 참가자 평균 달성률(어제까지 끝난 기간 기준)로.
  */
 @Service
@@ -75,6 +80,7 @@ public class RankingService {
                     """);
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final FollowRepository followRepository;
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository participantRepository;
     private final VerificationRepository verificationRepository;
@@ -83,18 +89,33 @@ public class RankingService {
     /** 전체 랭킹 상위 N명 + 내 줄 (viewerId 가 없거나 기록이 없으면 me = null) */
     @Transactional(readOnly = true)
     public UserRankingResponse users(RankingMetric metric, Long viewerId) {
+        return users(metric, viewerId, null);
+    }
+
+    /** 친구 랭킹: 나 + 내가 팔로우한 사람끼리만 같은 기준으로 */
+    @Transactional(readOnly = true)
+    public UserRankingResponse friends(RankingMetric metric, Long viewerId) {
+        Set<Long> scope = new HashSet<>(followRepository.followingIds(viewerId));
+        scope.add(viewerId);
+        return users(metric, viewerId, scope);
+    }
+
+    /** scope 가 있으면 그 회원들 안에서만 순위를 매긴다 (없으면 전체) */
+    private UserRankingResponse users(RankingMetric metric, Long viewerId, Collection<Long> scope) {
         String metricSql = METRIC_SQL.get(metric);
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("monthStart", LocalDate.now(clock).withDayOfMonth(1))
-                .addValue("limit", TOP);
+                .addValue("limit", TOP)
+                .addValue("scope", scope);
+        String inScope = scope == null ? "" : " AND r.uid IN (:scope)";
 
         List<Row> rows = jdbc.query("""
                 SELECT r.uid, r.val, u.nickname, u.profile_image_url
                 FROM (%s) r JOIN users u ON u.id = r.uid
-                WHERE u.status = 'ACTIVE' AND r.val > 0
+                WHERE u.status = 'ACTIVE' AND r.val > 0%s
                 ORDER BY r.val DESC, u.id
                 LIMIT :limit
-                """.formatted(metricSql), params,
+                """.formatted(metricSql, inScope), params,
                 (rs, i) -> new Row(rs.getLong("uid"), rs.getDouble("val"), rs.getString("nickname"),
                         rs.getString("profile_image_url")));
 
@@ -107,7 +128,7 @@ public class RankingService {
             }
             top.add(new Entry(rank, r.uid(), r.nickname(), r.profileImageUrl(), r.val(), r.uid().equals(viewerId)));
         }
-        return new UserRankingResponse(top, viewerId == null ? null : me(metricSql, params, viewerId));
+        return new UserRankingResponse(top, viewerId == null ? null : me(metricSql, inScope, params, viewerId));
     }
 
     /** 한 사람의 기준 값 (기록이 없으면 0) — 프로필용 */
@@ -129,7 +150,7 @@ public class RankingService {
     }
 
     /** 내 값과 순위 (나보다 값이 큰 사람 수 + 1) */
-    private Entry me(String metricSql, MapSqlParameterSource params, Long viewerId) {
+    private Entry me(String metricSql, String inScope, MapSqlParameterSource params, Long viewerId) {
         params.addValue("me", viewerId);
         List<Row> mine = jdbc.query("""
                 SELECT r.uid, r.val, u.nickname, u.profile_image_url
@@ -145,8 +166,8 @@ public class RankingService {
         params.addValue("myVal", me.val());
         Integer higher = jdbc.queryForObject("""
                 SELECT COUNT(*) FROM (%s) r JOIN users u ON u.id = r.uid
-                WHERE u.status = 'ACTIVE' AND r.val > :myVal
-                """.formatted(metricSql), params, Integer.class);
+                WHERE u.status = 'ACTIVE' AND r.val > :myVal%s
+                """.formatted(metricSql, inScope), params, Integer.class);
         return new Entry((higher == null ? 0 : higher) + 1, me.uid(), me.nickname(), me.profileImageUrl(), me.val(),
                 true);
     }
