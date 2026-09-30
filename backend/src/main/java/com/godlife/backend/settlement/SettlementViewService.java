@@ -99,8 +99,8 @@ public class SettlementViewService {
                     || r.currentStreak() != prev.currentStreak()) {
                 rank = i + 1;
             }
-            result.add(new RankingResponse(rank, r.nickname(), r.profileImageUrl(), r.successDays(), r.maxStreak(),
-                    r.currentStreak(), r.userId().equals(userId)));
+            result.add(new RankingResponse(rank, r.userId(), r.nickname(), r.profileImageUrl(), r.successDays(),
+                    r.maxStreak(), r.currentStreak(), r.userId().equals(userId)));
             prev = r;
         }
         return result;

@@ -234,6 +234,11 @@ export const settlementApi = {
   ranking: (challengeId) => apiFetch(`/api/challenges/${challengeId}/ranking`),
 }
 
+// 회원 프로필 (비로그인도 볼 수 있음)
+export const profileApi = {
+  get: (userId) => apiFetch(`/api/users/${userId}/profile`),
+}
+
 // 랭킹 메뉴 (비로그인도 볼 수 있음, 로그인하면 내 순위가 같이 온다)
 export const rankingApi = {
   // metric = month_verify | max_streak | month_reward | success_rate

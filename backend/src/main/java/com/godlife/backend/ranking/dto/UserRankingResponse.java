@@ -8,6 +8,6 @@ import java.util.List;
  */
 public record UserRankingResponse(List<Entry> top, Entry me) {
 
-    public record Entry(int rank, String nickname, String profileImageUrl, double value, boolean mine) {
+    public record Entry(int rank, Long userId, String nickname, String profileImageUrl, double value, boolean mine) {
     }
 }

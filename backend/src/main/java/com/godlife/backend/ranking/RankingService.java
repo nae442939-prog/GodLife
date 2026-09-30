@@ -105,9 +105,27 @@ public class RankingService {
             if (i == 0 || r.val() != rows.get(i - 1).val()) {
                 rank = i + 1;
             }
-            top.add(new Entry(rank, r.nickname(), r.profileImageUrl(), r.val(), r.uid().equals(viewerId)));
+            top.add(new Entry(rank, r.uid(), r.nickname(), r.profileImageUrl(), r.val(), r.uid().equals(viewerId)));
         }
         return new UserRankingResponse(top, viewerId == null ? null : me(metricSql, params, viewerId));
+    }
+
+    /** 한 사람의 기준 값 (기록이 없으면 0) — 프로필용 */
+    @Transactional(readOnly = true)
+    public double valueOf(RankingMetric metric, Long userId) {
+        Double v = valueOrNull(metric, userId);
+        return v == null ? 0 : v;
+    }
+
+    /** 한 사람의 기준 값 (기록이 없으면 null: 누적 성공률처럼 '없음'과 0을 구분할 때) */
+    @Transactional(readOnly = true)
+    public Double valueOrNull(RankingMetric metric, Long userId) {
+        List<Double> v = jdbc.query("SELECT r.val FROM (%s) r WHERE r.uid = :me".formatted(METRIC_SQL.get(metric)),
+                new MapSqlParameterSource()
+                        .addValue("monthStart", LocalDate.now(clock).withDayOfMonth(1))
+                        .addValue("me", userId),
+                (rs, i) -> rs.getDouble("val"));
+        return v.isEmpty() ? null : v.get(0);
     }
 
     /** 내 값과 순위 (나보다 값이 큰 사람 수 + 1) */
@@ -129,7 +147,8 @@ public class RankingService {
                 SELECT COUNT(*) FROM (%s) r JOIN users u ON u.id = r.uid
                 WHERE u.status = 'ACTIVE' AND r.val > :myVal
                 """.formatted(metricSql), params, Integer.class);
-        return new Entry((higher == null ? 0 : higher) + 1, me.nickname(), me.profileImageUrl(), me.val(), true);
+        return new Entry((higher == null ? 0 : higher) + 1, me.uid(), me.nickname(), me.profileImageUrl(), me.val(),
+                true);
     }
 
     /** 챌린지(팀) 랭킹: 진행 중인 공개 챌린지, 2명 이상, 끝난 기간이 하루 이상 있는 것만 */
