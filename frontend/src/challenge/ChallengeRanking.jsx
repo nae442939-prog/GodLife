@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { settlementApi } from '../api/client.js'
 import { Avatar } from '../components/UserMenu.jsx'
 
@@ -46,23 +47,28 @@ export function ChallengeRanking({ challengeId }) {
 
 function Row({ row: r }) {
   return (
-    <li className={`rk-row${r.mine ? ' is-mine' : ''}${r.rank <= 3 ? ` is-top${r.rank}` : ''}`}>
-      <span className="rk-rank">{r.rank}</span>
-      {r.profileImageUrl ? (
-        <Avatar src={r.profileImageUrl} size={30} />
-      ) : (
-        <span className="rk-initial" aria-hidden="true">
-          {r.nickname.slice(0, 1)}
+    <li className={`rk-row is-link${r.mine ? ' is-mine' : ''}${r.rank <= 3 ? ` is-top${r.rank}` : ''}`}>
+      <Link to={`/users/${r.userId}`} className="rk-row-link" aria-label={`${r.nickname} 프로필 보기`}>
+        <span className="rk-rank">{r.rank}</span>
+        {r.profileImageUrl ? (
+          <Avatar src={r.profileImageUrl} size={30} />
+        ) : (
+          <span className="rk-initial" aria-hidden="true">
+            {r.nickname.slice(0, 1)}
+          </span>
+        )}
+        <span className="rk-name">
+          {r.nickname}
+          {r.mine && <small>나</small>}
         </span>
-      )}
-      <span className="rk-name">
-        {r.nickname}
-        {r.mine && <small>나</small>}
-      </span>
-      <span className="rk-stat">
-        인증 <strong>{r.successDays}</strong>회
-        <span className="rk-streak">최장 {r.maxStreak}일</span>
-      </span>
+        <span className="rk-stat">
+          인증 <strong>{r.successDays}</strong>회
+          <span className="rk-streak">최장 {r.maxStreak}일</span>
+        </span>
+        <span className="rk-go" aria-hidden="true">
+          프로필 보기 ›
+        </span>
+      </Link>
     </li>
   )
 }

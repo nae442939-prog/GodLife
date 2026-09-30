@@ -144,14 +144,16 @@ export function ChallengeDetailView({
             <ul className="dt-people">
               {c.participants.map((p, i) => (
                 <li key={`${p.nickname}-${i}`}>
-                  {p.profileImageUrl ? (
-                    <Avatar src={p.profileImageUrl} size={34} />
-                  ) : (
-                    <span className={`dt-initial t${i % TINTS}`} aria-hidden="true">
-                      {p.nickname.slice(0, 1)}
-                    </span>
-                  )}
-                  <span>{p.nickname}</span>
+                  <Link to={`/users/${p.userId}`} className="dt-person">
+                    {p.profileImageUrl ? (
+                      <Avatar src={p.profileImageUrl} size={34} />
+                    ) : (
+                      <span className={`dt-initial t${i % TINTS}`} aria-hidden="true">
+                        {p.nickname.slice(0, 1)}
+                      </span>
+                    )}
+                    <span>{p.nickname}</span>
+                  </Link>
                 </li>
               ))}
             </ul>

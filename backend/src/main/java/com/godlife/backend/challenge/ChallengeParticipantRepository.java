@@ -43,6 +43,8 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     /** 이 챌린지에서 아직 판정 전(ACTIVE)인 참가자 (종료 판정용) */
     List<ChallengeParticipant> findByChallengeIdAndStatus(Long challengeId, ParticipantStatus status);
 
+    long countByUserIdAndStatus(Long userId, ParticipantStatus status);
+
     List<ChallengeParticipant> findByChallengeIdAndStatusIn(Long challengeId, Collection<ParticipantStatus> statuses);
 
     /** 챌린지 랭킹: 남아 있는 참가자(참여 중·성공·실패)를 인증 횟수 → 최장 연속 → 현재 연속 순으로 */

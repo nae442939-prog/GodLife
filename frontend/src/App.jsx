@@ -11,6 +11,7 @@ import { ChallengeInvitePage } from './pages/ChallengeInvitePage.jsx'
 import { ChallengeMinePage } from './pages/ChallengeMinePage.jsx'
 import { WalletPage } from './pages/WalletPage.jsx'
 import { RankingPage } from './pages/RankingPage.jsx'
+import { ProfilePage } from './pages/ProfilePage.jsx'
 import { ChallengeListPage } from './pages/ChallengeListPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/find-password" element={<FindPasswordPage />} />
         <Route path="/challenges" element={<ChallengeListPage />} />
         <Route path="/rankings" element={<RankingPage />} />
+        <Route path="/users/:id" element={<ProfilePage />} />
         <Route path="/challenges/:id" element={<ChallengeDetailPage />} />
         <Route path="/challenges/join/:code" element={<ChallengeInvitePage />} />
 

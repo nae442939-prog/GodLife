@@ -29,6 +29,8 @@ public enum ErrorCode {
     INVALID_RESET_TOKEN(HttpStatus.BAD_REQUEST, "비밀번호 재설정 시간이 지났습니다. 처음부터 다시 진행해 주세요."),
     PHONE_NOT_REGISTERED(HttpStatus.FORBIDDEN, "휴대폰 인증을 마친 회원만 이용할 수 있습니다."),
 
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없어요."),
+
     CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 카테고리입니다."),
     CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "챌린지를 찾을 수 없습니다."),
     INVITE_NOT_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 초대 링크입니다. 링크가 바뀌었는지 개설자에게 물어보세요."),

@@ -5570,39 +5570,34 @@ a.back-button:hover {
   transform-origin: bottom;
 }
 
-/* 등수는 메달 원 안에 */
+/* 등수는 단상 앞면에 새긴(음각) 숫자: 단상보다 한 톤 진한 같은 색 + 아래쪽 하이라이트·위쪽 그늘 */
 .pd-rank {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  font-size: 1.4rem;
-  font-weight: 800;
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: var(--pd-ink);
-  background: rgba(255, 255, 255, 0.55);
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55), 0 -1px 0 rgba(0, 0, 0, 0.18);
+  opacity: 0.85;
 }
 
 .pd-col.is-silver .pd-block {
   --pd-top: #f4f4f2;
-  --pd-ink: #7c8088;
+  --pd-ink: #9a9ea6;
   height: 110px;
   background: linear-gradient(180deg, #e3e4e2, #b9bcc2);
 }
 
 .pd-col.is-gold .pd-block {
   --pd-top: #fbe7ae;
-  --pd-ink: #b8791c;
+  --pd-ink: #c58a24;
   height: 152px;
   background: linear-gradient(180deg, #f5d27a, #dd9c2e);
 }
 
 .pd-col.is-bronze .pd-block {
   --pd-top: #f6d6bc;
-  --pd-ink: #a8622f;
+  --pd-ink: #b06d3d;
   height: 84px;
   background: linear-gradient(180deg, #ebb58c, #c97f4b);
 }
@@ -5630,9 +5625,7 @@ a.back-button:hover {
   }
 
   .pd-rank {
-    width: 34px;
-    height: 34px;
-    font-size: 1.1rem;
+    font-size: 1.9rem;
   }
 
   .pd-col.is-silver .pd-block {
@@ -5645,5 +5638,475 @@ a.back-button:hover {
 
   .pd-col.is-bronze .pd-block {
     height: 60px;
+  }
+}
+
+/* ---------- 프로필로 가는 링크 (랭킹 · 시상대 · 참가자) ---------- */
+
+.rk-link,
+.pd-name,
+.dt-person {
+  color: inherit;
+  font-weight: inherit;
+}
+
+.rk-link:hover,
+.pd-name:hover,
+.dt-person:hover span {
+  text-decoration: none;
+  color: var(--header-nav);
+}
+
+.dt-person {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dt-person:hover {
+  text-decoration: none;
+}
+
+.pd-avatar-link {
+  display: block;
+  margin-left: -12px;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.pd-avatar-link:first-child {
+  margin-left: 0;
+}
+
+.pd-avatar-link .pd-avatar {
+  margin-left: 0;
+}
+
+.pd-avatar-link:hover {
+  z-index: 1;
+  transform: translateY(-3px);
+}
+
+/* ---------- 회원 프로필 (사용자 시안: 프로필+기록 한 카드, 챌린지 목록 한 카드) ---------- */
+
+.pf-page {
+  max-width: 900px;
+}
+
+.pf-card {
+  margin-top: 16px;
+  padding: 30px 32px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(40, 30, 10, 0.035);
+}
+
+.pf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pf-identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.pf-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #7a4f22;
+  object-fit: cover;
+  background: linear-gradient(150deg, #f0dcc8, #dba36a);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px #f0e4d0;
+}
+
+.pf-info {
+  min-width: 0;
+}
+
+.pf-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.pf-name small {
+  padding: 2px 9px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0f9c86;
+  background: #e4f8f3;
+  border-radius: 999px;
+}
+
+.pf-bio {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: var(--header-nav);
+}
+
+.pf-joined {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pf-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.pf-follow,
+.pf-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.pf-follow {
+  color: #ffffff;
+  background: var(--text);
+  border: 0;
+}
+
+.pf-msg {
+  padding: 10px 18px;
+  color: var(--header-nav);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.pf-follow:disabled,
+.pf-msg:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 기록 4칸: 카드 안에서 얇은 선으로만 나눈다 */
+.pf-stats {
+  display: flex;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pf-stat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 6px 20px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+.pf-stat + .pf-stat {
+  border-left: 1px solid var(--border);
+}
+
+.pf-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 10px;
+  border-radius: 9px;
+}
+
+.pf-stat.is-verify .pf-stat-icon {
+  color: #0f9c86;
+  background: #e4f8f3;
+}
+
+.pf-stat.is-streak .pf-stat-icon {
+  color: #e2593f;
+  background: #fde3dc;
+}
+
+.pf-stat.is-rate .pf-stat-icon {
+  color: #948e7c;
+  background: #f1efe9;
+}
+
+.pf-stat.is-done .pf-stat-icon {
+  color: #c2932a;
+  background: #fdeee1;
+}
+
+.pf-stat strong {
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-stat strong.is-empty {
+  color: #b3ada0;
+}
+
+.pf-stat > span:last-child {
+  margin-top: 3px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pf-section-title {
+  margin: 32px 0 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* 참여 중인 챌린지: 흰 목록 카드 하나 */
+.pf-list {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.pf-row {
+  --cat: var(--muted);
+}
+
+.pf-row + .pf-row {
+  border-top: 1px solid var(--border);
+}
+
+.pf-row.cat-1 {
+  --cat: var(--primary);
+}
+
+.pf-row.cat-2 {
+  --cat: var(--accent-blue);
+}
+
+.pf-row.cat-3 {
+  --cat: var(--accent-mint);
+}
+
+.pf-row.cat-4 {
+  --cat: var(--accent-amber);
+}
+
+.pf-row.cat-5 {
+  --cat: var(--header-nav);
+}
+
+.pf-row-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  color: var(--text);
+  font-weight: inherit;
+  transition: background 0.15s;
+}
+
+.pf-row-link:hover {
+  text-decoration: none;
+  background: var(--surface-alt);
+}
+
+.pf-row-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--cat);
+  background: color-mix(in srgb, var(--cat) 16%, transparent);
+  border-radius: 12px;
+}
+
+.pf-row-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pf-row-title {
+  overflow: hidden;
+  font-size: 0.92rem;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pf-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pf-tag {
+  padding: 2px 8px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: #948e7c;
+  background: #f1efe9;
+  border-radius: 999px;
+}
+
+.pf-tag.is-live {
+  color: #0f9c86;
+  background: #e4f8f3;
+}
+
+.pf-row-bar {
+  width: 200px;
+  max-width: 100%;
+  height: 5px;
+  margin-top: 9px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--text) 6%, var(--surface));
+  border-radius: 999px;
+}
+
+.pf-row-bar span {
+  display: block;
+  height: 100%;
+  background: var(--cat);
+  border-radius: inherit;
+}
+
+@media (max-width: 640px) {
+  .pf-card {
+    padding: 22px 18px 4px;
+  }
+
+  .pf-head {
+    flex-wrap: wrap;
+  }
+
+  .pf-actions {
+    width: 100%;
+  }
+
+  .pf-follow,
+  .pf-msg {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .pf-stats {
+    flex-wrap: wrap;
+  }
+
+  .pf-stat {
+    flex: 1 1 50%;
+  }
+
+  .pf-stat:nth-child(3) {
+    border-left: 0;
+  }
+}
+
+/* ---------- 랭킹 줄: 줄 전체가 프로필 링크, 마우스를 올리면 누구를 고르는지 보이게 ---------- */
+
+.rk-row.is-link {
+  position: relative;
+  padding: 0;
+}
+
+.rk-row-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 16px;
+  color: var(--text);
+  font-weight: inherit;
+  border-radius: 12px;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.rk-row-link:hover,
+.rk-row-link:focus-visible {
+  position: relative;
+  z-index: 1;
+  text-decoration: none;
+  background: var(--surface-alt);
+  box-shadow: 0 8px 20px -10px rgba(43, 32, 20, 0.35), 0 0 0 1px var(--border);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.rk-row-link:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.rk-row-link:hover .rk-name,
+.rk-row-link:focus-visible .rk-name {
+  color: var(--header-nav);
+}
+
+/* 오른쪽 끝 '프로필 보기 ›' 는 마우스를 올렸을 때만 */
+.rk-go {
+  flex-shrink: 0;
+  max-width: 0;
+  overflow: hidden;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--header-nav);
+  opacity: 0;
+  transition: max-width 0.2s ease, opacity 0.2s ease;
+}
+
+.rk-row-link:hover .rk-go,
+.rk-row-link:focus-visible .rk-go {
+  max-width: 90px;
+  opacity: 1;
+}
+
+/* 내 줄은 떠올라도 민트 유지 */
+.rn-page .rk-row.is-mine .rk-row-link:hover,
+.rn-page .rk-row.is-mine .rk-row-link:focus-visible {
+  background: var(--rank-me);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-row-link,
+  .rk-go {
+    transition: none;
+  }
+
+  .rk-row-link:hover {
+    transform: none;
   }
 }

@@ -62,6 +62,19 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
             """)
     List<Challenge> findMine(@Param("userId") Long userId, @Param("today") LocalDate today);
 
+    /** 프로필: 이 회원이 참여 중인 공개 챌린지 (끝나지 않은 것, 시작일 순) */
+    @Query("""
+            SELECT c FROM Challenge c JOIN FETCH c.category
+            WHERE c.visibility = com.godlife.backend.challenge.ChallengeVisibility.PUBLIC
+              AND c.status IN (com.godlife.backend.challenge.ChallengeStatus.RECRUITING,
+                               com.godlife.backend.challenge.ChallengeStatus.ONGOING)
+              AND EXISTS (SELECT 1 FROM ChallengeParticipant p
+                          WHERE p.challengeId = c.id AND p.userId = :userId
+                            AND p.status = com.godlife.backend.challenge.ParticipantStatus.ACTIVE)
+            ORDER BY c.startDate, c.id
+            """)
+    List<Challenge> findPublicJoined(@Param("userId") Long userId);
+
     /** 챌린지(팀) 랭킹 후보: 진행 중인 공개 챌린지 (시작일이 지났고 아직 끝나지 않음) */
     @Query("""
             SELECT c FROM Challenge c JOIN FETCH c.category

@@ -127,20 +127,26 @@ function UserRanking({ metric, onMetric }) {
           ) : (
             <ol className="rk">
               {data.top.map((r, i) => (
-                <li key={i} className={`rk-row${r.mine ? ' is-mine' : ''}${r.rank <= 3 ? ` is-top${r.rank}` : ''}`}>
-                  <span className="rk-rank">{r.rank}</span>
-                  {r.profileImageUrl ? (
-                    <Avatar src={r.profileImageUrl} size={30} />
-                  ) : (
-                    <span className="rk-initial" aria-hidden="true">
-                      {r.nickname.slice(0, 1)}
+                <li key={i} className={`rk-row is-link${r.mine ? ' is-mine' : ''}${r.rank <= 3 ? ` is-top${r.rank}` : ''}`}>
+                  {/* 줄 전체가 프로필 링크: 마우스를 올리면 누구를 고르는지 보이게 떠오른다 */}
+                  <Link to={`/users/${r.userId}`} className="rk-row-link" aria-label={`${r.nickname} 프로필 보기`}>
+                    <span className="rk-rank">{r.rank}</span>
+                    {r.profileImageUrl ? (
+                      <Avatar src={r.profileImageUrl} size={30} />
+                    ) : (
+                      <span className="rk-initial" aria-hidden="true">
+                        {r.nickname.slice(0, 1)}
+                      </span>
+                    )}
+                    <span className="rk-name">
+                      {r.nickname}
+                      {r.mine && <small>나</small>}
                     </span>
-                  )}
-                  <span className="rk-name">
-                    {r.nickname}
-                    {r.mine && <small>나</small>}
-                  </span>
-                  <span className="rn-value">{value(r.value)}</span>
+                    <span className="rn-value">{value(r.value)}</span>
+                    <span className="rk-go" aria-hidden="true">
+                      프로필 보기 ›
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ol>
