@@ -12,6 +12,7 @@ import java.time.LocalDate;
  * @param mySuccess   내가 그 기간 목표를 채웠는지 (참가자가 아니면 null)
  * @param myRefund    그 기간 내가 돌려받을 몫
  * @param myReward    그 기간 내가 받을 보상
+ * @param myLost      그 기간 내가 못 채워서 잃은(깎인) 포인트
  * @param totalRefund 지금까지 쌓인 내 환급 (paid 면 실제로 받은 금액)
  * @param totalReward 지금까지 쌓인 내 보상 (paid 면 실제로 받은 금액)
  * @param paid        챌린지가 끝나 지갑으로 한 번에 지급됐는지
@@ -19,6 +20,6 @@ import java.time.LocalDate;
 public record SettlementSummaryResponse(int periodIndex, LocalDate periodStart, LocalDate periodEnd, boolean weekly,
                                         boolean bet, boolean settled, int successCount, int failCount,
                                         long forfeitedPool, long rewardShare,
-                                        Boolean mySuccess, long myRefund, long myReward,
+                                        Boolean mySuccess, long myRefund, long myReward, long myLost,
                                         long totalRefund, long totalReward, boolean paid) {
 }

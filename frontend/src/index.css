@@ -5175,3 +5175,45 @@ a.back-button:hover {
     animation: none;
   }
 }
+
+/* 내가 못 한 날: 응원 멘트 + 깎인 포인트 */
+.vc-intro .sr.is-missed .sr-body strong {
+  color: #f3c9a8;
+}
+
+.sr-lost {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 16px 0 4px;
+  padding: 14px 12px;
+  background: rgba(255, 143, 168, 0.08);
+  border: 1px solid rgba(255, 143, 168, 0.22);
+  border-radius: 14px;
+}
+
+.sr-lost span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #a39c8f;
+}
+
+.sr-lost strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ff8fa8;
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-lost small {
+  font-size: 0.78rem;
+  color: #8f8a7f;
+}
+
+.sr-group {
+  margin: 10px 0 0;
+  font-size: 0.84rem;
+  color: #8f8a7f;
+}
