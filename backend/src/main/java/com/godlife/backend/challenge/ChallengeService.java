@@ -254,6 +254,9 @@ public class ChallengeService {
         if (existing != null && existing.isKicked()) {
             throw new BusinessException(ErrorCode.KICKED_FROM_CHALLENGE);
         }
+        if (existing != null && existing.getStatus() == ParticipantStatus.GAVE_UP) {
+            throw new BusinessException(ErrorCode.GAVE_UP_CHALLENGE);
+        }
         if (c.isFull()) {
             throw new BusinessException(ErrorCode.CHALLENGE_FULL);
         }
@@ -274,11 +277,13 @@ public class ChallengeService {
 
     private ChallengeDetailResponse toDetail(Challenge c, Long viewerId) {
         String hostNickname = userRepository.findById(c.getHostId()).map(User::getNickname).orElse("알 수 없음");
-        boolean joined = viewerId != null && participantRepository.findByChallengeIdAndUserId(c.getId(), viewerId)
-                .filter(ChallengeParticipant::isActive)
-                .isPresent();
+        ParticipantStatus myStatus = viewerId == null ? null
+                : participantRepository.findByChallengeIdAndUserId(c.getId(), viewerId)
+                        .map(ChallengeParticipant::getStatus)
+                        .orElse(null);
+        boolean joined = myStatus == ParticipantStatus.ACTIVE;
         List<ParticipantResponse> participants = participantRepository.findParticipants(c.getId());
-        return ChallengeDetailResponse.of(c, today(), hostNickname, joined, c.isHost(viewerId),
+        return ChallengeDetailResponse.of(c, today(), hostNickname, joined, myStatus, c.isHost(viewerId),
                 isMember(c, viewerId), participants);
     }
 
@@ -308,7 +313,31 @@ public class ChallengeService {
         return inviteCode == null ? "" : inviteCode.strip().toUpperCase(Locale.ROOT);
     }
 
-    /** 시작 전 참여 취소. 시작한 뒤에 그만두는 것(포기 = 실패 처리)은 인증 기능과 함께 만든다. */
+    /**
+     * 진행 중 포기. 실패로 치고 챌린지에서 나간다(채팅·인증 사진·비공개 상세 접근 불가, 인원수에서 빠짐).
+     * 채팅방 안내에 쓸 방장 id 와 포기한 사람의 닉네임을 돌려준다.
+     * (포인트 챌린지는 정산 때 건 포인트를 돌려받지 못한다)
+     */
+    @Transactional
+    public GaveUp giveUp(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        ChallengeParticipant p = participantRepository.findByChallengeIdAndUserId(challengeId, userId)
+                .filter(ChallengeParticipant::isActive)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
+        if (!c.isInProgress(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_NOT_IN_PROGRESS);
+        }
+        p.giveUp();
+        c.removeParticipant();
+        return new GaveUp(c.getHostId(), userRepository.findById(userId).map(User::getNickname).orElse("알 수 없음"));
+    }
+
+    public record GaveUp(Long hostId, String nickname) {
+    }
+
+    /** 시작 전 참여 취소. 시작한 뒤에 그만두는 것은 포기(giveUp)다. */
     @Transactional
     public void leave(Long challengeId, Long userId) {
         Challenge c = challengeRepository.findForUpdate(challengeId)

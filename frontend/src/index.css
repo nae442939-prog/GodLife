@@ -4569,3 +4569,28 @@ a.back-button:hover {
     transition: none;
   }
 }
+
+/* ---------- 포기 · 결과 (챌린지 상세) ---------- */
+
+.dt-giveup {
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+.dt-result {
+  margin: 0;
+  padding: 14px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 12px;
+}
+
+.dt-result.is-failed {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--text) 6%, var(--bg));
+}
+
+.vf-done-pill.is-failed {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}

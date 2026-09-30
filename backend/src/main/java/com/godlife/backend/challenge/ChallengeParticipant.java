@@ -81,6 +81,16 @@ public class ChallengeParticipant {
         maxStreak = Math.max(maxStreak, currentStreak);
     }
 
+    /** 진행 중 포기. 실패로 치고 챌린지에서 나간다. */
+    void giveUp() {
+        status = ParticipantStatus.GAVE_UP;
+    }
+
+    /** 챌린지가 끝날 때 판정: 필요한 인증 횟수를 채웠으면 성공, 아니면 실패 */
+    void finish(int targetCount) {
+        status = successDays >= targetCount ? ParticipantStatus.COMPLETED : ParticipantStatus.FAILED;
+    }
+
     void kick() {
         status = ParticipantStatus.KICKED;
     }

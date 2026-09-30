@@ -147,9 +147,10 @@ public class Challenge {
         return c;
     }
 
-    /** 시작일 당일까지 참여할 수 있다. */
+    /** 시작일 당일까지 참여할 수 있다. (시작일 0시에 ONGOING 으로 바뀌어도 그날은 참여 가능) */
     public boolean isRecruiting(LocalDate today) {
-        return status == ChallengeStatus.RECRUITING && !today.isAfter(startDate);
+        return (status == ChallengeStatus.RECRUITING || status == ChallengeStatus.ONGOING)
+                && !today.isAfter(startDate);
     }
 
     /** 시작일 전날까지만 참여를 취소할 수 있다. */
@@ -192,6 +193,18 @@ public class Challenge {
         int fullWeeks = days / 7;
         int rest = days % 7;
         return fullWeeks * weeklyCount + Math.min(weeklyCount, rest);
+    }
+
+    /** 자정 스케줄러: 시작일이 되면 진행 중으로 */
+    void start() {
+        if (status == ChallengeStatus.RECRUITING) {
+            status = ChallengeStatus.ONGOING;
+        }
+    }
+
+    /** 자정 스케줄러: 종료일이 지나면 종료 (정산은 ENDED 인 챌린지를 대상으로 한다) */
+    void end() {
+        status = ChallengeStatus.ENDED;
     }
 
     public boolean isPrivate() {

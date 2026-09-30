@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { verificationApi } from '../api/client.js'
-import { closedText, timeText } from './format.js'
+import { closedText, hasProgress, timeText } from './format.js'
 
 const POLL_MS = 10_000
 
@@ -12,11 +12,13 @@ const POLL_MS = 10_000
 export function VerificationPanel({ challenge: c }) {
   const [data, setData] = useState({ mine: null, count: 0, error: '' })
 
+  const showMine = hasProgress(c)
+
   // 다른 참가자가 인증하면 게이지가 따라 올라가도록 10초마다 다시 불러온다 (화면을 보고 있을 때만)
   useEffect(() => {
     let cancelled = false
     function load() {
-      Promise.all([c.joined ? verificationApi.mine(c.id) : Promise.resolve(null), verificationApi.list(c.id)])
+      Promise.all([showMine ? verificationApi.mine(c.id) : Promise.resolve(null), verificationApi.list(c.id)])
         .then(([mine, items]) => !cancelled && setData({ mine, count: items.length, error: '' }))
         .catch((err) => !cancelled && setData((d) => ({ ...d, error: err.message })))
     }
@@ -26,7 +28,7 @@ export function VerificationPanel({ challenge: c }) {
       cancelled = true
       clearInterval(timer)
     }
-  }, [c.id, c.joined])
+  }, [c.id, showMine])
 
   const { mine, count, error } = data
   const verifyPath = `/challenges/${c.id}/verify`
@@ -37,11 +39,17 @@ export function VerificationPanel({ challenge: c }) {
       <div className="vf-head">
         <h2>오늘의 인증</h2>
         {/* 오늘 인증을 마쳤으면 큰 박스 대신 제목 옆 작은 표시로 */}
-        {mine?.state === 'DONE_TODAY' && (
-          <span className="vf-done-pill">
-            <CheckIcon />
-            오늘 인증 완료
-          </span>
+        {mine?.status === 'COMPLETED' ? (
+          <span className="vf-done-pill">성공 🎉</span>
+        ) : mine?.status === 'FAILED' ? (
+          <span className="vf-done-pill is-failed">아쉽게 실패</span>
+        ) : (
+          mine?.state === 'DONE_TODAY' && (
+            <span className="vf-done-pill">
+              <CheckIcon />
+              오늘 인증 완료
+            </span>
+          )
         )}
       </div>
       {error && <p className="form-error">{error}</p>}

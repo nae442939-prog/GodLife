@@ -18,7 +18,7 @@ public interface VerificationRepository extends JpaRepository<Verification, Long
 
     boolean existsByImageHash(String imageHash);
 
-    /** 그날 챌린지 참가자들의 인증 (내보낸 사람 제외), 먼저 올린 순. mine 은 서비스에서 채운다. */
+    /** 그날 챌린지 참가자들의 인증 (내보내졌거나 포기하고 나간 사람 제외), 먼저 올린 순. mine 은 서비스에서 채운다. */
     @Query("""
             SELECT new com.godlife.backend.verification.dto.VerificationResponse(
                        v.id, u.id, u.nickname, u.profileImageUrl, v.receivedAt, false)
@@ -26,19 +26,21 @@ public interface VerificationRepository extends JpaRepository<Verification, Long
               JOIN com.godlife.backend.challenge.ChallengeParticipant p ON p.id = v.participantId
               JOIN com.godlife.backend.user.User u ON u.id = p.userId
             WHERE p.challengeId = :challengeId AND v.verifyDate = :date
-              AND p.status <> com.godlife.backend.challenge.ParticipantStatus.KICKED
+              AND p.status NOT IN (com.godlife.backend.challenge.ParticipantStatus.KICKED,
+                                   com.godlife.backend.challenge.ParticipantStatus.GAVE_UP)
             ORDER BY v.receivedAt, v.id
             """)
     List<VerificationResponse> findByChallengeAndDate(@Param("challengeId") Long challengeId,
                                                       @Param("date") LocalDate date);
 
-    /** 이 챌린지의 인증 사진 파일 키 (내보낸 사람 것은 가린다) */
+    /** 이 챌린지의 인증 사진 파일 키 (내보내졌거나 포기한 사람 것은 가린다) */
     @Query("""
             SELECT v.imageKey
             FROM Verification v
               JOIN com.godlife.backend.challenge.ChallengeParticipant p ON p.id = v.participantId
             WHERE v.id = :id AND p.challengeId = :challengeId
-              AND p.status <> com.godlife.backend.challenge.ParticipantStatus.KICKED
+              AND p.status NOT IN (com.godlife.backend.challenge.ParticipantStatus.KICKED,
+                                   com.godlife.backend.challenge.ParticipantStatus.GAVE_UP)
             """)
     Optional<String> findImageKey(@Param("challengeId") Long challengeId, @Param("id") Long id);
 }

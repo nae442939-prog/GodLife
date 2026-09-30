@@ -101,12 +101,12 @@ public class VerificationService {
                 .toList();
     }
 
-    /** 내 인증 현황 (참여 중인 사람만) */
+    /** 내 인증 현황 (참여 중이거나, 끝난 챌린지에서 성공·실패 판정을 받은 사람) */
     @Transactional(readOnly = true)
     public MyVerificationResponse mine(Long challengeId, Long userId) {
         challengeService.requireMember(challengeId, userId);
         ChallengeParticipant participant = participantRepository.findByChallengeIdAndUserId(challengeId, userId)
-                .filter(ChallengeParticipant::isActive)
+                .filter(p -> p.getStatus().isMember())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
@@ -116,7 +116,7 @@ public class VerificationService {
         Integer weekCount = challenge.getFrequencyType() == FrequencyType.WEEKLY_N && challenge.isInProgress(today)
                 ? (int) countThisWeek(challenge, participant, today)
                 : null;
-        return new MyVerificationResponse(stateOf(challenge, participant, now), today,
+        return new MyVerificationResponse(stateOf(challenge, participant, now), participant.getStatus(), today,
                 participant.getSuccessDays(), challenge.targetCount(), participant.getCurrentStreak(),
                 participant.getMaxStreak(), weekCount);
     }
@@ -157,7 +157,7 @@ public class VerificationService {
         if (today.isBefore(c.getStartDate())) {
             return VerifyState.NOT_STARTED;
         }
-        if (!c.isInProgress(today)) {
+        if (!c.isInProgress(today) || !p.isActive()) {
             return VerifyState.ENDED;
         }
         if (verificationRepository.existsByParticipantIdAndVerifyDate(p.getId(), today)) {

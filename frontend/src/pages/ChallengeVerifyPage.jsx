@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { challengeApi, verificationApi } from '../api/client.js'
-import { closedText } from '../challenge/format.js'
+import { closedText, hasProgress } from '../challenge/format.js'
 import { VerifyPhoto } from '../challenge/VerifyPhoto.jsx'
 
 const MAX_SIDE = 1600
@@ -27,7 +27,7 @@ export function ChallengeVerifyPage() {
       .get(id)
       .then((challenge) =>
         Promise.all([
-          challenge.joined ? verificationApi.mine(id) : Promise.resolve(null),
+          hasProgress(challenge) ? verificationApi.mine(id) : Promise.resolve(null),
           verificationApi.list(id),
         ]).then(([mine, items]) => !cancelled && setData({ challenge, mine, items, error: '' })),
       )
