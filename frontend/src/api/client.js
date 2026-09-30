@@ -227,6 +227,13 @@ export const verificationApi = {
   },
 }
 
+// 정산 결과 · 챌린지 랭킹 (개설자·참가자만)
+export const settlementApi = {
+  // 가장 최근에 끝난 기간(어제 / 지난주) 결과. 아직 없으면 null (204)
+  latest: (challengeId) => apiFetch(`/api/challenges/${challengeId}/settlements/latest`),
+  ranking: (challengeId) => apiFetch(`/api/challenges/${challengeId}/ranking`),
+}
+
 // 포인트 지갑. 충전 포인트(참가비·결제 취소 환불 대상)와 보상 포인트(상점 전용)를 따로 보여 준다.
 export const walletApi = {
   get: () => apiFetch('/api/wallet'),

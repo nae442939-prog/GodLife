@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -163,6 +164,25 @@ public class WalletService {
                 participantId, "refund:" + participantId + ":" + seq);
     }
 
+    /**
+     * 정산 지급 (환급·보상). 지갑을 잠그고, 같은 멱등 키가 이미 있으면 그 줄을 돌려준다 → 정산이 두 번 돌아도 한 번만 지급.
+     * 지급한 원장 줄 id (금액이 0이면 null).
+     * 부르는 쪽(정산)이 챌린지 행을 잠근 트랜잭션 안에서 부른다.
+     */
+    @Transactional
+    public Long settle(Long userId, PointTxType type, PointSource source, long amount,
+                       String refType, Long refId, String key) {
+        if (amount <= 0) {
+            return null;
+        }
+        Wallet wallet = lock(userId);
+        Optional<PointTransaction> existing = txRepository.findByIdempotencyKey(key);
+        if (existing.isPresent()) {
+            return existing.get().getId();
+        }
+        return record(wallet, type, source, amount, refType, refId, key).getId();
+    }
+
     private static BusinessException insufficient(long amount, long charged) {
         return new BusinessException(ErrorCode.INSUFFICIENT_POINTS,
                 "충전 포인트가 모자라요. 참가 포인트 %,dP, 지금 %,dP 있어요.".formatted(amount, charged));
@@ -186,12 +206,12 @@ public class WalletService {
         }
     }
 
-    private void record(Wallet wallet, PointTxType type, PointSource source, long amount,
-                        String refType, Long refId, String key) {
+    private PointTransaction record(Wallet wallet, PointTxType type, PointSource source, long amount,
+                                    String refType, Long refId, String key) {
         long after = wallet.apply(source, amount);
         try {
-            txRepository.saveAndFlush(PointTransaction.of(wallet.getId(), type, source, amount, after, refType, refId,
-                    key, LocalDateTime.now(clock)));
+            return txRepository.saveAndFlush(PointTransaction.of(wallet.getId(), type, source, amount, after, refType,
+                    refId, key, LocalDateTime.now(clock)));
         } catch (DataIntegrityViolationException e) {
             // 잠금으로 이미 막히지만, 멱등 키 유니크 제약이 마지막 안전장치다
             throw new BusinessException(ErrorCode.DUPLICATE_REQUEST);
@@ -210,7 +230,7 @@ public class WalletService {
                 newbie, recent);
     }
 
-    /** 거래 내역 한 페이지 (최신순). 챌린지 참가비·환급에는 챌린지 제목을 붙인다. */
+    /** 거래 내역 한 페이지 (최신순). 챌린지 참가비·환급·정산에는 챌린지 제목을 붙인다. */
     private List<PointTransactionResponse> page(Long walletId, int page) {
         List<PointTransaction> txs = txRepository
                 .findByWalletIdOrderByIdDesc(walletId, PageRequest.of(Math.max(page, 0), PAGE_SIZE)).getContent();
@@ -221,9 +241,18 @@ public class WalletService {
         Map<Long, String> titles = participantIds.isEmpty() ? Map.of()
                 : txRepository.findChallengeTitles(participantIds).stream()
                         .collect(Collectors.toMap(row -> (Long) row[0], row -> (String) row[1]));
+        Set<Long> settlementIds = txs.stream()
+                .filter(t -> PointTransaction.REF_SETTLEMENT.equals(t.getRefType()) && t.getRefId() != null)
+                .map(PointTransaction::getRefId)
+                .collect(Collectors.toSet());
+        Map<Long, String> settlementTitles = settlementIds.isEmpty() ? Map.of()
+                : txRepository.findSettlementTitles(settlementIds).stream()
+                        .collect(Collectors.toMap(row -> (Long) row[0], row -> (String) row[1]));
         return txs.stream()
-                .map(t -> PointTransactionResponse.from(t, PointTransaction.REF_PARTICIPANT.equals(t.getRefType())
-                        ? titles.get(t.getRefId()) : null))
+                .map(t -> PointTransactionResponse.from(t,
+                        PointTransaction.REF_SETTLEMENT.equals(t.getRefType()) ? settlementTitles.get(t.getRefId())
+                                : PointTransaction.REF_PARTICIPANT.equals(t.getRefType()) ? titles.get(t.getRefId())
+                                : null))
                 .toList();
     }
 

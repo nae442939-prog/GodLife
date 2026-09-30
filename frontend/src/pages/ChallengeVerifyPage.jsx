@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { challengeApi, verificationApi } from '../api/client.js'
 import { closedText, hasProgress } from '../challenge/format.js'
+import { SettlementIntro } from '../challenge/SettlementIntro.jsx'
 import { VerifyPhoto } from '../challenge/VerifyPhoto.jsx'
 
 const MAX_SIDE = 1600
@@ -49,6 +50,8 @@ export function ChallengeVerifyPage() {
         </Link>
         <span className="vc-nav-title">{c?.title}</span>
       </header>
+
+      {c && <SettlementIntro challengeId={c.id} />}
 
       {error && !c ? (
         <div className="vc-body">

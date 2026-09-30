@@ -130,7 +130,7 @@ class ChallengeLifecycleTest {
         lifecycle.run(today.plusDays(1));
         lifecycle.run(today.plusDays(1)); // 두 번 돌아도 결과가 같다
 
-        detail(id, friend).andExpect(jsonPath("$.status").value("ENDED"))
+        detail(id, friend).andExpect(jsonPath("$.status").value("SETTLED")) // 무료 챌린지는 종료와 함께 정산 완료
                 .andExpect(jsonPath("$.myStatus").value("COMPLETED"));
         detail(id, friend2).andExpect(jsonPath("$.myStatus").value("FAILED"));
         mvc.perform(get("/api/challenges/" + id + "/verifications/me").header("Authorization", "Bearer " + friend))

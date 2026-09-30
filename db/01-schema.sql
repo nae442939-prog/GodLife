@@ -397,6 +397,25 @@ CREATE TABLE settlement_items (
   CONSTRAINT ck_sitems_amounts CHECK (success_rate BETWEEN 0 AND 100 AND refund_amount >= 0 AND reward_amount >= 0 AND forfeit_amount >= 0)
 ) ENGINE=InnoDB COMMENT='정산 상세';
 
+-- 매일 결과 (포인트 챌린지): 하루(주 N회는 한 주) 몫 단위로 성공자 환급 예정 + 실패분을 그날 성공자에게 보상 예정. 지급은 끝날 때 한 번에
+CREATE TABLE daily_settlements (
+  id             BIGINT   NOT NULL AUTO_INCREMENT,
+  challenge_id   BIGINT   NOT NULL,
+  period_start   DATE     NOT NULL COMMENT '매일 챌린지는 그날, 주 N회는 그 주 첫날 (시작일부터 7일씩)',
+  period_end     DATE     NOT NULL,
+  success_count  INT      NOT NULL COMMENT '그 기간 목표를 채운 사람 수',
+  fail_count     INT      NOT NULL COMMENT '못 채운 사람 수 (포기한 사람 포함)',
+  forfeited_pool BIGINT   NOT NULL COMMENT '못 채운 사람들이 잃은 포인트 합',
+  reward_share   BIGINT   NOT NULL COMMENT '성공한 사람 한 명이 받을 보상 (상한 적용 후, 끝날 때 지급)',
+  distributed    BIGINT   NOT NULL COMMENT '나눠 줄 보상 합 (나머지·상한 초과분은 나누지 않음)',
+  settled_at     DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_daily_settlement (challenge_id, period_start),
+  CONSTRAINT fk_daily_settlement_challenge FOREIGN KEY (challenge_id) REFERENCES challenges (id),
+  CONSTRAINT ck_daily_settlement CHECK (success_count >= 0 AND fail_count >= 0 AND forfeited_pool >= 0
+    AND reward_share >= 0 AND distributed >= 0 AND distributed <= forfeited_pool)
+) ENGINE=InnoDB COMMENT='매일(주) 결과 (지급은 챌린지 종료 시 settlements 로 한 번에)';
+
 -- =====================================================================
 -- 05. 결제 (테스트 모드 전용)
 -- =====================================================================

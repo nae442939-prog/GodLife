@@ -14,6 +14,12 @@ const TYPE_LABEL = {
   ADJUST: '조정',
 }
 
+/** 챌린지가 끝나고 한 번에 받은 몫은 '챌린지 정산 환급', 나머지는 종류 이름 */
+function txLabel(t) {
+  if (t.type === 'REFUND' && t.settlement) return '챌린지 정산 환급'
+  return TYPE_LABEL[t.type] ?? t.type
+}
+
 const SOURCE_LABEL = { CHARGED: '충전', REWARD: '보상', SHOP: '상점' }
 
 const p = (n) => `${n.toLocaleString()}P`
@@ -146,7 +152,7 @@ export function WalletPage() {
             {transactions.map((t) => (
               <li key={t.id}>
                 <div className="wl-tx-main">
-                  <strong>{TYPE_LABEL[t.type] ?? t.type}</strong>
+                  <strong>{txLabel(t)}</strong>
                   <span>
                     {t.challengeTitle ?? (t.type === 'ENTRY_FEE' || t.type === 'REFUND' ? '삭제된 챌린지' : '')}
                   </span>
