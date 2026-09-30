@@ -68,20 +68,21 @@ public class SettlementViewService {
             boolean paid = totals[2] == 1;
             if (d == null) {
                 return Optional.of(new SettlementSummaryResponse(period.index(), period.start(), period.end(), weekly,
-                        true, false, 0, 0, 0, 0, mySuccess, 0, 0, totals[0], totals[1], paid));
+                        true, false, 0, 0, 0, 0, mySuccess, 0, 0, 0, totals[0], totals[1], paid));
             }
             long refund = me == null ? 0 : period.refund(c, me.getDepositAmount(), done(me, period));
+            long lost = me == null ? 0 : period.value(c, me.getDepositAmount()) - refund;
             long reward = Boolean.TRUE.equals(mySuccess) ? d.getRewardShare() : 0;
             return Optional.of(new SettlementSummaryResponse(period.index(), period.start(), period.end(), weekly,
                     true, true, d.getSuccessCount(), d.getFailCount(), d.getForfeitedPool(), d.getRewardShare(),
-                    mySuccess, refund, reward, totals[0], totals[1], paid));
+                    mySuccess, refund, reward, lost, totals[0], totals[1], paid));
         }
 
         List<ChallengeParticipant> all = participantRepository.findByChallengeIdAndStatusIn(challengeId,
                 SettlementService.SETTLED_STATUSES);
         int success = (int) all.stream().filter(p -> done(p, period) >= period.required()).count();
         return Optional.of(new SettlementSummaryResponse(period.index(), period.start(), period.end(), weekly,
-                false, true, success, all.size() - success, 0, 0, mySuccess, 0, 0, 0, 0, false));
+                false, true, success, all.size() - success, 0, 0, mySuccess, 0, 0, 0, 0, 0, false));
     }
 
     /** 챌린지 랭킹: 인증 횟수 → 최장 연속 → 현재 연속. 같은 기록이면 같은 순위. */

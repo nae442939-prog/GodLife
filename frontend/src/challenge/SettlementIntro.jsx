@@ -58,6 +58,7 @@ export function SettlementIntro({ challengeId }) {
 
 /**
  * 결과 카드. 아무도 실패하지 않았으면 응원 멘트, 포인트 챌린지면 실패분을 누가 얼마씩 나누는지와 내 환급·보상(예정).
+ * 내가 못 했으면 위로·응원 멘트와 깎인 포인트를 먼저 보여 준다.
  * 포인트는 매일 결과만 쌓이고 챌린지가 끝나면 한 번에 지급된다.
  */
 function SettlementCard({ summary: s }) {
@@ -76,6 +77,11 @@ function SettlementCard({ summary: s }) {
         <p className="sr-body">결과를 모으는 중이에요. 잠시 뒤에 다시 확인해 주세요.</p>
       </div>
     )
+  }
+
+  // 내가 그 기간 목표를 못 채웠으면: 응원 멘트 먼저, 그 아래 깎인 포인트
+  if (s.mySuccess === false) {
+    return <MissedCard summary={s} when={when} total={total} />
   }
 
   return (
@@ -128,6 +134,46 @@ function SettlementCard({ summary: s }) {
               챌린지가 끝나면 한 번에 들어와요
             </>
           )}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function MissedCard({ summary: s, when, total }) {
+  const partial = s.myRefund > 0 // 주 N회에서 일부만 채움
+  return (
+    <div className="sr is-missed">
+      <p className="sr-title">{when} 결과</p>
+      <p className="sr-body">
+        <strong>
+          {s.weekly
+            ? partial
+              ? `${when}는 목표를 다 채우지 못했어요 ㅠㅠ`
+              : `${when}는 한 번도 인증하지 못했어요 ㅠㅠ`
+            : `${when}는 인증을 못 했어요 ㅠㅠ`}
+        </strong>
+        <br />
+        괜찮아요, 다시 시작하면 돼요. {s.weekly ? '이번 주는 꼭 채워서' : '오늘은 꼭 인증하고'} 갓생 이어가요! 💪
+      </p>
+      {s.bet && s.myLost > 0 && (
+        <div className="sr-lost">
+          <span>깎인 포인트</span>
+          <strong>−{p(s.myLost)}</strong>
+          <small>
+            {s.successCount > 0
+              ? `${when} 성공한 ${s.successCount}명에게 나눠져요`
+              : '아무도 성공하지 못해서 누구에게도 나눠지지 않아요'}
+          </small>
+        </div>
+      )}
+      <p className="sr-group">
+        {total}명 중 {s.successCount}명 성공
+      </p>
+      {s.bet && (
+        <p className="sr-total">
+          지금까지 환급 <strong>{p(s.totalRefund)}</strong> · 보상 <strong>{p(s.totalReward)}</strong> 쌓였어요.
+          챌린지가 끝나면 한 번에 들어와요
         </p>
       )}
     </div>
