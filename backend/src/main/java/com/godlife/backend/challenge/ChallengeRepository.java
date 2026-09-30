@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
@@ -40,6 +41,23 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
                                      @Param("mode") ChallengeMode mode,
                                      @Param("titlePattern") String titlePattern,
                                      Pageable pageable);
+
+    /**
+     * 내 챌린지: 내가 참여 중이거나(ACTIVE) 개설한, 아직 끝나지 않은 챌린지. 시작일 순.
+     * (끝난 챌린지 기록은 갓생기록에서 본다)
+     */
+    @Query("""
+            SELECT c FROM Challenge c JOIN FETCH c.category
+            WHERE c.endDate >= :today
+              AND c.status NOT IN (com.godlife.backend.challenge.ChallengeStatus.ENDED,
+                                   com.godlife.backend.challenge.ChallengeStatus.SETTLED)
+              AND (c.hostId = :userId OR EXISTS (
+                    SELECT 1 FROM ChallengeParticipant p
+                    WHERE p.challengeId = c.id AND p.userId = :userId
+                      AND p.status = com.godlife.backend.challenge.ParticipantStatus.ACTIVE))
+            ORDER BY c.startDate, c.id
+            """)
+    List<Challenge> findMine(@Param("userId") Long userId, @Param("today") LocalDate today);
 
     @Query("SELECT c FROM Challenge c JOIN FETCH c.category WHERE c.id = :id")
     Optional<Challenge> findWithCategory(@Param("id") Long id);

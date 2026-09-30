@@ -4,9 +4,11 @@ import { RequireAuth } from './components/RequireAuth.jsx'
 import { FindIdPage } from './pages/FindIdPage.jsx'
 import { FindPasswordPage } from './pages/FindPasswordPage.jsx'
 import { ChallengeChatPage } from './pages/ChallengeChatPage.jsx'
+import { ChallengeVerifyPage } from './pages/ChallengeVerifyPage.jsx'
 import { ChallengeCreatePage } from './pages/ChallengeCreatePage.jsx'
 import { ChallengeDetailPage } from './pages/ChallengeDetailPage.jsx'
 import { ChallengeInvitePage } from './pages/ChallengeInvitePage.jsx'
+import { ChallengeMinePage } from './pages/ChallengeMinePage.jsx'
 import { ChallengeListPage } from './pages/ChallengeListPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
@@ -32,6 +34,7 @@ export default function App() {
         {/* 로그인해야 볼 수 있는 화면 */}
         <Route element={<RequireAuth />}>
           <Route path="/challenges/new" element={<ChallengeCreatePage />} />
+          <Route path="/challenges/mine" element={<ChallengeMinePage />} />
           <Route path="/challenges/:id/chat" element={<ChallengeChatPage />} />
           <Route path="/me" element={<MyPage />} />
           <Route path="/settings" element={<SettingsPage />} />
@@ -39,6 +42,11 @@ export default function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+
+      {/* 인증 화면은 헤더·푸터 없이 전체 화면 (영상통화처럼) */}
+      <Route element={<RequireAuth />}>
+        <Route path="/challenges/:id/verify" element={<ChallengeVerifyPage />} />
       </Route>
     </Routes>
   )
