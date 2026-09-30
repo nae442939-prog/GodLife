@@ -24,6 +24,15 @@ public final class Hashing {
         }
     }
 
+    /** 파일 내용의 SHA-256 (같은 사진 파일을 다시 올렸는지 확인할 때) */
+    public static String sha256Hex(byte[] value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** 해시끼리 비교할 때 앞부분 일치 길이로 시간 차이가 나지 않게 한다. */
     public static boolean equalsConstantTime(String a, String b) {
         return MessageDigest.isEqual(a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));

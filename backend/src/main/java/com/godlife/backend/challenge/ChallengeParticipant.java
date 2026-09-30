@@ -71,6 +71,16 @@ public class ChallengeParticipant {
         return status == ParticipantStatus.KICKED;
     }
 
+    /**
+     * 인증 1건 반영. 어제도 인증했으면 연속 기록을 이어 가고, 아니면 1부터 다시 센다.
+     * (인증을 빼먹은 날 연속 기록을 0으로 돌리는 것은 자정 스케줄러가 맡는다)
+     */
+    public void recordVerification(boolean verifiedYesterday) {
+        successDays++;
+        currentStreak = verifiedYesterday ? currentStreak + 1 : 1;
+        maxStreak = Math.max(maxStreak, currentStreak);
+    }
+
     void kick() {
         status = ParticipantStatus.KICKED;
     }

@@ -11,6 +11,13 @@ DELETE m FROM chat_messages m
 DELETE m FROM chat_messages m
   JOIN challenges c ON c.id = m.challenge_id
   JOIN users u ON u.id = c.host_id WHERE u.email LIKE '%@dummy.godlife';
+DELETE v FROM verifications v
+  JOIN challenge_participants p ON p.id = v.participant_id
+  JOIN users u ON u.id = p.user_id WHERE u.email LIKE '%@dummy.godlife';
+DELETE v FROM verifications v
+  JOIN challenge_participants p ON p.id = v.participant_id
+  JOIN challenges c ON c.id = p.challenge_id
+  JOIN users u ON u.id = c.host_id WHERE u.email LIKE '%@dummy.godlife';
 DELETE p FROM challenge_participants p
   JOIN users u ON u.id = p.user_id WHERE u.email LIKE '%@dummy.godlife';
 DELETE p FROM challenge_participants p

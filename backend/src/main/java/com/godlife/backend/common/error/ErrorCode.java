@@ -46,6 +46,12 @@ public enum ErrorCode {
     INVALID_IMAGE(HttpStatus.BAD_REQUEST, "JPG·PNG 사진만 보낼 수 있어요."),
     IMAGE_TOO_BIG(HttpStatus.BAD_REQUEST, "사진이 너무 커요. 가로·세로 8000px 이하, 5MB 이하 사진을 보내 주세요."),
     CHALLENGE_CANNOT_DELETE(HttpStatus.CONFLICT, "시작된 챌린지는 삭제할 수 없어요. 시작일 전날까지만 삭제할 수 있어요."),
+    CHALLENGE_NOT_IN_PROGRESS(HttpStatus.CONFLICT, "진행 중인 챌린지만 인증할 수 있어요."),
+    VERIFY_TIME_CLOSED(HttpStatus.CONFLICT, "지금은 인증할 수 있는 시간이 아니에요."),
+    ALREADY_VERIFIED_TODAY(HttpStatus.CONFLICT, "오늘은 이미 인증했어요. 인증은 하루에 한 번이고 다시 올릴 수 없어요."),
+    WEEKLY_GOAL_DONE(HttpStatus.CONFLICT, "이번 주 인증 횟수를 이미 다 채웠어요."),
+    DUPLICATE_PHOTO(HttpStatus.CONFLICT, "이미 인증에 쓴 사진이에요. 지금 새로 찍어서 올려 주세요."),
+    VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "인증을 찾을 수 없어요."),
     POINT_CHALLENGE_NOT_READY(HttpStatus.CONFLICT, "포인트 챌린지 참여는 준비 중입니다. 포인트 지갑이 열리면 참여할 수 있어요.");
 
     private final HttpStatus status;

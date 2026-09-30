@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../components/UserMenu.jsx'
-import { MODE_LABEL, dDayText, frequencyText, periodText, pointText, timeText } from './format.js'
+import { MODE_LABEL, dDayText, daysBetween, frequencyText, periodText, pointText, timeText, toIsoDate } from './format.js'
 import { CategoryIcon } from './icons.jsx'
+import { VerificationPanel } from './VerificationPanel.jsx'
 
 // 참가자 동그라미 색 (사진이 없으면 닉네임 첫 글자 + 이 색들을 돌아가며)
 const TINTS = 4
@@ -10,6 +11,7 @@ const TINTS = 4
 /**
  * 챌린지 상세 카드. 상세 화면(/challenges/:id)과 초대 링크 화면(/challenges/join/:code)이 같이 쓴다.
  * joinLabel 로 참여 버튼 문구를, backTo 로 맨 위 돌아가기 링크를 바꿀 수 있다.
+ * showVerification 이면 시작한 챌린지에 '오늘의 인증' 칸을 보여 준다 (개설자·참가자만).
  */
 export function ChallengeDetailView({
   challenge: c,
@@ -23,8 +25,10 @@ export function ChallengeDetailView({
   onDelete,
   joinLabel = '참여하기',
   notice,
+  showVerification = false,
 }) {
   const isBet = c.mode === 'BET'
+  const started = daysBetween(toIsoDate(new Date()), c.startDate) <= 0
 
   return (
     <div className="container page detail-page">
@@ -72,11 +76,15 @@ export function ChallengeDetailView({
             challengeId={c.id}
             inviteCode={c.inviteCode}
             canChat={c.member}
-            canRegenerate={c.host && Boolean(onRegenerateInvite)}
+            canRegenerate={c.host && Boolean(onRegenerateInvite) && c.recruiting}
+            closedReason={inviteClosedReason(c)}
             busy={busy}
             onRegenerate={onRegenerateInvite}
           />
         )}
+
+        {/* 진행 중에는 가장 자주 보는 오늘의 인증을 맨 위에 */}
+        {showVerification && c.member && started && <VerificationPanel challenge={c} />}
 
         <dl className="mc-rows dt-rows">
           <div>
@@ -186,11 +194,18 @@ function DeleteBox({ canDelete, busy, onDelete }) {
  * 개설자 줄 아래 버튼 줄: [오픈채팅] (멤버만) · [초대 링크 복사] (멤버에게만 코드가 온다).
  * 방장은 링크가 새어 나갔을 때 새로 만들 수 있다 (이전 링크는 막힘).
  */
-function DetailActions({ challengeId, inviteCode, canChat, canRegenerate, busy, onRegenerate }) {
+function DetailActions({ challengeId, inviteCode, canChat, canRegenerate, closedReason, busy, onRegenerate }) {
   const [copied, setCopied] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [blocked, setBlocked] = useState(false)
 
   async function copy() {
+    // 시작한 챌린지는 초대 링크로 들어와도 참여할 수 없으니 복사 대신 이유를 알려 준다
+    if (closedReason) {
+      setBlocked(true)
+      setTimeout(() => setBlocked(false), 3500)
+      return
+    }
     const link = `${window.location.origin}/challenges/join/${inviteCode}`
     try {
       await navigator.clipboard.writeText(link)
@@ -236,6 +251,11 @@ function DetailActions({ challengeId, inviteCode, canChat, canRegenerate, busy, 
           </button>
         )}
       </div>
+      {blocked && (
+        <p className="invite-closed" role="status">
+          {closedReason}
+        </p>
+      )}
       {canRegenerate &&
         (confirming ? (
           <p className="invite-regen">
@@ -264,6 +284,15 @@ function DetailActions({ challengeId, inviteCode, canChat, canRegenerate, busy, 
         ))}
     </div>
   )
+}
+
+/** 초대 링크로 참여할 수 없는 이유. 모집 중(시작일 당일까지)이면 null */
+function inviteClosedReason(c) {
+  if (c.recruiting) return null
+  if (daysBetween(toIsoDate(new Date()), c.endDate) < 0) {
+    return '끝난 챌린지라 초대 링크로 참여할 수 없어요.'
+  }
+  return '이미 진행 중인 챌린지라 새로 참여할 수 없어요. 초대 링크는 시작일까지만 쓸 수 있어요.'
 }
 
 function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLeave }) {

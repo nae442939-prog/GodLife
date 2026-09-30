@@ -157,6 +157,43 @@ public class Challenge {
         return status == ChallengeStatus.RECRUITING && today.isBefore(startDate);
     }
 
+    /**
+     * 인증을 받는 기간인지. 하루는 밤 12시(00:00)부터 다음 날 밤 12시까지이고, 시작일~종료일 모두 포함한다.
+     * (상태를 ONGOING 으로 바꾸는 스케줄러가 생기기 전에도 날짜로 판단되도록 상태는 '끝났는지'만 본다)
+     */
+    public boolean isInProgress(LocalDate today) {
+        return status != ChallengeStatus.ENDED && status != ChallengeStatus.SETTLED
+                && !today.isBefore(startDate) && !today.isAfter(endDate);
+    }
+
+    /** 인증 가능 시간대가 없으면 하루 종일, 있으면 verifyFrom ~ verifyUntil (둘 다 포함) */
+    public boolean isVerifyTimeOpen(LocalTime now) {
+        return verifyFrom == null || (!now.isBefore(verifyFrom) && !now.isAfter(verifyUntil));
+    }
+
+    /**
+     * 주 N회 챌린지의 '한 주'는 시작일부터 7일씩 끊는다. (예: 수요일 시작 → 수~화가 한 주)
+     * day 가 속한 주의 첫날을 돌려준다.
+     */
+    public LocalDate weekStartOf(LocalDate day) {
+        long weeks = ChronoUnit.DAYS.between(startDate, day) / 7;
+        return startDate.plusWeeks(weeks);
+    }
+
+    /**
+     * 끝까지 성공하려면 필요한 인증 횟수. 매일이면 전체 일수,
+     * 주 N회면 주마다 N회 (마지막 주가 N일보다 짧으면 그 주는 남은 일수만큼).
+     */
+    public int targetCount() {
+        int days = (int) totalDays();
+        if (frequencyType == FrequencyType.DAILY) {
+            return days;
+        }
+        int fullWeeks = days / 7;
+        int rest = days % 7;
+        return fullWeeks * weeklyCount + Math.min(weeklyCount, rest);
+    }
+
     public boolean isPrivate() {
         return visibility == ChallengeVisibility.PRIVATE;
     }

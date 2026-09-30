@@ -63,3 +63,14 @@ export function dDayText(c, todayIso = toIsoDate(new Date())) {
   if (toStart === 0) return '오늘 시작'
   return daysBetween(todayIso, c.endDate) >= 0 ? '진행 중' : '종료'
 }
+
+/** 지금 인증할 수 없는 이유 (인증 화면과 같이 쓴다) */
+export function closedText(state, c) {
+  return {
+    DONE_TODAY: '오늘 인증 완료 ✅',
+    WEEK_DONE: '이번 주 인증을 다 채웠어요',
+    TIME_CLOSED: `${timeText(c.verifyFrom)} ~ ${timeText(c.verifyUntil)}에만 인증할 수 있어요`,
+    NOT_STARTED: `${shortDate(c.startDate)}부터 인증할 수 있어요`,
+    ENDED: '끝난 챌린지예요',
+  }[state]
+}

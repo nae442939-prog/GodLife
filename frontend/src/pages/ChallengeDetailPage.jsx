@@ -74,6 +74,7 @@ export function ChallengeDetailPage() {
       onLeave={() => act(challengeApi.leave)}
       onRegenerateInvite={() => act(challengeApi.regenerateInvite)}
       onDelete={remove}
+      showVerification
     />
   )
 }

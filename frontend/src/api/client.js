@@ -203,6 +203,28 @@ export const chatApi = {
     apiFetch(`/api/challenges/${challengeId}/report-alerts/${userId}/dismiss`, { method: 'POST' }),
 }
 
+// 챌린지 인증 사진 (개설자·참가자만). 하루 한 번, 다시 올리기 없음. 사진은 참가자끼리 서로 볼 수 있다.
+export const verificationApi = {
+  // 내 인증 현황: state = OPEN | DONE_TODAY | WEEK_DONE | TIME_CLOSED | NOT_STARTED | ENDED
+  mine: (challengeId) => apiFetch(`/api/challenges/${challengeId}/verifications/me`),
+  // 내 챌린지: 참여 중이거나 개설한, 아직 끝나지 않은 챌린지와 오늘 인증 상태
+  myChallenges: () => apiFetch('/api/me/challenges'),
+  // 그날 참가자들의 인증 (date 없으면 오늘)
+  list: (challengeId, date) =>
+    apiFetch(`/api/challenges/${challengeId}/verifications${date ? `?date=${date}` : ''}`),
+  async submit(challengeId, file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await authRaw(`/api/challenges/${challengeId}/verifications`, { method: 'POST', body: form })
+    return res.json()
+  },
+  // 채팅 사진처럼 토큰을 붙여 받아 Blob 으로
+  async imageBlob(challengeId, verificationId) {
+    const res = await authRaw(`/api/challenges/${challengeId}/verifications/${verificationId}/image`)
+    return res.blob()
+  },
+}
+
 // 차단: 나에게만 적용 (차단한 사람의 채팅이 내 화면에서 안 보인다)
 export const blockApi = {
   list: () => apiFetch('/api/users/me/blocks'),
