@@ -53,7 +53,13 @@ public enum ErrorCode {
     WEEKLY_GOAL_DONE(HttpStatus.CONFLICT, "이번 주 인증 횟수를 이미 다 채웠어요."),
     DUPLICATE_PHOTO(HttpStatus.CONFLICT, "이미 인증에 쓴 사진이에요. 지금 새로 찍어서 올려 주세요."),
     VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "인증을 찾을 수 없어요."),
-    POINT_CHALLENGE_NOT_READY(HttpStatus.CONFLICT, "포인트 챌린지 참여는 준비 중입니다. 포인트 지갑이 열리면 참여할 수 있어요.");
+    INSUFFICIENT_POINTS(HttpStatus.CONFLICT, "충전 포인트가 모자라요."),
+    BET_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "챌린지에 걸 수 있는 포인트 한도를 넘었어요."),
+    INVALID_CHARGE_AMOUNT(HttpStatus.BAD_REQUEST, "테스트 충전은 1,000P · 5,000P · 10,000P 중에서 골라 주세요."),
+    CHARGE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘 테스트 충전 한도를 넘었어요."),
+    INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "환불할 금액을 100P 단위로 입력해 주세요."),
+    REFUND_EXCEEDS_CHARGED(HttpStatus.CONFLICT, "쓰지 않은 충전 포인트까지만 환불할 수 있어요."),
+    DUPLICATE_REQUEST(HttpStatus.CONFLICT, "이미 처리된 요청이에요.");
 
     private final HttpStatus status;
     private final String message;

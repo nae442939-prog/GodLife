@@ -5,7 +5,7 @@ import { useAuth } from '../auth/useAuth.js'
 // 각 기능이 만들어지면 to 를 채워 링크로 바꾼다.
 const HUB = [
   { title: '내 챌린지', body: '참여 중인 챌린지와 인증 현황', to: '/challenges/mine' },
-  { title: '포인트 지갑', body: '보유 포인트와 거래 내역' },
+  { title: '포인트 지갑', body: '보유 포인트와 거래 내역', to: '/wallet' },
   { title: '랭킹', body: '내 순위와 성공률, 연속 달성' },
 ]
 

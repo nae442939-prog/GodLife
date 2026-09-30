@@ -227,6 +227,17 @@ export const verificationApi = {
   },
 }
 
+// 포인트 지갑. 충전 포인트(참가비·결제 취소 환불 대상)와 보상 포인트(상점 전용)를 따로 보여 준다.
+export const walletApi = {
+  get: () => apiFetch('/api/wallet'),
+  transactions: (page) => apiFetch(`/api/wallet/transactions?page=${page}`),
+  // 충전 포인트 환불: 쓰지 않은 충전 포인트까지만 (결제 취소). 보상 포인트는 환불하지 않는다.
+  refund: (amount, requestKey) => apiFetch('/api/wallet/refund', { method: 'POST', body: { amount, requestKey } }),
+  // 테스트 충전(결제 연동 전 가상 지급). requestKey 가 같으면 두 번 눌려도 한 번만 충전된다.
+  testCharge: (amount, requestKey) =>
+    apiFetch('/api/wallet/test-charge', { method: 'POST', body: { amount, requestKey } }),
+}
+
 // 차단: 나에게만 적용 (차단한 사람의 채팅이 내 화면에서 안 보인다)
 export const blockApi = {
   list: () => apiFetch('/api/users/me/blocks'),

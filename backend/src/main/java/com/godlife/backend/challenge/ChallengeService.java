@@ -14,6 +14,7 @@ import com.godlife.backend.common.upload.ImageStore;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserService;
+import com.godlife.backend.wallet.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -46,6 +47,7 @@ public class ChallengeService {
     private final ChatReportRepository chatReportRepository;
     private final ImageStore imageStore;
     private final InviteCodeGenerator inviteCodeGenerator;
+    private final WalletService walletService;
     private final RequestThrottle throttle;
     private final Clock clock;
 
@@ -166,7 +168,7 @@ public class ChallengeService {
 
     /**
      * 방장이 참가자를 내보낸다. 다시 참여할 수 없고 채팅·상세 접근도 막힌다. 내보낸 사람의 닉네임을 돌려준다.
-     * (포인트 챌린지 참여가 열리면: 본인 잘못으로 실패한 게 아니므로 예치 포인트를 돌려주는 것을 여기에 더한다)
+     * 포인트 챌린지면 건 포인트를 돌려준다.
      */
     @Transactional
     public String kick(Long challengeId, Long hostId, Long targetUserId) {
@@ -179,6 +181,8 @@ public class ChallengeService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
         if (p.isActive()) {
             c.removeParticipant();
+            // 본인 잘못으로 실패한 게 아니므로 건 포인트를 돌려준다
+            walletService.refundEntryFee(targetUserId, p.getDepositAmount(), p.getId());
         }
         p.kick();
         return userRepository.findById(targetUserId).map(User::getNickname).orElse("알 수 없음");
@@ -203,7 +207,7 @@ public class ChallengeService {
 
     /**
      * 개설자만, 시작일 전날까지 삭제할 수 있다. 참가 기록과 오픈채팅(신고·사진 파일 포함)도 함께 지운다.
-     * (시작한 뒤에는 인증·정산 기록이 생기므로 막는다. 포인트 챌린지는 참여가 열릴 때 '예치 포인트 환급'을 여기에 더한다)
+     * (시작한 뒤에는 인증·정산 기록이 생기므로 막는다) 포인트 챌린지면 참가자들이 건 포인트를 돌려준다.
      */
     @Transactional
     public void delete(Long challengeId, Long userId) {
@@ -216,6 +220,9 @@ public class ChallengeService {
         if (!c.canLeave(today())) {
             throw new BusinessException(ErrorCode.CHALLENGE_CANNOT_DELETE);
         }
+        // 포인트 챌린지면 참가자들이 건 포인트를 돌려준다
+        participantRepository.findByChallengeIdAndStatus(challengeId, ParticipantStatus.ACTIVE)
+                .forEach(p -> walletService.refundEntryFee(p.getUserId(), p.getDepositAmount(), p.getId()));
         chatReportRepository.deleteByChallengeId(challengeId);
         chatMessageRepository.deleteByChallengeId(challengeId);
         participantRepository.deleteByChallengeId(challengeId);
@@ -236,16 +243,12 @@ public class ChallengeService {
 
     /**
      * 참여 공통. 챌린지 행을 잠근 채로 정원을 확인하고 참가자 수를 올린다. (동시에 여러 명이 눌러도 정원 초과 없음)
-     * 포인트 챌린지는 지갑(충전/보상 포인트 분리)이 만들어진 뒤 연다.
+     * 포인트 챌린지는 참가 포인트를 충전 포인트에서 뺀다 (한도·잔액이 모자라면 참여 전체가 취소된다).
      */
     private void addParticipant(Challenge c, Long userId) {
         if (!c.isRecruiting(today())) {
             throw new BusinessException(ErrorCode.CHALLENGE_NOT_RECRUITING);
         }
-        if (c.getMode() == ChallengeMode.BET) {
-            throw new BusinessException(ErrorCode.POINT_CHALLENGE_NOT_READY);
-        }
-
         ChallengeParticipant existing = participantRepository.findByChallengeIdAndUserId(c.getId(), userId)
                 .orElse(null);
         if (existing != null && existing.isActive()) {
@@ -261,10 +264,16 @@ public class ChallengeService {
             throw new BusinessException(ErrorCode.CHALLENGE_FULL);
         }
 
+        long fee = c.getMode() == ChallengeMode.BET ? c.getEntryFee() : 0;
+        if (fee > 0) {
+            walletService.checkCanPay(userId, fee);
+        }
+        ChallengeParticipant participant;
         if (existing != null) {
-            existing.rejoin(0);
+            existing.rejoin(fee);
+            participant = existing;
         } else {
-            participantRepository.save(ChallengeParticipant.join(c.getId(), userId, 0));
+            participant = participantRepository.save(ChallengeParticipant.join(c.getId(), userId, fee));
         }
         c.addParticipant();
         try {
@@ -272,6 +281,9 @@ public class ChallengeService {
             participantRepository.flush();
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.ALREADY_JOINED);
+        }
+        if (fee > 0) {
+            walletService.payEntryFee(userId, fee, participant.getId());
         }
     }
 
@@ -337,7 +349,7 @@ public class ChallengeService {
     public record GaveUp(Long hostId, String nickname) {
     }
 
-    /** 시작 전 참여 취소. 시작한 뒤에 그만두는 것은 포기(giveUp)다. */
+    /** 시작 전 참여 취소. 포인트 챌린지면 건 포인트를 돌려준다. 시작한 뒤에 그만두는 것은 포기(giveUp)다. */
     @Transactional
     public void leave(Long challengeId, Long userId) {
         Challenge c = challengeRepository.findForUpdate(challengeId)
@@ -348,6 +360,7 @@ public class ChallengeService {
         if (!c.canLeave(today())) {
             throw new BusinessException(ErrorCode.CHALLENGE_ALREADY_STARTED);
         }
+        walletService.refundEntryFee(userId, p.getDepositAmount(), p.getId());
         p.leave();
         c.removeParticipant();
     }
