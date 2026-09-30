@@ -96,10 +96,20 @@ h3 {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter: blur(8px);
+  /* 반투명 배경·블러는 ::before 층에 둔다. 헤더 자체에 backdrop-filter 를 걸면
+     그 안의 메가 메뉴 패널이 뒤쪽 화면을 흐리게 만들지 못한다 */
+  isolation: isolate;
   /* 헤더 아래 선은 은은하게 (본문 카드 테두리와 같은 색) */
   border-bottom: 1px solid var(--border);
+}
+
+.site-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(8px);
 }
 
 .header-inner {
@@ -4334,4 +4344,185 @@ a.back-button:hover {
 
 .hub-link:hover {
   text-decoration: none;
+}
+
+/* ---------- 헤더 메가 메뉴 (챌린지 ▸ 화면 전체 폭 패널) ---------- */
+
+/* 메뉴 칸이 헤더 높이 전체를 차지해야, 글자에서 패널로 마우스를 내릴 때 닫히지 않는다 */
+.menu {
+  align-self: stretch;
+  align-items: center;
+}
+
+.menu-item {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+}
+
+/* 패널은 헤더(sticky) 기준으로 헤더 바로 아래 화면 전체 폭 */
+.mega {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 40;
+  visibility: hidden;
+  /* 반투명 + 뒤쪽 흐림 (유리 느낌) */
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 28px 40px -28px rgba(43, 32, 20, 0.35);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.22s ease, visibility 0.2s;
+}
+
+.menu-item.is-open .mega {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mega-inner {
+  display: flex;
+  gap: 40px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 26px 40px 30px;
+}
+
+/* 왼쪽: 링크 목록 (글자만, 가로로 나란히, 항목마다 앞에 점) */
+.mega-dot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: var(--muted);
+  border-radius: 50%;
+}
+
+.mega-links {
+  display: flex;
+  align-items: flex-start;
+  gap: 36px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 헤더 메뉴 밑줄·글자 크기 규칙이 패널 안 링크에는 걸리지 않게 */
+.menu .mega a {
+  padding: 0;
+  font-size: 1rem;
+}
+
+.menu .mega a::after {
+  display: none;
+}
+
+.menu .mega .mega-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 12px 9px 8px;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text);
+  border-radius: 10px;
+}
+
+.menu .mega .mega-link:hover,
+.menu .mega .mega-link:focus-visible {
+  color: var(--header-nav);
+  background: var(--surface-alt);
+}
+
+/* 오른쪽: 오늘 인증할 챌린지 */
+/* 링크는 왼쪽, 오늘 인증할 챌린지는 오른쪽 끝 (사이는 비워 둔다) */
+.mega-aside {
+  width: 320px;
+  margin-left: auto;
+  padding-left: 40px;
+  border-left: 1px solid var(--border);
+}
+
+.mega-today-title {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.mega-today ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mega-today li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.menu .mega .mega-today-name {
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.menu .mega .mega-today-name:hover {
+  color: var(--header-nav);
+}
+
+.menu .mega .mega-today-go {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--bg);
+  background: var(--text);
+  border-radius: 999px;
+}
+
+.menu .mega .mega-today-go:hover {
+  color: var(--bg);
+  background: color-mix(in srgb, var(--text) 85%, var(--bg));
+}
+
+.mega-today-done {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: color-mix(in srgb, #2f9e5f 85%, var(--text));
+}
+
+.mega-today-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: normal;
+  color: var(--muted);
+}
+
+.menu .mega .mega-today-empty a {
+  font-weight: 800;
+  color: var(--header-nav);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mega {
+    transition: none;
+  }
 }
