@@ -101,7 +101,7 @@ export function ChallengeListPage() {
         <div className="cl-cats" role="group" aria-label="카테고리">
           <button
             type="button"
-            className={`cl-cat ${categoryId === '' ? 'is-active' : ''}`}
+            className={`cl-cat is-all ${categoryId === '' ? 'is-active' : ''}`}
             aria-pressed={categoryId === ''}
             onClick={() => update('categoryId', '')}
           >
@@ -112,7 +112,7 @@ export function ChallengeListPage() {
             <button
               key={c.id}
               type="button"
-              className={`cl-cat ${categoryId === String(c.id) ? 'is-active' : ''}`}
+              className={`cl-cat cat-${c.id} ${categoryId === String(c.id) ? 'is-active' : ''}`}
               aria-pressed={categoryId === String(c.id)}
               onClick={() => update('categoryId', String(c.id))}
             >

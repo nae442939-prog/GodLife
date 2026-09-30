@@ -1417,7 +1417,9 @@ a:focus-visible,
   margin-bottom: 18px;
 }
 
+/* 카테고리 칩: 평소엔 무채색, 마우스를 올리면 카드처럼 카테고리 색 테두리·아이콘 ('전체'는 검정) */
 .cl-cat {
+  --cat: var(--header-nav);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1430,24 +1432,65 @@ a:focus-visible,
   border: 1px solid var(--border);
   border-radius: 999px;
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.cl-cat.cat-1 {
+  --cat: var(--primary);
+}
+
+.cl-cat.cat-2 {
+  --cat: var(--accent-blue);
+}
+
+.cl-cat.cat-3 {
+  --cat: var(--accent-mint);
+}
+
+.cl-cat.cat-4 {
+  --cat: var(--accent-amber);
+}
+
+.cl-cat.cat-5 {
+  --cat: var(--header-nav);
 }
 
 .cl-cat svg {
   color: var(--header-nav);
+  transition: color 0.15s;
 }
 
 .cl-cat:hover {
-  border-color: var(--text);
+  border-color: var(--cat);
 }
 
+.cl-cat:hover svg {
+  color: var(--cat);
+}
+
+/* 고른 칩: 검정 대신 카테고리 색으로 옅게 채움 */
 .cl-cat.is-active {
-  font-weight: 700;
+  color: color-mix(in srgb, var(--cat) 75%, var(--text));
+  background: color-mix(in srgb, var(--cat) 14%, var(--surface));
+  border-color: var(--cat);
+}
+
+.cl-cat.is-active svg {
+  color: var(--cat);
+}
+
+/* '전체'는 검정: 고르면 검정으로 꽉 채운다 */
+.cl-cat.is-all {
+  --cat: var(--text);
+}
+
+.cl-cat.is-all.is-active {
   color: var(--surface);
   background: var(--text);
   border-color: var(--text);
 }
 
-.cl-cat.is-active svg {
+.cl-cat.is-all.is-active svg {
   color: var(--surface);
 }
 
