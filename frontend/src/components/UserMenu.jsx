@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { messageApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 
 // 프로필 사진이 없으면 기본 사람 아이콘을 보여준다.
@@ -23,6 +24,25 @@ export function UserMenu() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+  const location = useLocation()
+  // 안 읽은 메시지 수: 30초마다, 화면을 옮길 때마다 새로
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    function load() {
+      messageApi
+        .unreadCount()
+        .then((r) => !cancelled && setUnread(r.count))
+        .catch(() => {}) // 보조 정보라 실패해도 메뉴는 그대로
+    }
+    load()
+    const timer = setInterval(() => document.visibilityState === 'visible' && load(), 30_000)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [location.pathname])
 
   // 바깥을 누르거나 Esc 를 누르면 닫는다.
   useEffect(() => {
@@ -57,6 +77,7 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
       >
         <Avatar src={user.profileImageUrl} />
+        {unread > 0 && <span className="user-menu-dot" aria-label={`안 읽은 메시지 ${unread}개`} />}
         <span className="user-menu-name">{user.nickname}</span>
         <span className="user-menu-caret" aria-hidden="true">
           ▾
@@ -74,6 +95,10 @@ export function UserMenu() {
           </div>
           <Link to="/me" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
             마이페이지
+          </Link>
+          <Link to="/messages" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
+            메시지
+            {unread > 0 && <span className="user-menu-badge">{unread > 99 ? '99+' : unread}</span>}
           </Link>
           <Link to="/wallet" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
             포인트 지갑

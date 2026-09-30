@@ -12,6 +12,8 @@ import { ChallengeMinePage } from './pages/ChallengeMinePage.jsx'
 import { WalletPage } from './pages/WalletPage.jsx'
 import { RankingPage } from './pages/RankingPage.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
+import { MessagesPage } from './pages/MessagesPage.jsx'
+import { MessageRoomPage } from './pages/MessageRoomPage.jsx'
 import { ChallengeListPage } from './pages/ChallengeListPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
@@ -41,6 +43,8 @@ export default function App() {
           <Route path="/challenges/new" element={<ChallengeCreatePage />} />
           <Route path="/challenges/mine" element={<ChallengeMinePage />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/messages/:userId" element={<MessageRoomPage />} />
           <Route path="/challenges/:id/chat" element={<ChallengeChatPage />} />
           <Route path="/me" element={<MyPage />} />
           <Route path="/settings" element={<SettingsPage />} />

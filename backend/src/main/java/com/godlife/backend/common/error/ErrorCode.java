@@ -31,6 +31,7 @@ public enum ErrorCode {
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없어요."),
     CANNOT_FOLLOW(HttpStatus.FORBIDDEN, "팔로우할 수 없는 회원이에요."),
+    MESSAGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "메시지는 서로 팔로우한 친구끼리만 보낼 수 있어요."),
 
     CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 카테고리입니다."),
     CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "챌린지를 찾을 수 없습니다."),
