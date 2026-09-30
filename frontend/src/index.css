@@ -4594,3 +4594,296 @@ a.back-button:hover {
   color: var(--muted);
   background: color-mix(in srgb, var(--text) 8%, transparent);
 }
+
+/* ---------- 포인트 챌린지 참여 확인 ---------- */
+
+.bet-confirm {
+  padding: 18px 20px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.bet-confirm-title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.bet-confirm-balance {
+  margin: 0 0 10px;
+  color: var(--header-nav);
+}
+
+.bet-confirm-balance strong {
+  color: var(--text);
+}
+
+.bet-confirm-help {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.bet-confirm .btn-dark:hover {
+  text-decoration: none;
+}
+
+/* ---------- 포인트 지갑 ---------- */
+
+.wallet-page {
+  max-width: 860px;
+}
+
+.wl-balances {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.wl-card {
+  padding: 22px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.wl-card.is-reward {
+  background: color-mix(in srgb, #6fcf97 10%, var(--surface));
+}
+
+.wl-label {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--header-nav);
+}
+
+.wl-amount {
+  margin: 0 0 10px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-help {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wl-section {
+  margin-bottom: 32px;
+}
+
+.wl-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.wl-section-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.wl-sub {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.wl-charge {
+  display: flex;
+  gap: 10px;
+}
+
+.wl-charge-btn {
+  flex: 1;
+  padding: 14px 0;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wl-charge-btn:hover:not(:disabled) {
+  border-color: var(--header-nav);
+  background: var(--surface-alt);
+}
+
+.wl-charge-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.wl-charge-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.wl-limit {
+  margin-bottom: 12px;
+}
+
+.wl-limit-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: var(--header-nav);
+}
+
+.wl-limit-head strong {
+  color: var(--text);
+}
+
+.wl-tx {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.wl-tx li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+}
+
+.wl-tx li + li {
+  border-top: 1px solid var(--border);
+}
+
+.wl-tx-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wl-tx-main strong {
+  font-size: 0.98rem;
+}
+
+.wl-tx-main span {
+  overflow: hidden;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+.wl-tx-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.wl-tx-amount {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-tx-amount.is-plus {
+  color: color-mix(in srgb, #2f9e5f 85%, var(--text));
+}
+
+.wl-tx-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.wl-more {
+  margin-top: 12px;
+}
+
+.wl-notice {
+  margin: 0;
+  padding: 16px 18px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--muted);
+  background: var(--surface-alt);
+  border-radius: 12px;
+}
+
+@media (max-width: 560px) {
+  .wl-balances {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 충전 포인트 환불 */
+.wl-refund-open {
+  margin-top: 14px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--header-nav);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.wl-refund-open:hover:not(:disabled) {
+  border-color: var(--header-nav);
+}
+
+.wl-refund-open:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.wl-refund {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.wl-refund label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--header-nav);
+}
+
+.wl-refund-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.wl-refund-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.wl-refund-row .btn {
+  padding: 9px 14px;
+  font-size: 0.9rem;
+}

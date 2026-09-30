@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { walletApi } from '../api/client.js'
 import { Avatar } from '../components/UserMenu.jsx'
 import { MODE_LABEL, dDayText, daysBetween, frequencyText, periodText, pointText, timeText, toIsoDate } from './format.js'
 import { CategoryIcon } from './icons.jsx'
@@ -332,17 +333,87 @@ function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLea
   if (!c.recruiting) return <Disabled>모집이 끝났어요</Disabled>
   if (c.participantCount >= c.maxParticipants) return <Disabled>정원이 다 찼어요</Disabled>
   if (c.mode === 'BET') {
-    return (
-      <>
-        <Disabled>포인트 챌린지 참여 준비 중</Disabled>
-        <p className="dt-note">포인트 지갑이 열리면 참여할 수 있어요</p>
-      </>
-    )
+    return <BetJoin challenge={c} busy={busy} onJoin={onJoin} />
   }
   return (
     <button type="button" className="btn btn-dark btn-block dt-btn" onClick={onJoin} disabled={busy}>
       {busy ? '참여하는 중…' : joinLabel}
     </button>
+  )
+}
+
+/**
+ * 포인트 챌린지 참여: 누르면 내 충전 포인트를 불러와 "얼마를 걸고, 참여 후 얼마가 남는지"를 보여 주고 한 번 더 확인한다.
+ * 모자라면 지갑으로 안내한다. (서버가 잠근 채로 다시 확인하므로 여기 숫자는 안내용)
+ */
+function BetJoin({ challenge: c, busy, onJoin }) {
+  const [wallet, setWallet] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const fee = c.entryFee
+
+  async function open() {
+    setLoading(true)
+    setError('')
+    try {
+      setWallet(await walletApi.get())
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!wallet) {
+    return (
+      <>
+        <button type="button" className="btn btn-dark btn-block dt-btn" onClick={open} disabled={loading || busy}>
+          {loading ? '불러오는 중…' : `${fee.toLocaleString()}P 걸고 참여하기`}
+        </button>
+        {error && <p className="form-error">{error}</p>}
+      </>
+    )
+  }
+
+  const enough = wallet.chargedBalance >= fee
+  return (
+    <div className="bet-confirm" role="alert">
+      <p className="bet-confirm-title">{fee.toLocaleString()}P를 걸고 참여할까요?</p>
+      <p className="bet-confirm-balance">
+        충전 포인트 <strong>{wallet.chargedBalance.toLocaleString()}P</strong>
+        {enough && (
+          <>
+            {' '}
+            → <strong>{(wallet.chargedBalance - fee).toLocaleString()}P</strong>
+          </>
+        )}
+      </p>
+      <p className="bet-confirm-help">
+        {c.partialRefund
+          ? '끝까지 성공하면 건 포인트를 그대로 돌려받고, 일부만 채우면 채운 만큼 비례해서 돌려받아요.'
+          : '끝까지 성공하면 건 포인트를 그대로 돌려받아요.'}{' '}
+        실패하거나 포기하면 돌려받지 못해요. 시작 전에 참여를 취소하면 돌려받아요.
+      </p>
+      {enough ? (
+        <div className="dt-delete-actions">
+          <button type="button" className="btn btn-outline" onClick={() => setWallet(null)} disabled={busy}>
+            취소
+          </button>
+          <button type="button" className="btn btn-dark" onClick={onJoin} disabled={busy}>
+            {busy ? '참여하는 중…' : '참여하기'}
+          </button>
+        </div>
+      ) : (
+        <div className="dt-delete-actions">
+          <button type="button" className="btn btn-outline" onClick={() => setWallet(null)}>
+            닫기
+          </button>
+          <Link to="/wallet" className="btn btn-dark">
+            충전 포인트가 모자라요 · 충전하러 가기
+          </Link>
+        </div>
+      )}
+    </div>
   )
 }
 

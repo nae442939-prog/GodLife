@@ -179,11 +179,11 @@ class ChallengeApiTest {
     }
 
     @Test
-    @DisplayName("포인트 챌린지 참여는 지갑이 생길 때까지 막는다")
-    void betJoinNotReady() throws Exception {
+    @DisplayName("포인트 챌린지는 충전 포인트가 모자라면 참여할 수 없다 (자세한 건 WalletApiTest)")
+    void betJoinNeedsPoints() throws Exception {
         long id = idOf(create(host, betBody("포인트", 1000)));
         join(other, id).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("POINT_CHALLENGE_NOT_READY"));
+                .andExpect(jsonPath("$.code").value("INSUFFICIENT_POINTS"));
     }
 
     // ---------- helpers ----------

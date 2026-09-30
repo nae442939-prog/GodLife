@@ -13,6 +13,7 @@ import com.godlife.backend.common.upload.ImageStore;
 import com.godlife.backend.verification.dto.MyChallengeResponse;
 import com.godlife.backend.verification.dto.MyVerificationResponse;
 import com.godlife.backend.verification.dto.VerificationResponse;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ public class VerificationService {
     private final ChallengeService challengeService;
     private final ImageStore imageStore;
     private final Clock clock;
+    private final EntityManager entityManager;
 
     /**
      * 인증 사진 올리기. 참가자 행을 잠근 채로 오늘 인증 여부·이번 주 횟수를 확인하므로
@@ -55,8 +57,12 @@ public class VerificationService {
     public VerificationResponse submit(Long challengeId, Long userId, MultipartFile file) {
         challengeService.requireMember(challengeId, userId);
         ChallengeParticipant participant = participantRepository.findForUpdate(challengeId, userId)
-                .filter(ChallengeParticipant::isActive)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
+        // requireMember 가 잠그지 않고 먼저 읽어 둔 객체가 있으면 잠금 쿼리를 보내도 예전 값이 돌아오므로 다시 읽는다
+        entityManager.refresh(participant);
+        if (!participant.isActive()) {
+            throw new BusinessException(ErrorCode.NOT_JOINED);
+        }
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
 

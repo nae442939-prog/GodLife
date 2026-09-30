@@ -75,6 +75,9 @@ export function UserMenu() {
           <Link to="/me" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
             마이페이지
           </Link>
+          <Link to="/wallet" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
+            포인트 지갑
+          </Link>
           <Link to="/settings" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
             설정
           </Link>

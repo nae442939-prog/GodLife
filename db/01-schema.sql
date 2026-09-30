@@ -328,20 +328,24 @@ CREATE TABLE reports (
 CREATE TABLE wallets (
   id         BIGINT   NOT NULL AUTO_INCREMENT,
   user_id    BIGINT   NOT NULL,
-  balance    BIGINT   NOT NULL DEFAULT 0 COMMENT '캐시 값. 진실의 원천은 point_transactions 합계. SELECT ... FOR UPDATE 락 앵커',
+  balance    BIGINT   NOT NULL DEFAULT 0 COMMENT '전체 잔액 캐시 (= charged + reward). 진실의 원천은 point_transactions. SELECT ... FOR UPDATE 락 앵커',
+  charged_balance BIGINT NOT NULL DEFAULT 0 COMMENT '직접 충전한 포인트. 쓰지 않은 만큼만 결제 취소 환불 가능',
+  reward_balance  BIGINT NOT NULL DEFAULT 0 COMMENT '챌린지 보상·이벤트 포인트. 상점에서만 사용, 환불·현금화 불가',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_wallets_user (user_id),
   CONSTRAINT fk_wallets_user FOREIGN KEY (user_id) REFERENCES users (id),
-  CONSTRAINT ck_wallets_balance CHECK (balance >= 0)
+  CONSTRAINT ck_wallets_balance CHECK (balance >= 0),
+  CONSTRAINT ck_wallets_sources CHECK (charged_balance >= 0 AND reward_balance >= 0 AND balance = charged_balance + reward_balance)
 ) ENGINE=InnoDB COMMENT='포인트 지갑';
 
 CREATE TABLE point_transactions (
   id              BIGINT      NOT NULL AUTO_INCREMENT,
   wallet_id       BIGINT      NOT NULL,
-  type            ENUM('CHARGE','ENTRY_FEE','REFUND','REWARD','PURCHASE','SEASON_BONUS','ADJUST') NOT NULL,
+  type            ENUM('CHARGE','CHARGE_CANCEL','ENTRY_FEE','REFUND','REWARD','PURCHASE','SEASON_BONUS','ADJUST') NOT NULL COMMENT 'CHARGE_CANCEL = 충전 포인트 환불(결제 취소). REFUND = 챌린지 참가비 환급',
+  source          ENUM('CHARGED','REWARD','SHOP') NOT NULL COMMENT '어느 출처의 포인트가 움직였는지. 환불 로직은 CHARGED 만 본다',
   amount          BIGINT      NOT NULL COMMENT '부호 있는 증감액 (+/-)',
-  balance_after   BIGINT      NOT NULL,
+  balance_after   BIGINT      NOT NULL COMMENT '거래 후 그 출처(source)의 잔액',
   ref_type        VARCHAR(20) NULL COMMENT '다형 참조 (participants / settlement_items / payments / orders)',
   ref_id          BIGINT      NULL COMMENT 'FK 없음 - 원장은 참조 대상이 삭제돼도 남아야 함',
   idempotency_key VARCHAR(80) NOT NULL COMMENT '같은 요청 재시도 시 이중 지급/차감 방지',
@@ -349,6 +353,7 @@ CREATE TABLE point_transactions (
   PRIMARY KEY (id),
   UNIQUE KEY uk_ptx_idempotency (idempotency_key),
   KEY idx_ptx_wallet_created (wallet_id, created_at),
+  KEY idx_ptx_wallet_type_created (wallet_id, type, created_at),
   KEY idx_ptx_ref (ref_type, ref_id),
   CONSTRAINT fk_ptx_wallet FOREIGN KEY (wallet_id) REFERENCES wallets (id),
   CONSTRAINT ck_ptx_amount CHECK (amount <> 0 AND balance_after >= 0)
