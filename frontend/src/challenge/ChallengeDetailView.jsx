@@ -4,6 +4,7 @@ import { walletApi } from '../api/client.js'
 import { Avatar } from '../components/UserMenu.jsx'
 import { MODE_LABEL, dDayText, daysBetween, frequencyText, periodText, pointText, timeText, toIsoDate } from './format.js'
 import { CategoryIcon } from './icons.jsx'
+import { ChallengeRanking } from './ChallengeRanking.jsx'
 import { VerificationPanel } from './VerificationPanel.jsx'
 
 // 참가자 동그라미 색 (사진이 없으면 닉네임 첫 글자 + 이 색들을 돌아가며)
@@ -87,6 +88,7 @@ export function ChallengeDetailView({
 
         {/* 진행 중에는 가장 자주 보는 오늘의 인증을 맨 위에 */}
         {showVerification && c.member && started && <VerificationPanel challenge={c} />}
+        {showVerification && c.member && started && <ChallengeRanking challengeId={c.id} />}
 
         <dl className="mc-rows dt-rows">
           <div>
@@ -104,7 +106,7 @@ export function ChallengeDetailView({
             <dt>참가 포인트</dt>
             <dd>
               {pointText(c)}
-              {isBet && (c.partialRefund ? ' · 부분 성공 시 비례 환급' : ' · 성공 시 전액 환급')}
+              {isBet && ' · 인증한 날만큼 환급, 끝나면 한 번에 정산'}
             </dd>
           </div>
           <div>
@@ -389,10 +391,9 @@ function BetJoin({ challenge: c, busy, onJoin }) {
         )}
       </p>
       <p className="bet-confirm-help">
-        {c.partialRefund
-          ? '끝까지 성공하면 건 포인트를 그대로 돌려받고, 일부만 채우면 채운 만큼 비례해서 돌려받아요.'
-          : '끝까지 성공하면 건 포인트를 그대로 돌려받아요.'}{' '}
-        실패하거나 포기하면 돌려받지 못해요. 시작 전에 참여를 취소하면 돌려받아요.
+        건 포인트를 하루 몫으로 나눠, 인증한 날은 그날 몫을 돌려받고 못 한 날 몫은 그날 성공한 사람들이 나눠 가져요(보상
+        포인트). 결과는 매일 보여 드리고, 포인트는 챌린지가 끝나면 한 번에 들어와요. 시작 전에 참여를 취소하면 전부
+        돌려받아요.
       </p>
       {enough ? (
         <div className="dt-delete-actions">

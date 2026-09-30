@@ -207,6 +207,11 @@ public class Challenge {
         status = ChallengeStatus.ENDED;
     }
 
+    /** 정산이 모두 끝남 (포인트 챌린지: 마지막 기간까지 정산 / 무료 챌린지: 종료와 함께) */
+    public void markSettled() {
+        status = ChallengeStatus.SETTLED;
+    }
+
     public boolean isPrivate() {
         return visibility == ChallengeVisibility.PRIVATE;
     }

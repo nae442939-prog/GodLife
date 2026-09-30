@@ -78,7 +78,6 @@ function initialForm() {
     weeklyCount: '3',
     maxParticipants: '20',
     entryFee: '1000',
-    partialRefund: false,
     useWindow: false,
     visibility: 'PUBLIC',
     verifyFrom: '05:00',
@@ -178,7 +177,6 @@ export function ChallengeCreatePage() {
         maxParticipants: Number(form.maxParticipants),
         verifyFrom: form.useWindow ? form.verifyFrom : null,
         verifyUntil: form.useWindow ? form.verifyUntil : null,
-        partialRefund: mode === 'BET' && form.partialRefund,
         visibility: form.visibility,
       })
       navigate(`/challenges/${created.id}`, { replace: true })
@@ -429,14 +427,8 @@ export function ChallengeCreatePage() {
                   value={form.entryFee}
                   onChange={onChange}
                   error={errors.entryFee}
-                  hint="100P 단위, 100P ~ 100,000P. 성공하면 건 포인트를 그대로 돌려받아요."
+                  hint="100P 단위, 100P ~ 100,000P. 인증한 날만큼 돌려받고, 못 한 날 몫은 그날 성공한 사람들이 나눠 가져요. 챌린지가 끝나면 한 번에 정산돼요."
                 />
-                <label className="check">
-                  <input type="checkbox" name="partialRefund" checked={form.partialRefund} onChange={onChange} />
-                  <span>
-                    부분 성공도 인정해요 <span className="muted">(인증한 날만큼 비례해서 돌려받기)</span>
-                  </span>
-                </label>
               </>
             )}
 

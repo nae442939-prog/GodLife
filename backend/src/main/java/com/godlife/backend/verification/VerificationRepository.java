@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,4 +44,13 @@ public interface VerificationRepository extends JpaRepository<Verification, Long
                                    com.godlife.backend.challenge.ParticipantStatus.GAVE_UP)
             """)
     Optional<String> findImageKey(@Param("challengeId") Long challengeId, @Param("id") Long id);
+
+    /** 정산용: 참가자별 from ~ to (둘 다 포함) 인증 수 → [participant_id, count] */
+    @Query("""
+            SELECT v.participantId, COUNT(v) FROM Verification v
+            WHERE v.participantId IN :participantIds AND v.verifyDate BETWEEN :from AND :to
+            GROUP BY v.participantId
+            """)
+    List<Object[]> countByParticipants(@Param("participantIds") Collection<Long> participantIds,
+                                       @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

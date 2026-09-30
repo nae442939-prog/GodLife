@@ -9,10 +9,13 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface PointTransactionRepository extends JpaRepository<PointTransaction, Long> {
 
     boolean existsByIdempotencyKey(String idempotencyKey);
+
+    Optional<PointTransaction> findByIdempotencyKey(String idempotencyKey);
 
     Page<PointTransaction> findByWalletIdOrderByIdDesc(Long walletId, Pageable pageable);
 
@@ -47,4 +50,12 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             WHERE p.id IN :participantIds
             """)
     List<Object[]> findChallengeTitles(@Param("participantIds") Collection<Long> participantIds);
+
+    /** 거래 내역에 챌린지 이름을 붙이려고: 최종 정산 id → [정산 id, 챌린지 제목] */
+    @Query("""
+            SELECT s.id, c.title FROM com.godlife.backend.settlement.Settlement s
+              JOIN com.godlife.backend.challenge.Challenge c ON c.id = s.challengeId
+            WHERE s.id IN :settlementIds
+            """)
+    List<Object[]> findSettlementTitles(@Param("settlementIds") Collection<Long> settlementIds);
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +42,21 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
 
     /** 이 챌린지에서 아직 판정 전(ACTIVE)인 참가자 (종료 판정용) */
     List<ChallengeParticipant> findByChallengeIdAndStatus(Long challengeId, ParticipantStatus status);
+
+    List<ChallengeParticipant> findByChallengeIdAndStatusIn(Long challengeId, Collection<ParticipantStatus> statuses);
+
+    /** 챌린지 랭킹: 남아 있는 참가자(참여 중·성공·실패)를 인증 횟수 → 최장 연속 → 현재 연속 순으로 */
+    @Query("""
+            SELECT new com.godlife.backend.settlement.dto.RankingRow(
+                       u.id, u.nickname, u.profileImageUrl, p.successDays, p.maxStreak, p.currentStreak)
+            FROM ChallengeParticipant p JOIN com.godlife.backend.user.User u ON u.id = p.userId
+            WHERE p.challengeId = :challengeId
+              AND p.status IN (com.godlife.backend.challenge.ParticipantStatus.ACTIVE,
+                               com.godlife.backend.challenge.ParticipantStatus.COMPLETED,
+                               com.godlife.backend.challenge.ParticipantStatus.FAILED)
+            ORDER BY p.successDays DESC, p.maxStreak DESC, p.currentStreak DESC, p.id
+            """)
+    List<com.godlife.backend.settlement.dto.RankingRow> findRanking(@Param("challengeId") Long challengeId);
 
     /**
      * 매일 챌린지에서 어제 인증하지 않은 참가자의 연속 기록을 0으로 (자정 스케줄러).

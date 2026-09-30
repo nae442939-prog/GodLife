@@ -1,5 +1,6 @@
 package com.godlife.backend.challenge;
 
+import com.godlife.backend.settlement.SettlementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +17,8 @@ import java.time.LocalDate;
  * 챌린지 진행 관리 (매일 밤 12시, 서울 시간).
  * 1) 종료일이 지난 챌린지를 종료하고 참가자마다 성공/실패를 판정한다 (정산은 이 결과를 쓴다)
  * 2) 매일 챌린지에서 어제 인증을 빼먹은 참가자의 연속 기록을 0으로 되돌린다
- * 3) 시작일이 된 챌린지를 진행 중으로 바꾼다
+ * 3) 포인트 챌린지 매일 정산 (어제까지 끝난 기간, 밀린 날 포함) → 다 끝나면 정산 완료
+ * 4) 시작일이 된 챌린지를 진행 중으로 바꾼다
  * 서버가 자정에 꺼져 있었을 수 있어 켜질 때도 한 번 돈다. 여러 번 돌아도 결과가 같다.
  */
 @Slf4j
@@ -26,6 +28,7 @@ public class ChallengeLifecycleService {
 
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository participantRepository;
+    private final SettlementService settlementService;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
@@ -56,10 +59,12 @@ public class ChallengeLifecycleService {
                 log.error("챌린지 {} 종료 처리 실패", id, e);
             }
         }
+        int settled = settlementService.settleDue(today);
         Integer reset = transactionTemplate.execute(
                 status -> participantRepository.resetMissedStreaks(today.minusDays(1)));
         Integer started = transactionTemplate.execute(status -> challengeRepository.startDue(today));
-        log.info("챌린지 진행 관리 {}: 종료 {}개, 연속 기록 초기화 {}명, 시작 {}개", today, ended, reset, started);
+        log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개",
+                today, ended, settled, reset, started);
     }
 
     /** 챌린지 행을 잠근 채로 종료하고, 아직 판정 전(ACTIVE)인 참가자를 성공/실패로 판정한다. */

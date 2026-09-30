@@ -25,6 +25,8 @@ public class PointTransaction {
 
     /** ref_type 값 */
     public static final String REF_PARTICIPANT = "participant";
+    /** 챌린지 최종 정산 (settlements.id) */
+    public static final String REF_SETTLEMENT = "settlement";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
