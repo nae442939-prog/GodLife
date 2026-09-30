@@ -6552,3 +6552,119 @@ a.back-button:hover {
   border: 2px solid var(--surface);
   border-radius: 50%;
 }
+
+/* ---------- 챌린지 랭킹: 내 챌린지 고르기 → 시상대 ---------- */
+
+.mcr-picker {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 2px 2px 10px;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.mcr-card {
+  --cat: var(--header-nav);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  max-width: 260px;
+  padding: 12px 14px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mcr-card.cat-1 {
+  --cat: var(--primary);
+}
+
+.mcr-card.cat-2 {
+  --cat: var(--accent-blue);
+}
+
+.mcr-card.cat-3 {
+  --cat: var(--accent-mint);
+}
+
+.mcr-card.cat-4 {
+  --cat: var(--accent-amber);
+}
+
+.mcr-card:hover {
+  border-color: var(--cat);
+}
+
+.mcr-card.is-active {
+  border-color: var(--cat);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cat) 35%, transparent);
+}
+
+.mcr-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.mcr-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--cat);
+  background: color-mix(in srgb, var(--cat) 16%, transparent);
+  border-radius: 10px;
+}
+
+.mcr-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mcr-text strong {
+  overflow: hidden;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mcr-text span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.mcr-board {
+  margin-top: 18px;
+}
+
+.mcr-board-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mcr-board-head h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+/* 홈 실시간 랭킹 시상대 */
+.home-podium {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.home-podium .rn-help {
+  text-align: center;
+}

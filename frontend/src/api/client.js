@@ -264,7 +264,6 @@ export const rankingApi = {
   users: (metric) => apiFetch(`/api/rankings/users?metric=${metric}`),
   // 친구 랭킹: 나 + 내가 팔로우한 사람 (로그인 필요)
   friends: (metric) => apiFetch(`/api/rankings/friends?metric=${metric}`),
-  challenges: () => apiFetch('/api/rankings/challenges'),
 }
 
 // 포인트 지갑. 충전 포인트(참가비·결제 취소 환불 대상)와 보상 포인트(상점 전용)를 따로 보여 준다.

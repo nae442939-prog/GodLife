@@ -2,16 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { rankingApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
-import { MODE_LABEL } from '../challenge/format.js'
-import { CategoryIcon } from '../challenge/icons.jsx'
 import { Avatar } from '../components/UserMenu.jsx'
+import { MyChallengeRanking } from '../ranking/MyChallengeRanking.jsx'
 import { Podium } from '../ranking/Podium.jsx'
 
 // 헤더 [랭킹] 메뉴에서 고른 랭킹 하나만 그 이름을 제목으로 보여 준다 (?tab=)
 const PAGES = {
   users: { title: '전체 랭킹', sub: '누가 가장 꾸준히 갓생 살고 있을까요?' },
   friends: { title: '친구 랭킹', sub: '팔로우한 친구들끼리 비교해요.' },
-  challenges: { title: '챌린지 랭킹', sub: '어느 챌린지가 가장 열심히 하고 있을까요?' },
+  challenges: { title: '챌린지 랭킹', sub: '내가 하는 챌린지에서 누가 가장 꾸준할까요?' },
 }
 
 const METRICS = [
@@ -50,7 +49,9 @@ export function RankingPage() {
         <div className="rn-body">
           {tab === 'users' && <UserRanking metric={metric} onMetric={(m) => update('metric', m)} />}
           {tab === 'friends' && <UserRanking friends metric={metric} onMetric={(m) => update('metric', m)} />}
-          {tab === 'challenges' && <ChallengeRanking />}
+          {tab === 'challenges' && (
+            <MyChallengeRanking selectedId={params.get('challenge')} onSelect={(id) => update('challenge', id)} />
+          )}
         </div>
       </div>
     </div>
@@ -166,57 +167,6 @@ function UserRanking({ metric, onMetric, friends = false }) {
           )}
         </>
       )}
-    </>
-  )
-}
-
-function ChallengeRanking() {
-  const [data, setData] = useState({ loaded: false, items: [], error: '' })
-
-  useEffect(() => {
-    let cancelled = false
-    rankingApi
-      .challenges()
-      .then((items) => !cancelled && setData({ loaded: true, items, error: '' }))
-      .catch((err) => !cancelled && setData({ loaded: true, items: [], error: err.message }))
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  if (!data.loaded) return <p className="muted">불러오는 중…</p>
-  if (data.error) return <p className="form-error">{data.error}</p>
-  if (data.items.length === 0) {
-    return (
-      <p className="muted">아직 순위를 매길 챌린지가 없어요. 2명 이상이 함께하는 챌린지가 하루 이상 지나면 올라와요.</p>
-    )
-  }
-
-  return (
-    <>
-      <p className="rn-help">진행 중인 공개 챌린지를 참가자 평균 달성률(어제까지)로 비교해요.</p>
-      <ol className="rk">
-        {data.items.map((c) => (
-          <li key={c.id} className={`rk-row rn-ch cat-${c.category.id}${c.rank <= 3 ? ` is-top${c.rank}` : ''}`}>
-            <span className="rk-rank">{c.rank}</span>
-            <span className="cl-icon-tile rn-ch-icon">
-              <CategoryIcon id={c.category.id} size={17} strokeWidth={1.8} />
-            </span>
-            <Link to={`/challenges/${c.id}`} className="rk-name rn-ch-name">
-              {c.title}
-              <span className="rn-ch-meta">
-                {MODE_LABEL[c.mode]} · {c.participantCount}명 · {c.dayNumber}일째 / {c.totalDays}일
-              </span>
-            </Link>
-            <span className="rn-rate">
-              {c.rate.toFixed(1)}%
-              <span className="my-ch-bar" aria-hidden="true">
-                <span style={{ width: `${Math.min(100, c.rate)}%` }} />
-              </span>
-            </span>
-          </li>
-        ))}
-      </ol>
     </>
   )
 }

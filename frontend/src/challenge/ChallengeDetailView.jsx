@@ -2,9 +2,17 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { walletApi } from '../api/client.js'
 import { Avatar } from '../components/UserMenu.jsx'
-import { MODE_LABEL, dDayText, daysBetween, frequencyText, periodText, pointText, timeText, toIsoDate } from './format.js'
+import {
+  MODE_LABEL,
+  dDayText,
+  daysBetween,
+  frequencyText,
+  periodText,
+  pointText,
+  timeText,
+  toIsoDate,
+} from './format.js'
 import { CategoryIcon } from './icons.jsx'
-import { ChallengeRanking } from './ChallengeRanking.jsx'
 import { VerificationPanel } from './VerificationPanel.jsx'
 
 // 참가자 동그라미 색 (사진이 없으면 닉네임 첫 글자 + 이 색들을 돌아가며)
@@ -88,7 +96,6 @@ export function ChallengeDetailView({
 
         {/* 진행 중에는 가장 자주 보는 오늘의 인증을 맨 위에 */}
         {showVerification && c.member && started && <VerificationPanel challenge={c} />}
-        {showVerification && c.member && started && <ChallengeRanking challengeId={c.id} />}
 
         <dl className="mc-rows dt-rows">
           <div>
@@ -436,7 +443,8 @@ function GiveUpBox({ busy, onGiveUp }) {
   return (
     <div className="dt-delete is-confirming" role="alert">
       <p>
-        정말 포기할까요? 실패로 처리되고 챌린지에서 나가요. 오픈채팅과 인증 사진도 더는 볼 수 없고, 다시 참여할 수 없어요.
+        정말 포기할까요? 실패로 처리되고 챌린지에서 나가요. 오픈채팅과 인증 사진도 더는 볼 수 없고, 다시 참여할 수
+        없어요.
       </p>
       <div className="dt-delete-actions">
         <button type="button" className="btn btn-outline" onClick={() => setConfirming(false)} disabled={busy}>
