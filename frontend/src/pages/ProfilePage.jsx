@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { profileApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { MODE_LABEL, daysBetween, toIsoDate } from '../challenge/format.js'
@@ -8,7 +8,7 @@ import { CategoryIcon } from '../challenge/icons.jsx'
 /**
  * 회원 프로필 (/users/:id). 랭킹·참가자 목록에서 사람을 누르면 온다.
  * 프로필과 기록을 카드 하나로, 참여 중인 공개 챌린지는 목록 카드 하나로 보여 준다.
- * 팔로우·메시지는 다음 단계에서 연다.
+ * [메시지]는 서로 팔로우(맞팔로우)했을 때만 대화방으로 가고, 아니면 왜 안 되는지 안내한다.
  */
 export function ProfilePage() {
   const { id } = useParams()
@@ -17,6 +17,9 @@ export function ProfilePage() {
   const [state, setState] = useState({ key: null, profile: null, error: '' })
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState('')
+  // 맞팔로우가 아닌데 [메시지]를 누르면 띄우는 안내
+  const [msgNotice, setMsgNotice] = useState(false)
+  const navigate = useNavigate()
   // 로그인 상태가 정해진 뒤에 불러와야 '내가 팔로우 중인지'가 맞게 온다
   const loadKey = `${id}|${status}`
 
@@ -47,6 +50,19 @@ export function ProfilePage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  function openMessage() {
+    const u = state.profile
+    if (status !== 'authed') {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+    if (u.following && u.followsMe) {
+      navigate(`/messages/${u.id}`)
+      return
+    }
+    setMsgNotice(true)
   }
 
   if (state.key !== loadKey) return <p className="loading">불러오는 중…</p>
@@ -124,12 +140,7 @@ export function ProfilePage() {
                   )}
                 </button>
               )}
-              <button
-                type="button"
-                className="pf-msg"
-                disabled
-                title="서로 팔로우하면 메시지를 보낼 수 있어요 (곧 열려요)"
-              >
+              <button type="button" className="pf-msg" onClick={openMessage} aria-expanded={msgNotice}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                   <path d="M4 5h16v11H8l-4 4V5z" strokeWidth="1.8" strokeLinejoin="round" />
                 </svg>
@@ -139,6 +150,33 @@ export function ProfilePage() {
           )}
         </div>
 
+        {msgNotice && !(u.following && u.followsMe) && (
+          <div className="pf-msg-notice" role="status">
+            <span className="pf-msg-notice-icon" aria-hidden="true">
+              💬
+            </span>
+            <div>
+              <strong>메시지는 서로 팔로우한 친구끼리만 보낼 수 있어요</strong>
+              <p>
+                {u.following
+                  ? `${u.nickname}님도 나를 팔로우하면 바로 메시지를 보낼 수 있어요. 조금만 기다려 주세요!`
+                  : u.followsMe
+                    ? `${u.nickname}님은 이미 나를 팔로우하고 있어요. 나도 팔로우하면 바로 대화할 수 있어요!`
+                    : `먼저 ${u.nickname}님을 팔로우해 보세요. ${u.nickname}님도 나를 팔로우하면 대화할 수 있어요.`}
+              </p>
+            </div>
+            <div className="pf-msg-notice-actions">
+              {!u.following && (
+                <button type="button" className="pf-follow" onClick={toggleFollow} disabled={busy}>
+                  + 팔로우하기
+                </button>
+              )}
+              <button type="button" className="pf-msg-close" onClick={() => setMsgNotice(false)} aria-label="안내 닫기">
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
         {actionError && <p className="form-error">{actionError}</p>}
 
         <ul className="pf-stats">

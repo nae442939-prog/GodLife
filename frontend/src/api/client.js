@@ -242,6 +242,22 @@ export const profileApi = {
   unfollow: (userId) => apiFetch(`/api/users/${userId}/follow`, { method: 'DELETE' }),
 }
 
+// 1:1 메시지 (맞팔로우끼리만 보낼 수 있음)
+export const messageApi = {
+  conversations: () => apiFetch('/api/messages'),
+  unreadCount: () => apiFetch('/api/messages/unread-count'),
+  // 상대 + 지금 보낼 수 있는지(canSend, reason)
+  room: (userId) => apiFetch(`/api/messages/${userId}/room`),
+  list: (userId, { after, before } = {}) => {
+    const params = new URLSearchParams()
+    if (after != null) params.set('after', after)
+    if (before != null) params.set('before', before)
+    const qs = params.toString()
+    return apiFetch(`/api/messages/${userId}${qs ? `?${qs}` : ''}`)
+  },
+  send: (userId, content) => apiFetch(`/api/messages/${userId}`, { method: 'POST', body: { content } }),
+}
+
 // 랭킹 메뉴 (비로그인도 볼 수 있음, 로그인하면 내 순위가 같이 온다)
 export const rankingApi = {
   // metric = month_verify | max_streak | month_reward | success_rate
