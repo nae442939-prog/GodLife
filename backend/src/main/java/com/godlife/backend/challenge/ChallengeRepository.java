@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,7 +21,8 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
      */
     @Query(value = """
             SELECT c FROM Challenge c JOIN FETCH c.category
-            WHERE c.status = com.godlife.backend.challenge.ChallengeStatus.RECRUITING
+            WHERE c.status IN (com.godlife.backend.challenge.ChallengeStatus.RECRUITING,
+                               com.godlife.backend.challenge.ChallengeStatus.ONGOING)
               AND c.startDate >= :today
               AND c.visibility = com.godlife.backend.challenge.ChallengeVisibility.PUBLIC
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
@@ -29,7 +31,8 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
             """,
             countQuery = """
             SELECT COUNT(c) FROM Challenge c
-            WHERE c.status = com.godlife.backend.challenge.ChallengeStatus.RECRUITING
+            WHERE c.status IN (com.godlife.backend.challenge.ChallengeStatus.RECRUITING,
+                               com.godlife.backend.challenge.ChallengeStatus.ONGOING)
               AND c.startDate >= :today
               AND c.visibility = com.godlife.backend.challenge.ChallengeVisibility.PUBLIC
               AND (:categoryId IS NULL OR c.category.id = :categoryId)
@@ -58,6 +61,24 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
             ORDER BY c.startDate, c.id
             """)
     List<Challenge> findMine(@Param("userId") Long userId, @Param("today") LocalDate today);
+
+    /** 종료일이 지났는데 아직 끝나지 않은 챌린지 (자정 스케줄러가 종료 처리) */
+    @Query("""
+            SELECT c.id FROM Challenge c
+            WHERE c.endDate < :today
+              AND c.status IN (com.godlife.backend.challenge.ChallengeStatus.RECRUITING,
+                               com.godlife.backend.challenge.ChallengeStatus.ONGOING)
+            """)
+    List<Long> findIdsToEnd(@Param("today") LocalDate today);
+
+    /** 시작일이 된 모집 중 챌린지를 진행 중으로 (자정 스케줄러) */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            UPDATE Challenge c SET c.status = com.godlife.backend.challenge.ChallengeStatus.ONGOING
+            WHERE c.status = com.godlife.backend.challenge.ChallengeStatus.RECRUITING
+              AND c.startDate <= :today AND c.endDate >= :today
+            """)
+    int startDue(@Param("today") LocalDate today);
 
     @Query("SELECT c FROM Challenge c JOIN FETCH c.category WHERE c.id = :id")
     Optional<Challenge> findWithCategory(@Param("id") Long id);

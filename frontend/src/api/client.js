@@ -154,6 +154,8 @@ export const challengeApi = {
   create: (payload) => apiFetch('/api/challenges', { method: 'POST', body: payload }),
   join: (id) => apiFetch(`/api/challenges/${id}/participants`, { method: 'POST' }),
   leave: (id) => apiFetch(`/api/challenges/${id}/participants/me`, { method: 'DELETE' }),
+  // 진행 중 포기: 실패로 치고 챌린지에서 나간다 (204)
+  giveUp: (id) => apiFetch(`/api/challenges/${id}/participants/me/give-up`, { method: 'POST' }),
   // 초대 링크(/challenges/join/{code}): 비공개 챌린지는 이 코드로만 보고 참여한다.
   getByInvite: (code) => apiFetch(`/api/challenges/invite/${encodeURIComponent(code)}`),
   joinByInvite: (code) =>

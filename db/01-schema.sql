@@ -183,7 +183,7 @@ CREATE TABLE challenge_participants (
   challenge_id   BIGINT   NOT NULL,
   user_id        BIGINT   NOT NULL,
   deposit_amount BIGINT   NOT NULL DEFAULT 0 COMMENT '참가 시점 예치 포인트 스냅샷',
-  status         ENUM('ACTIVE','COMPLETED','FAILED','LEFT','KICKED') NOT NULL DEFAULT 'ACTIVE' COMMENT 'KICKED = 방장이 내보냄',
+  status         ENUM('ACTIVE','COMPLETED','FAILED','GAVE_UP','LEFT','KICKED') NOT NULL DEFAULT 'ACTIVE' COMMENT 'COMPLETED/FAILED = 종료 시 판정, GAVE_UP = 진행 중 포기, KICKED = 방장이 내보냄',
   success_days   INT      NOT NULL DEFAULT 0 COMMENT '인증 성공 일수 (승인 시 증가)',
   current_streak INT      NOT NULL DEFAULT 0,
   max_streak     INT      NOT NULL DEFAULT 0,

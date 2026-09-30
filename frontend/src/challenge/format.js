@@ -74,3 +74,8 @@ export function closedText(state, c) {
     ENDED: '끝난 챌린지예요',
   }[state]
 }
+
+/** 내 진행 현황(달성률)을 볼 수 있는 참가 상태: 참여 중이거나, 끝난 뒤 성공·실패 판정을 받음 */
+export function hasProgress(c) {
+  return ['ACTIVE', 'COMPLETED', 'FAILED'].includes(c.myStatus)
+}

@@ -53,6 +53,19 @@ export function ChallengeDetailPage() {
     }
   }
 
+  // 포기하면 챌린지에서 나가므로(비공개면 상세도 못 봄) 내 챌린지로 보낸다
+  async function giveUp() {
+    setBusy(true)
+    setActionError('')
+    try {
+      await challengeApi.giveUp(id)
+      navigate('/challenges/mine', { replace: true })
+    } catch (err) {
+      setActionError(err.message)
+      setBusy(false)
+    }
+  }
+
   if (state.key !== loadKey) return <p className="loading">불러오는 중…</p>
   if (state.error) {
     return (
@@ -74,6 +87,7 @@ export function ChallengeDetailPage() {
       onLeave={() => act(challengeApi.leave)}
       onRegenerateInvite={() => act(challengeApi.regenerateInvite)}
       onDelete={remove}
+      onGiveUp={giveUp}
       showVerification
     />
   )

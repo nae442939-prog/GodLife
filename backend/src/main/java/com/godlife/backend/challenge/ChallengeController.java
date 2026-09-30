@@ -7,6 +7,7 @@ import com.godlife.backend.challenge.dto.ChallengeCreateRequest;
 import com.godlife.backend.challenge.dto.ChallengeDetailResponse;
 import com.godlife.backend.challenge.dto.ChallengeSummaryResponse;
 import com.godlife.backend.challenge.dto.PageResponse;
+import com.godlife.backend.chat.ChatService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.Locale;
 public class ChallengeController {
 
     private final ChallengeService challengeService;
+    private final ChatService chatService;
 
     @GetMapping("/api/categories")
     public List<CategoryResponse> categories() {
@@ -96,6 +98,17 @@ public class ChallengeController {
     public ChallengeDetailResponse leave(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
         challengeService.leave(id, authUser.id());
         return challengeService.detail(id, authUser.id());
+    }
+
+    /**
+     * 진행 중 포기. 실패로 치고 챌린지에서 나간다. 채팅방에 안내가 남는다.
+     * 나간 뒤에는 비공개 챌린지 상세를 볼 수 없으므로 상세 대신 204 를 돌려준다.
+     */
+    @PostMapping("/api/challenges/{id}/participants/me/give-up")
+    public ResponseEntity<Void> giveUp(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
+        ChallengeService.GaveUp gaveUp = challengeService.giveUp(id, authUser.id());
+        chatService.postSystem(id, gaveUp.hostId(), gaveUp.nickname() + "님이 챌린지를 포기하고 나갔어요.");
+        return ResponseEntity.noContent().build();
     }
 
     private static SortOption parseSort(String sort) {

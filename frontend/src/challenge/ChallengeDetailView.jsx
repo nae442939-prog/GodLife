@@ -23,6 +23,7 @@ export function ChallengeDetailView({
   onLeave,
   onRegenerateInvite,
   onDelete,
+  onGiveUp,
   joinLabel = '참여하기',
   notice,
   showVerification = false,
@@ -127,6 +128,7 @@ export function ChallengeDetailView({
             joinLabel={joinLabel}
             onJoin={onJoin}
             onLeave={onLeave}
+            onGiveUp={onGiveUp}
           />
           {actionError && <p className="form-error">{actionError}</p>}
         </div>
@@ -295,7 +297,7 @@ function inviteClosedReason(c) {
   return '이미 진행 중인 챌린지라 새로 참여할 수 없어요. 초대 링크는 시작일까지만 쓸 수 있어요.'
 }
 
-function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLeave }) {
+function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLeave, onGiveUp }) {
   if (!authed) {
     return (
       <Link to="/login" state={{ from }} className="btn btn-dark btn-block dt-btn">
@@ -311,6 +313,8 @@ function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLea
           <button type="button" className="btn btn-outline btn-block dt-btn" onClick={onLeave} disabled={busy}>
             참여 취소
           </button>
+        ) : onGiveUp && c.status !== 'ENDED' && c.status !== 'SETTLED' ? (
+          <GiveUpBox busy={busy} onGiveUp={onGiveUp} />
         ) : onLeave ? (
           <p className="dt-note">시작된 챌린지는 참여를 취소할 수 없어요.</p>
         ) : (
@@ -321,6 +325,10 @@ function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLea
       </div>
     )
   }
+  // 끝났거나 포기한 챌린지: 참여 버튼 대신 결과
+  if (c.myStatus === 'COMPLETED') return <p className="joined-badge dt-result">성공한 챌린지예요 🎉</p>
+  if (c.myStatus === 'FAILED') return <p className="dt-result is-failed">아쉽게 실패한 챌린지예요</p>
+  if (c.myStatus === 'GAVE_UP') return <p className="dt-result is-failed">포기하고 나간 챌린지예요</p>
   if (!c.recruiting) return <Disabled>모집이 끝났어요</Disabled>
   if (c.participantCount >= c.maxParticipants) return <Disabled>정원이 다 찼어요</Disabled>
   if (c.mode === 'BET') {
@@ -335,6 +343,36 @@ function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLea
     <button type="button" className="btn btn-dark btn-block dt-btn" onClick={onJoin} disabled={busy}>
       {busy ? '참여하는 중…' : joinLabel}
     </button>
+  )
+}
+
+/** 진행 중 포기. 한 번 더 확인한다. 포기하면 실패로 치고 채팅·인증 사진에서도 나간다. */
+function GiveUpBox({ busy, onGiveUp }) {
+  const [confirming, setConfirming] = useState(false)
+
+  if (!confirming) {
+    return (
+      <p className="dt-giveup">
+        <button type="button" className="link-button is-muted" onClick={() => setConfirming(true)}>
+          챌린지 포기하기
+        </button>
+      </p>
+    )
+  }
+  return (
+    <div className="dt-delete is-confirming" role="alert">
+      <p>
+        정말 포기할까요? 실패로 처리되고 챌린지에서 나가요. 오픈채팅과 인증 사진도 더는 볼 수 없고, 다시 참여할 수 없어요.
+      </p>
+      <div className="dt-delete-actions">
+        <button type="button" className="btn btn-outline" onClick={() => setConfirming(false)} disabled={busy}>
+          계속하기
+        </button>
+        <button type="button" className="btn dt-delete-confirm" onClick={onGiveUp} disabled={busy}>
+          {busy ? '처리하는 중…' : '포기하기'}
+        </button>
+      </div>
+    </div>
   )
 }
 
