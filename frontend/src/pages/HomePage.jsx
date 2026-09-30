@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { challengeApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { ChallengeCard } from '../challenge/ChallengeCard.jsx'
+import { HomeRanking } from '../ranking/HomeRanking.jsx'
 
 // body 의 \n 은 문장 단위 줄바꿈이다. (.step-body p 가 white-space: pre-line)
 const STEPS = [
@@ -25,12 +26,19 @@ const STEPS = [
 ]
 
 const FEATURES = [
-  { title: '직접 학습한 AI 인증', body: '외부 AI 서비스가 아니라, 직접 파인튜닝한 이미지 분류 모델이 인증 사진을 확인해요.' },
+  {
+    title: '직접 학습한 AI 인증',
+    body: '외부 AI 서비스가 아니라, 직접 파인튜닝한 이미지 분류 모델이 인증 사진을 확인해요.',
+  },
   { title: '실시간 랭킹', body: '같은 챌린지 참가자끼리 인증 횟수와 연속 달성 기록을 겨뤄요.' },
-  { title: '안전한 포인트', body: '포인트는 챌린지 참여와 포인트 상점에서만 쓰여요. 직접 충전하고 쓰지 않은 금액만 결제 취소로 환불되고, 챌린지·이벤트로 얻은 포인트는 현금화할 수 없어요.' },
+  {
+    title: '안전한 포인트',
+    body: '포인트는 챌린지 참여와 포인트 상점에서만 쓰여요. 직접 충전하고 쓰지 않은 금액만 결제 취소로 환불되고, 챌린지·이벤트로 얻은 포인트는 현금화할 수 없어요.',
+  },
 ]
 
-// 아래 목록(HERO_CHALLENGE / RANKING / COMMUNITY)은 랭킹·커뮤니티 API가 아직 없어서 넣은 목업 데이터다.
+// 아래 목록(HERO_CHALLENGE / RANKING / COMMUNITY)은 첫 화면 장식·커뮤니티용 목업 데이터다.
+// ('실시간 랭킹' 구역은 실제 랭킹 API 를 시상대로 보여 준다. RANKING 은 첫 화면 오른쪽 장식 카드에만 쓴다)
 // HERO_CHALLENGE 는 첫 화면 오른쪽 장식 그림용. ('지금 모집 중인 챌린지' 칸은 실제 API 를 쓴다)
 const HERO_CHALLENGE = { category: '운동', title: '아침 6시 기상 러닝', participants: 32, points: 10000 }
 
@@ -188,21 +196,11 @@ export function HomePage() {
         <div className="container">
           <div className="section-head">
             <h2>실시간 랭킹</h2>
-            <span className="badge">준비 중</span>
+            <Link to="/rankings?tab=users" className="section-more">
+              전체 보기 →
+            </Link>
           </div>
-          <ol className="ranking-list">
-            {RANKING.map((r) => (
-              <li key={r.rank} className="ranking-row">
-                <span className="rank-num" aria-hidden="true">
-                  {r.rank}
-                </span>
-                <span className="rank-name">{r.nickname}</span>
-                <span className="rank-detail">
-                  연속 {r.streak}일 · 성공률 {r.successRate}%
-                </span>
-              </li>
-            ))}
-          </ol>
+          <HomeRanking />
         </div>
       </section>
 
