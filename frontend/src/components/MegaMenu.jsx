@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { verificationApi } from '../api/client.js'
+import { rankingApi, verificationApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 
 /**
@@ -11,11 +11,12 @@ export function MegaMenu({ label, to, links, aside }) {
   const [open, setOpen] = useState(false)
   const boxRef = useRef(null)
   const location = useLocation()
-  const [lastPath, setLastPath] = useState(location.pathname)
+  const here = location.pathname + location.search
+  const [lastPath, setLastPath] = useState(here)
 
-  // 다른 화면으로 이동하면 닫는다 (패널 안 링크를 눌렀을 때)
-  if (lastPath !== location.pathname) {
-    setLastPath(location.pathname)
+  // 다른 화면(또는 같은 화면의 다른 탭 ?tab=)으로 이동하면 닫는다 (패널 안 링크를 눌렀을 때)
+  if (lastPath !== here) {
+    setLastPath(here)
     setOpen(false)
   }
 
@@ -115,6 +116,47 @@ export function TodayChallenges({ open }) {
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  )
+}
+
+/** 랭킹 메가 메뉴 오른쪽: 로그인했으면 이번 달 인증 기준 내 순위 (패널이 열릴 때 불러온다) */
+export function MyRankSummary({ open }) {
+  const { status } = useAuth()
+  const [me, setMe] = useState(undefined)
+
+  useEffect(() => {
+    if (!open || status !== 'authed') return
+    let cancelled = false
+    rankingApi
+      .users('month_verify')
+      .then((r) => !cancelled && setMe(r.me))
+      .catch(() => !cancelled && setMe(null))
+    return () => {
+      cancelled = true
+    }
+  }, [open, status])
+
+  return (
+    <div className="mega-today">
+      <p className="mega-today-title">이번 달 내 순위</p>
+      {status !== 'authed' ? (
+        <p className="mega-today-empty">
+          <Link to="/login" tabIndex={open ? 0 : -1}>
+            로그인
+          </Link>
+          하면 내 순위를 볼 수 있어요.
+        </p>
+      ) : me === undefined ? (
+        <p className="mega-today-empty">불러오는 중…</p>
+      ) : me === null ? (
+        <p className="mega-today-empty">아직 이번 달 인증이 없어요. 오늘 인증하고 순위에 올라 봐요!</p>
+      ) : (
+        <p className="mega-rank">
+          <strong>{me.rank}위</strong>
+          <span>이번 달 인증 {Math.round(me.value)}회</span>
+        </p>
       )}
     </div>
   )
