@@ -5217,3 +5217,433 @@ a.back-button:hover {
   font-size: 0.84rem;
   color: #8f8a7f;
 }
+
+/* ---------- 랭킹 메뉴 ---------- */
+
+/* 화면 전체 배경: 홈 '지금 모집 중인 챌린지' 구역(section-alt)과 같은 색.
+   내 순위 카드·내 줄은 배경과 다른 민트('나' 표시와 같은 계열)로 눈에 띄게 */
+.rn-page {
+  --rank-me: #e3f5ec;
+  --rank-me-line: #b9e4cd;
+  min-height: 100%;
+  background: var(--surface-alt);
+}
+
+@media (prefers-color-scheme: dark) {
+  .rn-page {
+    --rank-me: #16302a;
+    --rank-me-line: #24503f;
+  }
+}
+
+.rn-page .rk-row.is-mine {
+  background: var(--rank-me);
+}
+
+.rn-page .pd-avatar {
+  border-color: var(--surface-alt);
+}
+
+.rn-body {
+  max-width: 860px;
+}
+
+.rn-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.rn-metric {
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.rn-metric:hover {
+  border-color: var(--header-nav);
+}
+
+.rn-metric.is-active {
+  color: var(--surface);
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.rn-metric:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.rn-me {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  font-size: 0.92rem;
+  color: var(--header-nav);
+  background: var(--rank-me);
+  border: 1px solid var(--rank-me-line);
+  border-radius: 14px;
+}
+
+.rn-me strong {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.rn-me-value {
+  margin-left: auto;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.rn-value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-row.is-top1 .rk-rank::after {
+  content: ' 🥇';
+}
+
+.rk-row.is-top2 .rk-rank::after {
+  content: ' 🥈';
+}
+
+.rk-row.is-top3 .rk-rank::after {
+  content: ' 🥉';
+}
+
+.rk-row.is-top1 .rk-rank,
+.rk-row.is-top2 .rk-rank,
+.rk-row.is-top3 .rk-rank {
+  width: 52px;
+  text-align: left;
+}
+
+.rn-help {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.rn-ch {
+  --cat: var(--muted);
+}
+
+.rn-ch.cat-1 {
+  --cat: var(--primary);
+}
+
+.rn-ch.cat-2 {
+  --cat: var(--accent-blue);
+}
+
+.rn-ch.cat-3 {
+  --cat: var(--accent-mint);
+}
+
+.rn-ch.cat-4 {
+  --cat: var(--accent-amber);
+}
+
+.rn-ch.cat-5 {
+  --cat: var(--header-nav);
+}
+
+.rn-ch-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.rn-ch-name {
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+}
+
+.rn-ch-name:hover {
+  text-decoration: none;
+  color: var(--header-nav);
+}
+
+.rn-ch-meta {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.rn-rate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+  width: 80px;
+  font-weight: 800;
+}
+
+/* 랭킹 메가 메뉴 오른쪽: 이번 달 내 순위 */
+.mega-rank {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+
+.mega-rank strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.mega-rank span {
+  font-size: 0.9rem;
+  color: var(--header-nav);
+}
+
+/* ---------- 랭킹 시상대 (은 · 금 · 동) ---------- */
+
+.pd {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  margin: 30px 0 34px;
+  padding: 30px 12px 0;
+}
+
+/* 뒤쪽 은은한 조명 */
+.pd::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 0;
+  width: min(560px, 100%);
+  height: 78%;
+  background: radial-gradient(ellipse at 50% 35%, rgba(255, 214, 120, 0.35), transparent 70%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* 바닥 그림자 */
+.pd::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  z-index: 0;
+  width: min(720px, 96%);
+  height: 20px;
+  background: radial-gradient(ellipse at center, rgba(60, 40, 20, 0.22), transparent 70%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pd-col {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 1 240px;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.pd-crown {
+  width: 34px;
+  height: 26px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 3px rgba(194, 133, 31, 0.4));
+}
+
+.pd-avatars {
+  display: flex;
+  justify-content: center;
+}
+
+.pd-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-left: -12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  object-fit: cover;
+  border: 3px solid var(--bg);
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+.pd-avatar:first-child {
+  margin-left: 0;
+}
+
+.pd-avatar.is-more {
+  font-size: 12px;
+  color: var(--header-nav);
+  background: var(--surface);
+}
+
+.pd-col.is-gold .pd-avatar {
+  width: 50px;
+  height: 50px;
+  font-size: 16px;
+}
+
+.pd-names {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 36px;
+  margin: 10px 0 0;
+  padding: 0 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text);
+}
+
+.pd-me {
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #0f9c86;
+  background: #e4f8f3;
+  border-radius: 999px;
+}
+
+.pd-count {
+  margin-top: 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0f9c86;
+  background: #e4f8f3;
+  border-radius: 999px;
+}
+
+/* 단상: 윗면(밝은 뚜껑) + 앞면(그라데이션) + 안쪽 그늘로 입체감 */
+.pd-block {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  margin-top: 26px;
+  padding-top: 16px;
+  border-radius: 0 0 4px 4px;
+  box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.1), 0 8px 16px -8px rgba(60, 40, 20, 0.35);
+}
+
+.pd-block::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: var(--pd-top);
+  border-radius: 10px 10px 0 0;
+  transform: perspective(120px) rotateX(38deg);
+  transform-origin: bottom;
+}
+
+/* 등수는 메달 원 안에 */
+.pd-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--pd-ink);
+  background: rgba(255, 255, 255, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.pd-col.is-silver .pd-block {
+  --pd-top: #f4f4f2;
+  --pd-ink: #7c8088;
+  height: 110px;
+  background: linear-gradient(180deg, #e3e4e2, #b9bcc2);
+}
+
+.pd-col.is-gold .pd-block {
+  --pd-top: #fbe7ae;
+  --pd-ink: #b8791c;
+  height: 152px;
+  background: linear-gradient(180deg, #f5d27a, #dd9c2e);
+}
+
+.pd-col.is-bronze .pd-block {
+  --pd-top: #f6d6bc;
+  --pd-ink: #a8622f;
+  height: 84px;
+  background: linear-gradient(180deg, #ebb58c, #c97f4b);
+}
+
+/* 기록 묶음이 3개보다 적으면 빈 자리만 남긴다 */
+.pd-col.is-empty {
+  visibility: hidden;
+}
+
+@media (max-width: 560px) {
+  .pd {
+    gap: 6px;
+  }
+
+  .pd-avatar {
+    width: 32px;
+    height: 32px;
+    margin-left: -10px;
+    font-size: 12px;
+  }
+
+  .pd-col.is-gold .pd-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .pd-rank {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
+
+  .pd-col.is-silver .pd-block {
+    height: 80px;
+  }
+
+  .pd-col.is-gold .pd-block {
+    height: 112px;
+  }
+
+  .pd-col.is-bronze .pd-block {
+    height: 60px;
+  }
+}

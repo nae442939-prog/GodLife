@@ -234,6 +234,13 @@ export const settlementApi = {
   ranking: (challengeId) => apiFetch(`/api/challenges/${challengeId}/ranking`),
 }
 
+// 랭킹 메뉴 (비로그인도 볼 수 있음, 로그인하면 내 순위가 같이 온다)
+export const rankingApi = {
+  // metric = month_verify | max_streak | month_reward | success_rate
+  users: (metric) => apiFetch(`/api/rankings/users?metric=${metric}`),
+  challenges: () => apiFetch('/api/rankings/challenges'),
+}
+
 // 포인트 지갑. 충전 포인트(참가비·결제 취소 환불 대상)와 보상 포인트(상점 전용)를 따로 보여 준다.
 export const walletApi = {
   get: () => apiFetch('/api/wallet'),
