@@ -4350,7 +4350,8 @@ a.back-button:hover {
   }
 }
 
-.my-ch-page {
+/* 제목 줄은 넓은 컨테이너(챌린지 목록과 같은 폭), 목록 본문만 좁게 */
+.my-ch-body {
   max-width: 860px;
 }
 
