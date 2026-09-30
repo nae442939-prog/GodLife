@@ -157,6 +157,56 @@ h3 {
   color: var(--text);
 }
 
+/* 메뉴에 마우스를 올리면 글자 아래 코랄 선이 가운데서 양옆으로 펴진다. 지금 보는 메뉴는 선이 계속 남아 있다. */
+.menu a,
+.menu-soon {
+  position: relative;
+  padding: 6px 2px;
+  transition: color 0.2s ease;
+}
+
+.menu a::after,
+.menu-soon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transition: transform 0.25s ease;
+}
+
+.menu a:hover {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.menu a:hover::after,
+.menu a.active::after {
+  transform: scaleX(1);
+}
+
+.menu a:focus-visible {
+  outline: none;
+  color: var(--primary);
+}
+
+.menu a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* 준비 중 메뉴는 누를 수 없으니 흐린 선만 보여 준다. */
+.menu-soon::after {
+  background: var(--border);
+}
+
+.menu-soon:hover::after {
+  transform: scaleX(1);
+}
+
 .menu-soon {
   cursor: default;
 }
