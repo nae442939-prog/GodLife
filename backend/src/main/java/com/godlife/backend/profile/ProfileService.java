@@ -5,6 +5,7 @@ import com.godlife.backend.challenge.ChallengeRepository;
 import com.godlife.backend.challenge.ParticipantStatus;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.follow.FollowRepository;
 import com.godlife.backend.profile.dto.ProfileResponse;
 import com.godlife.backend.profile.dto.ProfileResponse.ProfileChallenge;
 import com.godlife.backend.ranking.RankingMetric;
@@ -28,6 +29,7 @@ public class ProfileService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository participantRepository;
     private final RankingService rankingService;
+    private final FollowRepository followRepository;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -43,6 +45,9 @@ public class ProfileService {
                 rankingService.valueOrNull(RankingMetric.SUCCESS_RATE, userId),
                 participantRepository.countByUserIdAndStatus(userId, ParticipantStatus.COMPLETED),
                 challengeRepository.findPublicJoined(userId).stream().map(c -> ProfileChallenge.of(c, today)).toList(),
-                userId.equals(viewerId));
+                userId.equals(viewerId),
+                followRepository.followerCount(userId), followRepository.followingCount(userId),
+                viewerId != null && followRepository.exists(viewerId, userId),
+                viewerId != null && followRepository.exists(userId, viewerId));
     }
 }

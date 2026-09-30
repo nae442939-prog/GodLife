@@ -50,15 +50,7 @@ export function RankingPage() {
 
         <div className="rn-body">
           {tab === 'users' && <UserRanking metric={metric} onMetric={(m) => update('metric', m)} />}
-          {tab === 'friends' && (
-            <div className="my-ch-empty">
-              <p>
-                팔로우 기능이 생기면 친구끼리만 비교하는 랭킹을 볼 수 있어요.
-                <br />
-                지금은 전체 랭킹과 챌린지 랭킹을 둘러보세요.
-              </p>
-            </div>
-          )}
+          {tab === 'friends' && <UserRanking friends metric={metric} onMetric={(m) => update('metric', m)} />}
           {tab === 'challenges' && <ChallengeRanking />}
         </div>
       </div>
@@ -66,28 +58,47 @@ export function RankingPage() {
   )
 }
 
-function UserRanking({ metric, onMetric }) {
+/** 전체 랭킹 · 친구 랭킹(friends: 나 + 내가 팔로우한 사람, 로그인 필요)이 같이 쓴다 */
+function UserRanking({ metric, onMetric, friends = false }) {
   const { status } = useAuth()
   const [data, setData] = useState({ key: null, top: [], me: null, error: '' })
-  const key = `${metric}|${status}`
+  const key = `${friends}|${metric}|${status}`
   const m = METRICS.find((x) => x.value === metric) ?? METRICS[0]
 
   useEffect(() => {
-    if (status === 'loading') return
+    if (status === 'loading' || (friends && status !== 'authed')) return
     let cancelled = false
-    rankingApi
-      .users(metric)
+    rankingApi[friends ? 'friends' : 'users'](metric)
       .then((r) => !cancelled && setData({ key, top: r.top, me: r.me, error: '' }))
       .catch((err) => !cancelled && setData({ key, top: [], me: null, error: err.message }))
     return () => {
       cancelled = true
     }
-  }, [metric, status, key])
+  }, [metric, status, key, friends])
 
   const value = (v) => `${m.value === 'success_rate' ? v.toFixed(1) : Math.round(v).toLocaleString()}${m.unit}`
 
+  if (friends && status === 'anon') {
+    return (
+      <div className="my-ch-empty">
+        <p>로그인하면 팔로우한 친구들과 순위를 비교할 수 있어요.</p>
+        <Link to="/login" state={{ from: '/rankings?tab=friends' }} className="btn btn-dark">
+          로그인
+        </Link>
+      </div>
+    )
+  }
+  // 친구 랭킹인데 팔로우한 사람이 없으면(나만 있거나 아무도 없음) 팔로우 안내
+  const lonely = friends && data.key === key && !data.error && data.top.every((r) => r.mine)
+
   return (
     <>
+      {lonely && (
+        <div className="rn-hint">
+          아직 팔로우한 친구가 없어요. <Link to="/rankings?tab=users">전체 랭킹</Link>이나 챌린지 참가자에서 프로필을
+          눌러 팔로우해 보세요.
+        </div>
+      )}
       <div className="rn-metrics" role="group" aria-label="랭킹 기준">
         {METRICS.map((x) => (
           <button
@@ -127,7 +138,10 @@ function UserRanking({ metric, onMetric }) {
           ) : (
             <ol className="rk">
               {data.top.map((r, i) => (
-                <li key={i} className={`rk-row is-link${r.mine ? ' is-mine' : ''}${r.rank <= 3 ? ` is-top${r.rank}` : ''}`}>
+                <li
+                  key={i}
+                  className={`rk-row is-link${r.mine ? ' is-mine' : ''}${r.rank <= 3 ? ` is-top${r.rank}` : ''}`}
+                >
                   {/* 줄 전체가 프로필 링크: 마우스를 올리면 누구를 고르는지 보이게 떠오른다 */}
                   <Link to={`/users/${r.userId}`} className="rk-row-link" aria-label={`${r.nickname} 프로필 보기`}>
                     <span className="rk-rank">{r.rank}</span>

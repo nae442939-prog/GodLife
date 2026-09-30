@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { profileApi } from '../api/client.js'
+import { useAuth } from '../auth/useAuth.js'
 import { MODE_LABEL, daysBetween, toIsoDate } from '../challenge/format.js'
 import { CategoryIcon } from '../challenge/icons.jsx'
 
@@ -11,20 +12,44 @@ import { CategoryIcon } from '../challenge/icons.jsx'
  */
 export function ProfilePage() {
   const { id } = useParams()
+  const location = useLocation()
+  const { status } = useAuth()
   const [state, setState] = useState({ key: null, profile: null, error: '' })
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState('')
+  // 로그인 상태가 정해진 뒤에 불러와야 '내가 팔로우 중인지'가 맞게 온다
+  const loadKey = `${id}|${status}`
 
   useEffect(() => {
+    if (status === 'loading') return
     let cancelled = false
     profileApi
       .get(id)
-      .then((profile) => !cancelled && setState({ key: id, profile, error: '' }))
-      .catch((err) => !cancelled && setState({ key: id, profile: null, error: err.message }))
+      .then((profile) => !cancelled && setState({ key: loadKey, profile, error: '' }))
+      .catch((err) => !cancelled && setState({ key: loadKey, profile: null, error: err.message }))
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [id, status, loadKey])
 
-  if (state.key !== id) return <p className="loading">불러오는 중…</p>
+  async function toggleFollow() {
+    const u = state.profile
+    setBusy(true)
+    setActionError('')
+    try {
+      await (u.following ? profileApi.unfollow(u.id) : profileApi.follow(u.id))
+      setState((st) => ({
+        ...st,
+        profile: { ...st.profile, following: !u.following, followerCount: u.followerCount + (u.following ? -1 : 1) },
+      }))
+    } catch (err) {
+      setActionError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (state.key !== loadKey) return <p className="loading">불러오는 중…</p>
   if (state.error) {
     return (
       <div className="container page">
@@ -65,17 +90,46 @@ export function ProfilePage() {
               <h1 className="pf-name">
                 {u.nickname}
                 {u.mine && <small>나</small>}
+                {u.following && u.followsMe && <small className="is-mutual">맞팔로우</small>}
+                {!u.following && u.followsMe && <small className="is-follows-me">나를 팔로우해요</small>}
               </h1>
               {u.bio && <p className="pf-bio">{u.bio}</p>}
-              {u.joinedAt && <p className="pf-joined">{u.joinedAt.replaceAll('-', '.')} 가입</p>}
+              <p className="pf-joined">
+                팔로워 <strong>{u.followerCount}</strong> · 팔로잉 <strong>{u.followingCount}</strong>
+                {u.joinedAt && ` · ${u.joinedAt.replaceAll('-', '.')} 가입`}
+              </p>
             </div>
           </div>
           {!u.mine && (
             <div className="pf-actions">
-              <button type="button" className="pf-follow" disabled title="곧 열려요">
-                + 팔로우
-              </button>
-              <button type="button" className="pf-msg" disabled title="곧 열려요">
+              {status !== 'authed' ? (
+                <Link to="/login" state={{ from: location.pathname }} className="pf-follow">
+                  + 팔로우
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className={`pf-follow${u.following ? ' is-following' : ''}`}
+                  onClick={toggleFollow}
+                  disabled={busy}
+                  aria-pressed={u.following}
+                >
+                  {u.following ? (
+                    <>
+                      <span className="pf-follow-on">팔로잉 ✓</span>
+                      <span className="pf-follow-off">언팔로우</span>
+                    </>
+                  ) : (
+                    '+ 팔로우'
+                  )}
+                </button>
+              )}
+              <button
+                type="button"
+                className="pf-msg"
+                disabled
+                title="서로 팔로우하면 메시지를 보낼 수 있어요 (곧 열려요)"
+              >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                   <path d="M4 5h16v11H8l-4 4V5z" strokeWidth="1.8" strokeLinejoin="round" />
                 </svg>
@@ -84,6 +138,8 @@ export function ProfilePage() {
             </div>
           )}
         </div>
+
+        {actionError && <p className="form-error">{actionError}</p>}
 
         <ul className="pf-stats">
           {stats.map((s) => (

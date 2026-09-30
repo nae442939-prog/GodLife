@@ -1,6 +1,8 @@
 package com.godlife.backend.ranking;
 
 import com.godlife.backend.auth.AuthUser;
+import com.godlife.backend.common.error.BusinessException;
+import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.ranking.dto.ChallengeRankingResponse;
 import com.godlife.backend.ranking.dto.UserRankingResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,18 +25,31 @@ public class RankingController {
     @GetMapping("/api/rankings/users")
     public UserRankingResponse users(@RequestParam(defaultValue = "month_verify") String metric,
                                      @AuthenticationPrincipal AuthUser authUser) {
-        RankingMetric m;
-        try {
-            m = RankingMetric.valueOf(metric.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            m = RankingMetric.MONTH_VERIFY;
+        return rankingService.users(parse(metric), authUser == null ? null : authUser.id());
+    }
+
+    /** 친구 랭킹: 나 + 내가 팔로우한 사람끼리 (로그인 필요) */
+    @GetMapping("/api/rankings/friends")
+    public UserRankingResponse friends(@RequestParam(defaultValue = "month_verify") String metric,
+                                       @AuthenticationPrincipal AuthUser authUser) {
+        if (authUser == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
-        return rankingService.users(m, authUser == null ? null : authUser.id());
+        return rankingService.friends(parse(metric), authUser.id());
     }
 
     /** 챌린지(팀) 랭킹: 진행 중인 공개 챌린지의 참가자 평균 달성률 */
     @GetMapping("/api/rankings/challenges")
     public List<ChallengeRankingResponse> challenges() {
         return rankingService.challenges();
+    }
+
+    /** 잘못된 기준은 기본(이번 달 인증)으로 */
+    private static RankingMetric parse(String metric) {
+        try {
+            return RankingMetric.valueOf(metric.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return RankingMetric.MONTH_VERIFY;
+        }
     }
 }

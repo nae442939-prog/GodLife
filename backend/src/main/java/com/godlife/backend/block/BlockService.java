@@ -3,6 +3,7 @@ package com.godlife.backend.block;
 import com.godlife.backend.block.dto.BlockedUserResponse;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.follow.FollowRepository;
 import com.godlife.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,6 +19,7 @@ public class BlockService {
 
     private final UserBlockRepository blockRepository;
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
 
     /** 이미 차단했으면 그대로 둔다(멱등). */
     @Transactional
@@ -28,6 +30,8 @@ public class BlockService {
         if (!userRepository.existsById(targetId)) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "없는 사용자예요.");
         }
+        // 차단하면 서로의 팔로우도 끊는다 (맞팔로우 1:1 메시지도 함께 막힌다)
+        followRepository.removeBoth(blockerId, targetId);
         if (blockRepository.existsByBlockerIdAndBlockedId(blockerId, targetId)) {
             return;
         }
