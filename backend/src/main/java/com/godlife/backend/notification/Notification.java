@@ -16,7 +16,7 @@ import org.hibernate.generator.EventType;
 
 import java.time.LocalDateTime;
 
-/** 알림. 지금은 신고 누적 알림(REPORT_ALERT)만 쓴다. 알림함 화면은 리텐션(3차) 때 만든다. */
+/** 알림 한 줄. 만들고 읽는 일은 대부분 {@link NotificationService}(SQL)가 하고, 이 엔티티는 신고 누적 알림에서만 직접 쓴다. */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 public class Notification {
 
     public enum Type {
-        SETTLEMENT, VERIFY_REMINDER, COMMENT, REPORT_RESULT, REPORT_ALERT
+        SETTLEMENT, VERIFY_REMINDER, COMMENT, REPORT_RESULT, REPORT_ALERT, FOLLOW, MESSAGE_REQUEST, INQUIRY_ANSWER
     }
 
     @Id

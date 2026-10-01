@@ -1,5 +1,6 @@
 package com.godlife.backend.challenge;
 
+import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.settlement.SettlementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class ChallengeLifecycleService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository participantRepository;
     private final SettlementService settlementService;
+    private final NotificationService notificationService;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
@@ -63,8 +65,15 @@ public class ChallengeLifecycleService {
         Integer reset = transactionTemplate.execute(
                 status -> participantRepository.resetMissedStreaks(today.minusDays(1)));
         Integer started = transactionTemplate.execute(status -> challengeRepository.startDue(today));
-        log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개",
-                today, ended, settled, reset, started);
+        int reminded = 0;
+        try {
+            // 오늘 시작한 챌린지까지 포함하도록 시작 처리 뒤에 만든다
+            reminded = notificationService.remindToday(today);
+        } catch (RuntimeException e) {
+            log.error("오늘 인증 알림 만들기 실패", e);
+        }
+        log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개, 인증 알림 {}건",
+                today, ended, settled, reset, started, reminded);
     }
 
     /** 챌린지 행을 잠근 채로 종료하고, 아직 판정 전(ACTIVE)인 참가자를 성공/실패로 판정한다. */

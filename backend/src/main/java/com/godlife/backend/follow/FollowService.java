@@ -4,6 +4,8 @@ import com.godlife.backend.block.UserBlockRepository;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
+import com.godlife.backend.notification.Notification;
+import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserStatus;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class FollowService {
     private final UserRepository userRepository;
     private final UserBlockRepository blockRepository;
     private final RequestThrottle throttle;
+    private final NotificationService notificationService;
 
     @Transactional
     public void follow(Long me, Long target) {
@@ -37,12 +40,19 @@ public class FollowService {
         userRepository.findById(target)
                 .filter(u -> u.getStatus() == UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        boolean already = followRepository.exists(me, target);
         if (blockRepository.existsByBlockerIdAndBlockedId(me, target)
                 || blockRepository.existsByBlockerIdAndBlockedId(target, me)) {
             throw new BusinessException(ErrorCode.CANNOT_FOLLOW);
         }
         throttle.check("follow:" + me, FOLLOW_LIMIT, FOLLOW_WINDOW);
         followRepository.follow(me, target);
+        if (!already) {
+            // 같은 사람이 팔로우를 여러 번 눌렀다 풀어도 알림은 한 번만 간다
+            String nickname = userRepository.findById(me).map(u -> u.getNickname()).orElse("누군가");
+            notificationService.notify(target, Notification.Type.FOLLOW, "새 팔로워",
+                    nickname + "님이 나를 팔로우했어요.", "/users/" + me, "follow:" + me);
+        }
     }
 
     @Transactional

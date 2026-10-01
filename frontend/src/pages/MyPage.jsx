@@ -259,7 +259,6 @@ export function MyPage() {
               </svg>
             </span>
             <span className="mp-acctLabel">알림 설정</span>
-            <span className="mp-soonTag">준비 중</span>
             <Chevron />
           </Link>
         </li>

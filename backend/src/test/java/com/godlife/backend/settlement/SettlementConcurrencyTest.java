@@ -66,6 +66,8 @@ class SettlementConcurrencyTest {
         userIds.forEach(id -> {
             jdbc.update("DELETE t FROM point_transactions t JOIN wallets w ON w.id = t.wallet_id WHERE w.user_id = ?", id);
             jdbc.update("DELETE FROM wallets WHERE user_id = ?", id);
+            // 정산이 끝나면 참가자에게 알림이 가므로 회원을 지우기 전에 같이 지운다
+            jdbc.update("DELETE FROM notifications WHERE user_id = ?", id);
             jdbc.update("DELETE FROM users WHERE id = ?", id);
         });
     }

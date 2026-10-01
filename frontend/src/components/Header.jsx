@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { MegaMenu, MyRankSummary, TodayChallenges, TodayDiary } from './MegaMenu.jsx'
+import { NotificationBell } from './NotificationBell.jsx'
 import { UserMenu } from './UserMenu.jsx'
 
 // 챌린지 메가 메뉴 항목. 나중에 항목을 더하려면 여기에 한 줄 추가한다.
@@ -74,7 +75,10 @@ export function Header() {
 
         <div className="header-auth">
           {status === 'loading' ? null : status === 'authed' ? (
-            <UserMenu />
+            <>
+              <NotificationBell />
+              <UserMenu />
+            </>
           ) : (
             // 회원가입은 로그인 화면 아래 링크로 들어간다.
             <Link to="/login" className="btn btn-ghost btn-sm">

@@ -7,6 +7,8 @@ import com.godlife.backend.challenge.ChallengeParticipantRepository;
 import com.godlife.backend.challenge.ChallengeRepository;
 import com.godlife.backend.challenge.ChallengeStatus;
 import com.godlife.backend.challenge.ParticipantStatus;
+import com.godlife.backend.notification.Notification;
+import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.verification.VerificationRepository;
 import com.godlife.backend.wallet.PointSource;
 import com.godlife.backend.wallet.PointTransaction;
@@ -52,6 +54,7 @@ public class SettlementService {
     private final SettlementRepository settlementRepository;
     private final SettlementItemRepository itemRepository;
     private final WalletService walletService;
+    private final NotificationService notificationService;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
@@ -92,6 +95,11 @@ public class SettlementService {
         }
         if (c.getStatus() == ChallengeStatus.ENDED) {
             c.markSettled();
+            for (ChallengeParticipant p : participants(challengeId)) {
+                notificationService.notify(p.getUserId(), Notification.Type.SETTLEMENT, "챌린지가 끝났어요",
+                        "'" + c.getTitle() + "' 결과를 확인해 보세요.", "/challenges/" + challengeId,
+                        "settled:" + challengeId);
+            }
         }
         return count;
     }
