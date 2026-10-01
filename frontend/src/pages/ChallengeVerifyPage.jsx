@@ -16,6 +16,8 @@ const POLL_MS = 10_000
  * 1단계: 카메라만 크게. 촬영 버튼을 누르면 바로 올라간다 (하루 한 번, 다시 찍기 없음).
  * 2단계: "촬영이 확인됐습니다!" 팝업이 뜬 뒤 내 사진이 그리드 칸으로 끌려가 자리를 잡고,
  *        오늘 인증 현황(게이지 + 참가자 사진)이 나타난다.
+ * 올릴 때 AI 가 사진을 본다: 챌린지와 다른 사진이면 저장하지 않고 돌려보내 다시 찍게 하고,
+ * 애매하면 일단 인증으로 받고 '확인 중'으로 표시한다 (관리자가 본 뒤 확정).
  * 오늘 이미 인증했거나 지금 인증할 수 없으면 바로 2단계를 보여 준다.
  */
 export function ChallengeVerifyPage() {
@@ -74,6 +76,7 @@ function VerifyScreen({ challenge: c, initialMine, initialItems }) {
   // camera → (촬영) → reveal(팝업 애니메이션) → result
   const [phase, setPhase] = useState(initialMine?.state === 'OPEN' ? 'camera' : 'result')
   const [shotUrl, setShotUrl] = useState(null)
+  const [shotInReview, setShotInReview] = useState(false)
   const [zoom, setZoom] = useState(null)
 
   useEffect(() => {
@@ -105,6 +108,7 @@ function VerifyScreen({ challenge: c, initialMine, initialItems }) {
 
   function onUploaded(verification, localUrl) {
     setShotUrl(localUrl)
+    setShotInReview(verification.status === 'IN_REVIEW')
     setItems((list) => [...list, { ...verification, localUrl }])
     setMine((m) => ({ ...m, state: 'DONE_TODAY', successDays: m.successDays + 1 }))
     setPhase('reveal')
@@ -123,7 +127,7 @@ function VerifyScreen({ challenge: c, initialMine, initialItems }) {
         revealing={phase === 'reveal'}
         onOpen={setZoom}
       />
-      {phase === 'reveal' && <RevealPopup url={shotUrl} />}
+      {phase === 'reveal' && <RevealPopup url={shotUrl} inReview={shotInReview} />}
       {zoom && <PhotoModal challengeId={c.id} item={zoom} onClose={() => setZoom(null)} />}
     </>
   )
@@ -208,7 +212,9 @@ function CameraStage({ challengeId, onUploaded }) {
         } catch (err) {
           URL.revokeObjectURL(url)
           setFrozen(null)
-          setUploadError(err.message)
+          setUploadError(
+            err.code === 'VERIFICATION_REJECTED' ? `${err.message}\n오늘 인증 횟수에는 들어가지 않았어요.` : err.message,
+          )
         }
       },
       'image/jpeg',
@@ -321,6 +327,7 @@ function ResultStage({ challenge: c, mine, items, revealing, onOpen }) {
   const percent = total > 0 ? Math.round((items.length / total) * 100) : 0
   const empty = Math.max(0, total - items.length)
   const note = mine ? (mine.state === 'DONE_TODAY' ? null : closedText(mine.state, c)) : '참가자만 인증할 수 있어요.'
+  const myReview = items.some((v) => v.mine && v.status === 'IN_REVIEW')
 
   return (
     <div className={`vc-body vc-result${revealing ? ' is-revealing' : ''}`}>
@@ -333,6 +340,12 @@ function ResultStage({ challenge: c, mine, items, revealing, onOpen }) {
         <span style={{ width: `${percent}%` }} />
       </div>
 
+      {myReview && (
+        <p className="vc-review-note">
+          내 사진은 한 번 더 확인하고 있어요. 그동안은 인증한 것으로 쳐요. 인정되지 않으면 알림으로 알려 드려요.
+        </p>
+      )}
+
       <ul className="vc-grid">
         {items.map((v) => (
           // 막 올린 내 칸은 날아온 사진을 이어받아 스르륵 나타난다 (사진 칸만 커지게 해서 착지 위치가 흔들리지 않게)
@@ -343,7 +356,7 @@ function ResultStage({ challenge: c, mine, items, revealing, onOpen }) {
               ) : (
                 <VerifyPhoto challengeId={c.id} verificationId={v.id} alt="" />
               )}
-              <CheckBadge />
+              {v.status === 'IN_REVIEW' ? <span className="vc-review-chip">확인 중</span> : <CheckBadge />}
             </button>
             <p className="vc-tile-caption">
               <span className={v.mine ? 'is-mine' : undefined}>{v.mine ? '나' : v.nickname}</span>
@@ -369,7 +382,7 @@ function ResultStage({ challenge: c, mine, items, revealing, onOpen }) {
  * 잠시 멈췄다가 그리드의 내 칸으로 끌려가듯 날아가 작아지며 사라진다.
  * 날아갈 위치는 그리드에서 내 칸을 재서 CSS 변수로 넘긴다.
  */
-function RevealPopup({ url }) {
+function RevealPopup({ url, inReview }) {
   const anchorRef = useRef(null)
   const revealRef = useRef(null)
   const cardRef = useRef(null)
@@ -407,7 +420,7 @@ function RevealPopup({ url }) {
           <span className="vc-reveal-name">나</span>
           <CheckBadge large />
         </div>
-        <p className="vc-reveal-text">촬영이 확인됐습니다!</p>
+        <p className="vc-reveal-text">{inReview ? '인증됐어요 · 사진은 확인 중이에요' : '촬영이 확인됐습니다!'}</p>
       </div>
     </div>
   )

@@ -161,6 +161,17 @@ export const adminApi = {
   // status = WAITING | ANSWERED | '' → [{ inquiry, userId, nickname }]
   inquiries: (status) => apiFetch(`/api/admin/inquiries${status ? `?status=${status}` : ''}`),
   answerInquiry: (id, answer) => apiFetch(`/api/admin/inquiries/${id}/answer`, { method: 'POST', body: { answer } }),
+  // AI 가 넘긴 인증 검토. status = OPEN | APPROVED | REJECTED | ''
+  // → [{ id, verificationId, reason, status, challengeId, challengeTitle, categoryName, expectedLabel, userId,
+  //      nickname, verifyDate, predictedLabel, confidence, maxSimilarity, duplicateOfId, memo }]
+  reviews: (status) => apiFetch(`/api/admin/reviews${status ? `?status=${status}` : ''}`),
+  approveReview: (id, memo) => apiFetch(`/api/admin/reviews/${id}/approve`, { method: 'POST', body: { memo } }),
+  // 거절하면 그 인증이 취소되고 회원에게 알림이 간다
+  rejectReview: (id, memo) => apiFetch(`/api/admin/reviews/${id}/reject`, { method: 'POST', body: { memo } }),
+  async reviewImageBlob(verificationId) {
+    const res = await authRaw(`/api/admin/reviews/images/${verificationId}`)
+    return res.blob()
+  },
 }
 
 // 휴대폰 인증: 인증번호 발송 → 확인하면 1회용 증표(phoneProof)를 받아 가입/아이디 찾기/번호 등록에 제출한다.
@@ -258,9 +269,10 @@ export const verificationApi = {
   mine: (challengeId) => apiFetch(`/api/challenges/${challengeId}/verifications/me`),
   // 내 챌린지: 참여 중이거나 개설한, 아직 끝나지 않은 챌린지와 오늘 인증 상태
   myChallenges: () => apiFetch('/api/me/challenges'),
-  // 그날 참가자들의 인증 (date 없으면 오늘)
+  // 그날 참가자들의 인증 (date 없으면 오늘). status = APPROVED | IN_REVIEW(관리자 검토 중, 그동안은 인정)
   list: (challengeId, date) =>
     apiFetch(`/api/challenges/${challengeId}/verifications${date ? `?date=${date}` : ''}`),
+  // AI 가 챌린지와 다른 사진이라고 보면 400 VERIFICATION_REJECTED (저장되지 않아 바로 다시 찍을 수 있다)
   async submit(challengeId, file) {
     const form = new FormData()
     form.append('file', file)
