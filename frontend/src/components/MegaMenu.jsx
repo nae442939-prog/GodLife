@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { rankingApi, verificationApi } from '../api/client.js'
+import { rankingApi, recordApi, verificationApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 
 /**
@@ -118,6 +118,73 @@ export function TodayChallenges({ open }) {
         </ul>
       )}
     </div>
+  )
+}
+
+const MOOD_EMOJI = { GREAT: '🤩', GOOD: '🙂', OKAY: '😐', SAD: '😔', HARD: '😣' }
+
+/** 갓생기록 메가 메뉴 오른쪽: 로그인했으면 오늘 일기를 썼는지, 썼으면 가장 최근에 쓴 글 (패널이 열릴 때 불러온다) */
+export function TodayDiary({ open }) {
+  const { status } = useAuth()
+  const [day, setDay] = useState(undefined)
+
+  useEffect(() => {
+    if (!open || status !== 'authed') return
+    let cancelled = false
+    const d = new Date()
+    const p = (n) => String(n).padStart(2, '0')
+    recordApi
+      .day(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`)
+      .then((r) => !cancelled && setDay(r))
+      .catch(() => !cancelled && setDay(null))
+    return () => {
+      cancelled = true
+    }
+  }, [open, status])
+
+  return (
+    <div className="mega-today">
+      <p className="mega-today-title">오늘의 일기</p>
+      {status !== 'authed' ? (
+        <p className="mega-today-empty">
+          <Link to="/login" tabIndex={open ? 0 : -1}>
+            로그인
+          </Link>
+          하면 오늘 하루를 일기로 남길 수 있어요.
+        </p>
+      ) : day === undefined ? (
+        <p className="mega-today-empty">불러오는 중…</p>
+      ) : day === null ? (
+        <p className="mega-today-empty">일기를 불러오지 못했어요.</p>
+      ) : day.diaries.length === 0 ? (
+        <p className="mega-today-empty">
+          오늘 일기를 아직 안 쓰셨어요.{' '}
+          <Link to="/records" tabIndex={open ? 0 : -1}>
+            지금 쓰러 가기
+          </Link>
+        </p>
+      ) : (
+        <TodayDiaryCard diaries={day.diaries} open={open} />
+      )}
+    </div>
+  )
+}
+
+/** 오늘 쓴 일기 중 가장 최근 것. 여러 개면 '외 N개' */
+function TodayDiaryCard({ diaries, open }) {
+  const last = diaries[diaries.length - 1]
+  return (
+    <Link to="/records/calendar" className="mega-diary" tabIndex={open ? 0 : -1}>
+      {last.mood && (
+        <span className="mega-diary-mood" aria-hidden="true">
+          {MOOD_EMOJI[last.mood]}
+        </span>
+      )}
+      <span className="mega-diary-text">
+        {last.content || (last.photo ? '사진으로 오늘을 남겼어요.' : '기분만 남겼어요. 한 줄 더 적어 볼까요?')}
+        {diaries.length > 1 && <small> 외 {diaries.length - 1}개</small>}
+      </span>
+    </Link>
   )
 }
 

@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
-import { MegaMenu, MyRankSummary, TodayChallenges } from './MegaMenu.jsx'
+import { MegaMenu, MyRankSummary, TodayChallenges, TodayDiary } from './MegaMenu.jsx'
 import { UserMenu } from './UserMenu.jsx'
 
 // 챌린지 메가 메뉴 항목. 나중에 항목을 더하려면 여기에 한 줄 추가한다.
@@ -16,10 +16,23 @@ const RANKING_LINKS = [
   { label: '내 챌린지 랭킹', to: '/rankings?tab=challenges' },
 ]
 
+// 갓생기록 메가 메뉴 항목 (일기장 · 캘린더)
+const RECORD_LINKS = [
+  { label: '갓생기록', to: '/records' },
+  { label: '갓생기록 캘린더', to: '/records/calendar' },
+]
+
+// 메가 메뉴 종류별 링크와 오른쪽 내용(aside)
+const MEGA = {
+  challenge: { links: CHALLENGE_LINKS, aside: (open) => <TodayChallenges open={open} /> },
+  record: { links: RECORD_LINKS, aside: (open) => <TodayDiary open={open} /> },
+  ranking: { links: RANKING_LINKS, aside: (open) => <MyRankSummary open={open} /> },
+}
+
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
 const MENU = [
   { label: '챌린지', to: '/challenges', mega: 'challenge' },
-  { label: '갓생기록', to: null },
+  { label: '갓생기록', to: '/records', mega: 'record' },
   { label: '랭킹', to: '/rankings', mega: 'ranking' },
   { label: '포인트 상점', to: null },
   { label: '커뮤니티', to: null },
@@ -48,10 +61,8 @@ export function Header() {
                 key={item.label}
                 label={item.label}
                 to={item.to}
-                links={item.mega === 'ranking' ? RANKING_LINKS : CHALLENGE_LINKS}
-                aside={(open) =>
-                  item.mega === 'ranking' ? <MyRankSummary open={open} /> : <TodayChallenges open={open} />
-                }
+                links={MEGA[item.mega].links}
+                aside={MEGA[item.mega].aside}
               />
             ) : (
               <NavLink key={item.label} to={item.to}>

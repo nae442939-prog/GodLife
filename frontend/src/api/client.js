@@ -234,6 +234,41 @@ export const settlementApi = {
   ranking: (challengeId) => apiFetch(`/api/challenges/${challengeId}/ranking`),
 }
 
+// 갓생기록 (본인 기록만): 일기장(글 · 기분 · 챌린지 태그 · 사진, 하루에 여러 개) · 캘린더 · 그날 결과
+export const recordApi = {
+  // month = 'YYYY-MM'
+  month: (month) => apiFetch(`/api/records?month=${month}`),
+  day: (date) => apiFetch(`/api/records/days/${date}`),
+  // 그날 챌린지 결과(items) + 그날 쓴 일기들(diaries) + 최근 7일(week)
+  // diary = { content, mood, challengeIds }. 새로 쓰면 { id } 가 온다
+  createDiary: (date, diary) => apiFetch(`/api/records/days/${date}/diaries`, { method: 'POST', body: diary }),
+  // 사진으로 일기 시작하기 (JPG·PNG 5MB 이하) → { id }. 글 · 기분은 이어서 updateDiary 로 채운다
+  async createDiaryWithPhoto(date, file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await authRaw(`/api/records/days/${date}/diaries/photo`, { method: 'POST', body: form })
+    return res.json()
+  },
+  // 글도 기분도 사진도 없으면 지워진다
+  updateDiary: (id, diary) => apiFetch(`/api/records/diaries/${id}`, { method: 'PUT', body: diary }),
+  deleteDiary: (id) => apiFetch(`/api/records/diaries/${id}`, { method: 'DELETE' }),
+  // 일기 사진 한 장. 다시 올리면 바뀐다
+  async saveDiaryPhoto(id, file) {
+    const form = new FormData()
+    form.append('file', file)
+    await authRaw(`/api/records/diaries/${id}/photo`, { method: 'POST', body: form })
+  },
+  deleteDiaryPhoto: (id) => apiFetch(`/api/records/diaries/${id}/photo`, { method: 'DELETE' }),
+  async diaryPhotoBlob(id) {
+    const res = await authRaw(`/api/records/diaries/${id}/photo`)
+    return res.blob()
+  },
+  async photoBlob(verificationId) {
+    const res = await authRaw(`/api/records/photos/${verificationId}`)
+    return res.blob()
+  },
+}
+
 // 회원 프로필 (비로그인도 볼 수 있음)
 export const profileApi = {
   get: (userId) => apiFetch(`/api/users/${userId}/profile`),
