@@ -3,6 +3,8 @@ package com.godlife.backend.support;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
+import com.godlife.backend.notification.Notification;
+import com.godlife.backend.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -46,6 +48,7 @@ public class InquiryService {
 
     private final NamedParameterJdbcTemplate jdbc;
     private final RequestThrottle throttle;
+    private final NotificationService notificationService;
     private final Clock clock;
 
     @Transactional
@@ -96,5 +99,9 @@ public class InquiryService {
         if (updated == 0) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "문의를 찾을 수 없어요.");
         }
+        jdbc.query("SELECT user_id, title FROM inquiries WHERE id = :id", new MapSqlParameterSource("id", id), rs -> {
+            notificationService.notify(rs.getLong("user_id"), Notification.Type.INQUIRY_ANSWER, "문의에 답변이 달렸어요",
+                    rs.getString("title"), "/settings?tab=support", "inquiry:" + id);
+        });
     }
 }

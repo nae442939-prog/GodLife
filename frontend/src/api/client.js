@@ -137,6 +137,18 @@ export const userApi = {
   registerPhone: (phoneProof) => apiFetch('/api/users/me/phone', { method: 'POST', body: { phoneProof } }),
 }
 
+// 알림함 (본인 알림만)
+export const notificationApi = {
+  // [{ id, type, title, body, link, read, sentAt }] 최근 것부터 50개
+  list: () => apiFetch('/api/notifications'),
+  unreadCount: () => apiFetch('/api/notifications/unread-count'),
+  read: (id) => apiFetch(`/api/notifications/${id}/read`, { method: 'POST' }),
+  readAll: () => apiFetch('/api/notifications/read-all', { method: 'POST' }),
+  // 알림 설정 { verifyReminder, challengeResult, social }
+  settings: () => apiFetch('/api/notifications/settings'),
+  updateSettings: (settings) => apiFetch('/api/notifications/settings', { method: 'PUT', body: settings }),
+}
+
 // 고객센터 1:1 문의 (본인 문의만)
 export const inquiryApi = {
   // { category: ACCOUNT | CHALLENGE | POINT | BUG | ETC, title, content }

@@ -649,15 +649,29 @@ CREATE TABLE comments (
 CREATE TABLE notifications (
   id      BIGINT       NOT NULL AUTO_INCREMENT,
   user_id BIGINT       NOT NULL,
-  type    ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT','REPORT_ALERT') NOT NULL,
+  type    ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT','REPORT_ALERT',
+               'FOLLOW','MESSAGE_REQUEST','INQUIRY_ANSWER') NOT NULL,
   title   VARCHAR(100) NOT NULL,
   body    VARCHAR(300) NOT NULL,
+  link       VARCHAR(200) NULL COMMENT '누르면 갈 화면 주소',
+  dedupe_key VARCHAR(100) NULL COMMENT '같은 알림을 두 번 만들지 않기 위한 키 (예: verify:{챌린지}:{날짜})',
   read_at DATETIME     NULL,
   sent_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
+  UNIQUE KEY uk_notifications_dedupe (user_id, dedupe_key),
   KEY idx_notifications_user_read (user_id, read_at),
   CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB COMMENT='알림';
+
+CREATE TABLE notification_settings (
+  user_id          BIGINT   NOT NULL,
+  verify_reminder  BOOLEAN  NOT NULL DEFAULT TRUE COMMENT '오늘 인증하는 날 알림',
+  challenge_result BOOLEAN  NOT NULL DEFAULT TRUE COMMENT '챌린지 종료 · 정산 결과 알림',
+  social           BOOLEAN  NOT NULL DEFAULT TRUE COMMENT '팔로우 · 메시지 요청 알림',
+  updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id),
+  CONSTRAINT fk_notification_settings_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='알림 설정 (줄이 없으면 모두 켜짐)';
 
 CREATE TABLE push_tokens (
   id        BIGINT       NOT NULL AUTO_INCREMENT,

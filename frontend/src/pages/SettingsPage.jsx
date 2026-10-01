@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { blockApi, inquiryApi, userApi } from '../api/client.js'
+import { blockApi, inquiryApi, notificationApi, userApi } from '../api/client.js'
 import { PASSWORD_HINT, passwordError } from '../auth/rules.js'
 import { useAuth } from '../auth/useAuth.js'
 import { Field } from '../components/Field.jsx'
@@ -14,14 +14,14 @@ const TABS = [
   { key: 'info', label: '내 정보' },
   { key: 'password', label: '비밀번호 변경' },
   { key: 'blocked', label: '차단한 사용자' },
-  { key: 'alarm', label: '알림', soon: true },
+  { key: 'alarm', label: '알림' },
   { key: 'support', label: '고객센터' },
   { key: 'withdraw', label: '회원 탈퇴' },
 ]
 
 /**
  * 설정 (/settings): 왼쪽 메뉴에서 고르면 오른쪽에 그 내용이 나온다.
- * 내 정보(휴대폰 번호 변경) · 비밀번호 변경 · 차단한 사용자 · 알림(준비 중) · 고객센터(자주 묻는 질문 · 1:1 문의) · 회원 탈퇴.
+ * 내 정보(휴대폰 번호 변경) · 비밀번호 변경 · 차단한 사용자 · 알림(종류별 켜기/끄기) · 고객센터(자주 묻는 질문 · 1:1 문의) · 회원 탈퇴.
  * 프로필(사진 · 닉네임 · 한 줄 소개) 수정은 마이페이지에서 한다.
  */
 export function SettingsPage() {
@@ -72,12 +72,7 @@ export function SettingsPage() {
           {tab === 'info' && <InfoSection account={account} />}
           {tab === 'password' && <PasswordSection account={account} />}
           {tab === 'blocked' && <BlockedUsers />}
-          {tab === 'alarm' && (
-            <section className="card settings-block">
-              <h2>알림</h2>
-              <p className="settings-help settings-help-last">인증 마감, 정산 결과 알림 설정은 준비하고 있어요.</p>
-            </section>
-          )}
+          {tab === 'alarm' && <AlarmSection />}
           {tab === 'support' && <SupportSection />}
           {tab === 'withdraw' && <WithdrawSection />}
         </div>
@@ -273,6 +268,78 @@ function PasswordSection({ account }) {
           </button>
         </form>
       )}
+    </section>
+  )
+}
+
+// 알림 설정 항목 (서버 notification_settings 의 칸과 같다)
+const ALARMS = [
+  { key: 'verifyReminder', title: '오늘 인증하는 날', body: '진행 중인 챌린지의 인증을 아직 안 했을 때 알려 드려요.' },
+  { key: 'challengeResult', title: '챌린지 결과', body: '챌린지가 끝나고 정산되면 알려 드려요.' },
+  { key: 'social', title: '팔로우 · 메시지', body: '누군가 나를 팔로우하거나 메시지 요청을 보내면 알려 드려요.' },
+]
+
+/** 알림 설정: 종류별 켜기/끄기. 누르는 즉시 저장한다. 끈 종류는 알림함에 쌓이지 않는다 */
+function AlarmSection() {
+  const [state, setState] = useState({ settings: null, error: '' })
+  const [busyKey, setBusyKey] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    notificationApi
+      .settings()
+      .then((settings) => !cancelled && setState({ settings, error: '' }))
+      .catch((err) => !cancelled && setState({ settings: null, error: err.message }))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function toggle(key) {
+    const next = { ...state.settings, [key]: !state.settings[key] }
+    setBusyKey(key)
+    try {
+      setState({ settings: await notificationApi.updateSettings(next), error: '' })
+    } catch (err) {
+      setState((s) => ({ ...s, error: err.message }))
+    } finally {
+      setBusyKey(null)
+    }
+  }
+
+  return (
+    <section className="card settings-block">
+      <h2>알림</h2>
+      <p className="settings-help">받을 알림을 골라 주세요. 알림은 화면 위쪽의 종 모양에 쌓여요.</p>
+      {state.error && <p className="form-error">{state.error}</p>}
+      {!state.settings ? (
+        !state.error && <p className="muted">불러오는 중…</p>
+      ) : (
+        <ul className="alarm-list">
+          {ALARMS.map((a) => (
+            <li key={a.key}>
+              <span className="alarm-text">
+                <strong>{a.title}</strong>
+                <span>{a.body}</span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={state.settings[a.key]}
+                aria-label={`${a.title} 알림`}
+                className={`alarm-switch${state.settings[a.key] ? ' is-on' : ''}`}
+                onClick={() => toggle(a.key)}
+                disabled={busyKey === a.key}
+              >
+                <span aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="settings-help settings-help-last alarm-note">
+        문의 답변처럼 꼭 알아야 하는 알림은 설정과 상관없이 보내 드려요.
+      </p>
     </section>
   )
 }

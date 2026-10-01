@@ -10,6 +10,7 @@ import com.godlife.backend.common.crypto.Hashing;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.upload.ImageStore;
+import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.verification.dto.MyChallengeResponse;
 import com.godlife.backend.verification.dto.MyVerificationResponse;
 import com.godlife.backend.verification.dto.VerificationResponse;
@@ -46,6 +47,7 @@ public class VerificationService {
     private final ChallengeParticipantRepository participantRepository;
     private final ChallengeService challengeService;
     private final ImageStore imageStore;
+    private final NotificationService notificationService;
     private final Clock clock;
     private final EntityManager entityManager;
 
@@ -89,6 +91,7 @@ public class VerificationService {
         boolean verifiedYesterday = verificationRepository
                 .existsByParticipantIdAndVerifyDate(participant.getId(), now.toLocalDate().minusDays(1));
         participant.recordVerification(verifiedYesterday);
+        notificationService.resolve(userId, "verify:" + challengeId + ":" + now.toLocalDate());
 
         return verificationRepository.findByChallengeAndDate(challengeId, now.toLocalDate()).stream()
                 .filter(v -> v.id().equals(saved.getId()))

@@ -11,6 +11,8 @@ import com.godlife.backend.message.dto.MessageDtos.ConversationResponse;
 import com.godlife.backend.message.dto.MessageDtos.MessageResponse;
 import com.godlife.backend.message.dto.MessageDtos.Partner;
 import com.godlife.backend.message.dto.MessageDtos.RoomResponse;
+import com.godlife.backend.notification.Notification;
+import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserStatus;
@@ -53,6 +55,7 @@ public class DirectMessageService {
     private final FollowRepository followRepository;
     private final UserBlockRepository blockRepository;
     private final RequestThrottle throttle;
+    private final NotificationService notificationService;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
 
@@ -139,6 +142,9 @@ public class DirectMessageService {
             Thread t = a.thread();
             if (t == null) {
                 threadRepository.request(me, partnerId); // 첫 메시지 → 메시지 요청
+                String nickname = userRepository.findById(me).map(User::getNickname).orElse("누군가");
+                notificationService.notify(partnerId, Notification.Type.MESSAGE_REQUEST, "메시지 요청",
+                        nickname + "님이 메시지 요청을 보냈어요.", "/messages", "dmreq:" + me);
             } else if (!t.requesterId().equals(me)) {
                 threadRepository.setStatus(me, partnerId, Status.ACCEPTED); // 받은 요청에 답장 = 수락
             }
