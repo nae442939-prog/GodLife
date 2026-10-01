@@ -30,10 +30,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 채팅 사진·인증 사진·일기 사진을 서버 디스크에 저장한다. 받은 파일을 그대로 두지 않고 다시 그려서 JPEG 로 저장하므로
+ * 채팅 사진·인증 사진·일기 사진·프로필 사진을 서버 디스크에 저장한다. 받은 파일을 그대로 두지 않고 다시 그려서 JPEG 로 저장하므로
  * - 진짜 사진(JPG/PNG)인지 확인되고
  * - 위치(GPS)·기기 정보 같은 촬영 정보(EXIF)가 지워지고
- * - 긴 쪽이 1600px 를 넘으면 줄어든다.
+ * - 긴 쪽이 1600px(프로필 사진은 512px)를 넘으면 줄어든다.
  * 픽셀 수는 열기 전에 머리 부분만 읽어 확인한다. (작은 파일이 거대한 그림으로 풀려 서버 메모리를 채우는 공격 방지)
  */
 @Slf4j
@@ -42,6 +42,8 @@ public class ImageStore {
 
     private static final Set<String> FORMATS = Set.of("jpeg", "png");
     private static final int MAX_SIDE = 1600;
+    /** 프로필 사진은 작게만 쓰인다 */
+    private static final int PROFILE_MAX_SIDE = 512;
     private static final int MAX_SOURCE_SIDE = 8000;
     private static final long MAX_SOURCE_PIXELS = 40_000_000L;
     private static final float JPEG_QUALITY = 0.85f;
@@ -67,12 +69,21 @@ public class ImageStore {
         return store("diary/" + userId, file);
     }
 
+    /** 프로필 사진을 저장하고 파일 키("profile/{userId}/{uuid}.jpg")를 돌려준다. */
+    public String storeProfileImage(Long userId, MultipartFile file) {
+        return store("profile/" + userId, file, PROFILE_MAX_SIDE);
+    }
+
     private String store(String folder, MultipartFile file) {
+        return store(folder, file, MAX_SIDE);
+    }
+
+    private String store(String folder, MultipartFile file, int maxSide) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE);
         }
         BufferedImage source = read(file);
-        BufferedImage resized = toRgbWithin(source, MAX_SIDE);
+        BufferedImage resized = toRgbWithin(source, maxSide);
 
         String key = folder + "/" + UUID.randomUUID() + ".jpg";
         Path target = resolve(key);

@@ -106,6 +106,11 @@ export function UserMenu() {
           <Link to="/settings" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
             설정
           </Link>
+          {user.role === 'ADMIN' && (
+            <Link to="/admin/inquiries" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
+              관리자 · 1:1 문의
+            </Link>
+          )}
           <hr />
           <button type="button" role="menuitem" className="user-menu-item is-danger" onClick={onLogout}>
             로그아웃

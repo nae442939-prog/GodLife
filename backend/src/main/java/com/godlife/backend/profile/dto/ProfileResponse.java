@@ -14,11 +14,28 @@ import java.util.List;
  * @param mine        내 프로필인지
  * @param following   내가 이 사람을 팔로우 중인지 (비로그인·내 프로필이면 false)
  * @param followsMe   이 사람이 나를 팔로우하는지
+ * @param tier        칭호(티어) — BRONZE / SILVER / GOLD / PLATINUM / DIAMOND
+ * @param badges      뱃지 전체 목록(15개)과 땄는지 · 얼마나 왔는지 (기록으로 그때그때 계산한다)
  */
 public record ProfileResponse(Long id, String nickname, String profileImageUrl, String bio, LocalDate joinedAt,
                               long monthVerify, long maxStreak, Double successRate, long completedCount,
                               List<ProfileChallenge> challenges, boolean mine,
-                              long followerCount, long followingCount, boolean following, boolean followsMe) {
+                              long followerCount, long followingCount, boolean following, boolean followsMe,
+                              String tier, List<Badge> badges) {
+
+    /**
+     * 뱃지 하나.
+     * @param group   VERIFY(인증 횟수) / STREAK(연속 인증) / FINISH(완주) / ACTIVITY(활동)
+     * @param current 지금까지 한 만큼 (target 을 넘지 않게 잘라서 준다)
+     * @param target  따려면 채워야 하는 수
+     */
+    public record Badge(String code, String group, String name, String description, boolean earned, long current,
+                        long target) {
+
+        public static Badge of(String code, String group, String name, String description, long value, long target) {
+            return new Badge(code, group, name, description, value >= target, Math.min(value, target), target);
+        }
+    }
 
     public record ProfileChallenge(Long id, String title, CategoryResponse category, ChallengeMode mode,
                                    LocalDate startDate, LocalDate endDate, long totalDays, boolean inProgress) {

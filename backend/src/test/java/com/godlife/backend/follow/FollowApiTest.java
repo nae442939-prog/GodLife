@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -83,10 +84,24 @@ class FollowApiTest {
         profile(bUser, a).andExpect(jsonPath("$.following").value(true))
                 .andExpect(jsonPath("$.followsMe").value(true));
 
+        // 내 팔로잉 · 팔로워 목록: 누구인지와 맞팔로우인지
+        follow(c, aUser);
+        mvc.perform(get("/api/users/me/following").header("Authorization", "Bearer " + a))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].userId").value(bUser.getId()))
+                .andExpect(jsonPath("$[0].nickname").value(bUser.getNickname()))
+                .andExpect(jsonPath("$[0].mutual").value(true));
+        mvc.perform(get("/api/users/me/followers").header("Authorization", "Bearer " + a))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.userId == " + cUser.getId() + ")].mutual").value(hasItem(false)));
+        mvc.perform(get("/api/users/me/following")).andExpect(status().isUnauthorized());
+
         mvc.perform(delete("/api/users/" + bUser.getId() + "/follow").header("Authorization", "Bearer " + a))
                 .andExpect(status().isNoContent());
         profile(bUser, a).andExpect(jsonPath("$.following").value(false))
                 .andExpect(jsonPath("$.followerCount").value(0));
+        mvc.perform(get("/api/users/me/following").header("Authorization", "Bearer " + a))
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test

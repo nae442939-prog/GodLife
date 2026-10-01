@@ -45,6 +45,11 @@ export function LoginPage() {
       <section className="card auth-card">
         <h1>로그인</h1>
         <p className="sub">이메일과 비밀번호로 로그인하세요.</p>
+        {location.state?.notice && !error && (
+          <p className="auth-notice" role="status">
+            {location.state.notice}
+          </p>
+        )}
         {socialError && !error && (
           <p className="form-error" role="alert">
             {socialError}

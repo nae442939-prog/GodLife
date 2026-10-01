@@ -34,6 +34,7 @@ CREATE TABLE users (
   profile_image_url VARCHAR(500) NULL,
   bio               VARCHAR(200) NULL COMMENT '자기소개',
   phone_hash        CHAR(64)     NULL COMMENT '휴대폰 번호 HMAC 해시(원문 미저장). UNIQUE = 계정당 1개 → 다중계정 베팅 악용 방지',
+  phone_enc         VARCHAR(100) NULL COMMENT '휴대폰 번호 암호화 값 (본인에게만 다시 보여 준다)',
   tier_id           INT          NOT NULL DEFAULT 1 COMMENT '신규 가입자는 최저 티어(id=1, BRONZE)',
   role              ENUM('USER','ADMIN') NOT NULL DEFAULT 'USER',
   status            ENUM('ACTIVE','SUSPENDED','WITHDRAWN') NOT NULL DEFAULT 'ACTIVE',
@@ -60,6 +61,7 @@ CREATE TABLE social_accounts (
 CREATE TABLE phone_verifications (
   id            BIGINT   NOT NULL AUTO_INCREMENT,
   phone_hash    CHAR(64) NOT NULL,
+  phone_enc     VARCHAR(100) NULL COMMENT '인증하는 번호의 암호화 값 (인증이 끝나면 users.phone_enc 로 옮긴다)',
   code_hash     CHAR(64) NOT NULL COMMENT 'SMS 인증번호 해시',
   attempt_count TINYINT  NOT NULL DEFAULT 0 COMMENT '시도 횟수 제한',
   expires_at    DATETIME NOT NULL,
@@ -608,6 +610,23 @@ CREATE TABLE diary_tags (
   CONSTRAINT fk_diary_tags_diary FOREIGN KEY (diary_id) REFERENCES diary_entries (id) ON DELETE CASCADE,
   CONSTRAINT fk_diary_tags_challenge FOREIGN KEY (challenge_id) REFERENCES challenges (id) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='일기에 태그한 챌린지';
+
+-- 고객센터 1:1 문의: 회원이 남기고 관리자가 답변한다. 본인 문의만 볼 수 있다
+CREATE TABLE inquiries (
+  id          BIGINT        NOT NULL AUTO_INCREMENT,
+  user_id     BIGINT        NOT NULL,
+  category    ENUM('ACCOUNT','CHALLENGE','POINT','BUG','ETC') NOT NULL COMMENT '계정 · 챌린지/인증 · 포인트 · 오류 신고 · 기타',
+  title       VARCHAR(100)  NOT NULL,
+  content     VARCHAR(2000) NOT NULL,
+  status      ENUM('WAITING','ANSWERED') NOT NULL DEFAULT 'WAITING',
+  answer      VARCHAR(2000) NULL,
+  answered_at DATETIME      NULL,
+  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_inquiries_user (user_id, id),
+  KEY idx_inquiries_status (status, id),
+  CONSTRAINT fk_inquiries_user FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB COMMENT='고객센터 1:1 문의';
 
 CREATE TABLE comments (
   id              BIGINT       NOT NULL AUTO_INCREMENT,

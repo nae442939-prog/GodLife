@@ -113,7 +113,42 @@ export const authApi = {
 
 export const userApi = {
   me: () => apiFetch('/api/users/me'),
+  // 설정: 계정 칸 { email, hasPassword, socialProviders }
+  account: () => apiFetch('/api/users/me/account'),
+  // 닉네임 · 자기소개 고치기 → 바뀐 내 정보
+  updateProfile: (profile) => apiFetch('/api/users/me/profile', { method: 'PUT', body: profile }),
+  // 프로필 사진 (JPG·PNG 5MB 이하) → 바뀐 내 정보
+  async changeProfileImage(file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await authRaw('/api/users/me/profile-image', { method: 'POST', body: form })
+    return res.json()
+  },
+  removeProfileImage: () => apiFetch('/api/users/me/profile-image', { method: 'DELETE' }),
+  // 성공하면 모든 기기에서 로그아웃된다
+  changePassword: (currentPassword, newPassword) =>
+    apiFetch('/api/users/me/password', { method: 'PUT', body: { currentPassword, newPassword } }),
+  // 탈퇴 전 확인 { canWithdraw, blockers, rewardBalance, hasPassword }
+  withdrawalCheck: () => apiFetch('/api/users/me/withdrawal'),
+  // 탈퇴 본인 확인만 (맞으면 화면이 마지막 경고를 띄운다)
+  verifyWithdrawal: (body) => apiFetch('/api/users/me/withdrawal/verify', { method: 'POST', body }),
+  // 탈퇴: 비밀번호가 있는 계정은 { password }, 소셜 계정은 { confirm: '탈퇴' }. 되돌릴 수 없다
+  withdraw: (body) => apiFetch('/api/users/me/withdrawal', { method: 'POST', body }),
   registerPhone: (phoneProof) => apiFetch('/api/users/me/phone', { method: 'POST', body: { phoneProof } }),
+}
+
+// 고객센터 1:1 문의 (본인 문의만)
+export const inquiryApi = {
+  // { category: ACCOUNT | CHALLENGE | POINT | BUG | ETC, title, content }
+  create: (inquiry) => apiFetch('/api/inquiries', { method: 'POST', body: inquiry }),
+  mine: () => apiFetch('/api/inquiries'),
+}
+
+// 관리자 (role = ADMIN 만 쓸 수 있다)
+export const adminApi = {
+  // status = WAITING | ANSWERED | '' → [{ inquiry, userId, nickname }]
+  inquiries: (status) => apiFetch(`/api/admin/inquiries${status ? `?status=${status}` : ''}`),
+  answerInquiry: (id, answer) => apiFetch(`/api/admin/inquiries/${id}/answer`, { method: 'POST', body: { answer } }),
 }
 
 // 휴대폰 인증: 인증번호 발송 → 확인하면 1회용 증표(phoneProof)를 받아 가입/아이디 찾기/번호 등록에 제출한다.
@@ -275,6 +310,9 @@ export const profileApi = {
   // 팔로우 / 언팔로우 (여러 번 눌러도 결과가 같다)
   follow: (userId) => apiFetch(`/api/users/${userId}/follow`, { method: 'POST' }),
   unfollow: (userId) => apiFetch(`/api/users/${userId}/follow`, { method: 'DELETE' }),
+  // 내 팔로잉 · 팔로워 목록: [{ userId, nickname, profileImageUrl, bio, mutual }]
+  following: () => apiFetch('/api/users/me/following'),
+  followers: () => apiFetch('/api/users/me/followers'),
 }
 
 // 1:1 메시지 (맞팔로우·같은 챌린지는 바로, 그 밖은 메시지 요청)

@@ -67,6 +67,38 @@ public class FollowRepository {
                 new MapSqlParameterSource("u", userId), Long.class);
     }
 
+    /** 한 줄에 보여 줄 회원. mutual = 서로 팔로우하는 사이인지 */
+    public record FollowUser(Long userId, String nickname, String profileImageUrl, String bio, boolean mutual) {
+    }
+
+    /** 내가 팔로우하는 (활동 중인) 회원들. 닉네임 순 */
+    public List<FollowUser> following(Long userId) {
+        return list("""
+                SELECT u.id, u.nickname, u.profile_image_url, u.bio,
+                       EXISTS (SELECT 1 FROM follows b WHERE b.follower_id = u.id AND b.following_id = :u) AS mutual
+                FROM follows f JOIN users u ON u.id = f.following_id
+                WHERE f.follower_id = :u AND u.status = 'ACTIVE'
+                ORDER BY u.nickname LIMIT 500
+                """, userId);
+    }
+
+    /** 나를 팔로우하는 (활동 중인) 회원들. 닉네임 순 */
+    public List<FollowUser> followers(Long userId) {
+        return list("""
+                SELECT u.id, u.nickname, u.profile_image_url, u.bio,
+                       EXISTS (SELECT 1 FROM follows b WHERE b.follower_id = :u AND b.following_id = u.id) AS mutual
+                FROM follows f JOIN users u ON u.id = f.follower_id
+                WHERE f.following_id = :u AND u.status = 'ACTIVE'
+                ORDER BY u.nickname LIMIT 500
+                """, userId);
+    }
+
+    private List<FollowUser> list(String sql, Long userId) {
+        return jdbc.query(sql, new MapSqlParameterSource("u", userId),
+                (rs, i) -> new FollowUser(rs.getLong("id"), rs.getString("nickname"),
+                        rs.getString("profile_image_url"), rs.getString("bio"), rs.getBoolean("mutual")));
+    }
+
     private long count(String sql, Long userId) {
         Long n = jdbc.queryForObject(sql, new MapSqlParameterSource("u", userId), Long.class);
         return n == null ? 0 : n;

@@ -2,8 +2,10 @@ package com.godlife.backend.user;
 
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.phone.PhoneCipher;
 import com.godlife.backend.phone.PhoneVerification;
 import com.godlife.backend.phone.PhoneVerificationService;
+import com.godlife.backend.user.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PhoneVerificationService phoneVerificationService;
+    private final PhoneCipher phoneCipher;
+
+    /** 본인에게 돌려주는 내 정보 (인증한 휴대폰 번호 포함) */
+    public UserResponse toResponse(User user) {
+        return UserResponse.from(user, phoneCipher.decryptFormatted(user.getPhoneEnc()));
+    }
 
     @Transactional(readOnly = true)
     public User getActive(Long userId) {
@@ -37,6 +45,7 @@ public class UserService {
                     throw new BusinessException(ErrorCode.PHONE_ALREADY_REGISTERED);
                 });
         user.registerPhone(phone.getPhoneHash());
+        user.rememberPhone(phone.getPhoneEnc());
         phone.linkUser(userId);
         try {
             // 동시에 같은 번호를 두 계정에 등록하면 users.phone_hash 유니크 제약이 최종적으로 막는다.

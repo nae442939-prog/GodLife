@@ -67,8 +67,9 @@ public class AuthService {
                 if (userRepository.existsByPhoneHash(phone.getPhoneHash())) {
                     throw new BusinessException(ErrorCode.PHONE_ALREADY_REGISTERED);
                 }
-                User user = userRepository.saveAndFlush(
-                        User.createWithPassword(email, passwordHash, req.nickname(), phone.getPhoneHash()));
+                User created = User.createWithPassword(email, passwordHash, req.nickname(), phone.getPhoneHash());
+                created.rememberPhone(phone.getPhoneEnc());
+                User user = userRepository.saveAndFlush(created);
                 phone.linkUser(user.getId());
                 return user;
             });
