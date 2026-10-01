@@ -130,9 +130,13 @@ class AccountRecoveryTest {
         mvc.perform(get("/api/users/me").header("Authorization", "Bearer " + access))
                 .andExpect(jsonPath("$.phoneVerified").value(false));
 
-        registerPhone(access, phoneProofs.newProof())
+        registerPhone(access, phoneProofs.proofFor("010-2345-6789"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.phoneVerified").value(true));
+                .andExpect(jsonPath("$.phoneVerified").value(true))
+                .andExpect(jsonPath("$.phone").value("010-2345-6789"));
+        // 인증한 번호는 본인에게 그대로 다시 보인다
+        mvc.perform(get("/api/users/me").header("Authorization", "Bearer " + access))
+                .andExpect(jsonPath("$.phone").value("010-2345-6789"));
 
         String taken = PhoneProofs.randomPhone();
         signup(EMAIL, "먼저가입", phoneProofs.proofFor(taken)).andExpect(status().isCreated());

@@ -26,6 +26,10 @@ public class PhoneVerification {
     @Column(name = "phone_hash", nullable = false, updatable = false)
     private String phoneHash;
 
+    /** 인증하는 번호의 암호화 값. 인증이 끝나면 회원에게 옮겨 설정 화면에서 본인에게 보여 준다 */
+    @Column(name = "phone_enc", updatable = false)
+    private String phoneEnc;
+
     @Column(name = "code_hash", nullable = false, updatable = false)
     private String codeHash;
 
@@ -47,9 +51,11 @@ public class PhoneVerification {
     @Column(name = "user_id")
     private Long userId;
 
-    public static PhoneVerification issue(String phoneHash, String codeHash, LocalDateTime expiresAt) {
+    public static PhoneVerification issue(String phoneHash, String phoneEnc, String codeHash,
+                                          LocalDateTime expiresAt) {
         PhoneVerification v = new PhoneVerification();
         v.phoneHash = phoneHash;
+        v.phoneEnc = phoneEnc;
         v.codeHash = codeHash;
         v.expiresAt = expiresAt;
         return v;

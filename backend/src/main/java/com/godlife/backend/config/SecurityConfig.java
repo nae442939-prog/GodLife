@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
                         // 회원 프로필도 비로그인이 볼 수 있다 (개인정보는 싣지 않음)
                         .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
+                        // 프로필 사진은 랭킹·프로필처럼 비로그인 화면에도 나온다
+                        .requestMatchers(HttpMethod.GET, "/api/profile-images/**").permitAll()
                         // 챌린지 둘러보기는 비로그인도 가능. 개설/참여는 아래 authenticated 에 걸린다.
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/challenges", "/api/challenges/*",
                                 "/api/challenges/invite/*")

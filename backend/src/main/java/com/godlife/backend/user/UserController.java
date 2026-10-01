@@ -21,12 +21,12 @@ public class UserController {
 
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal AuthUser authUser) {
-        return UserResponse.from(userService.getActive(authUser.id()));
+        return userService.toResponse(userService.getActive(authUser.id()));
     }
 
     @PostMapping("/me/phone")
     public UserResponse registerPhone(@AuthenticationPrincipal AuthUser authUser,
                                       @Valid @RequestBody PhoneRegisterRequest request) {
-        return UserResponse.from(userService.registerPhone(authUser.id(), request.phoneProof()));
+        return userService.toResponse(userService.registerPhone(authUser.id(), request.phoneProof()));
     }
 }

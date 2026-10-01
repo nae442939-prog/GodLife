@@ -30,16 +30,18 @@ public class PhoneVerificationService {
 
     private final PhoneVerificationRepository repository;
     private final PhoneHasher phoneHasher;
+    private final PhoneCipher phoneCipher;
     private final SmsSender smsSender;
     private final RequestThrottle throttle;
     private final Clock clock;
     private final int ipLimit;
 
     public PhoneVerificationService(PhoneVerificationRepository repository, PhoneHasher phoneHasher,
-                                    SmsSender smsSender, RequestThrottle throttle, Clock clock,
+                                    PhoneCipher phoneCipher, SmsSender smsSender, RequestThrottle throttle, Clock clock,
                                     @Value("${app.sms.ip-limit}") int ipLimit) {
         this.repository = repository;
         this.phoneHasher = phoneHasher;
+        this.phoneCipher = phoneCipher;
         this.smsSender = smsSender;
         this.throttle = throttle;
         this.clock = clock;
@@ -72,7 +74,8 @@ public class PhoneVerificationService {
         }
 
         String code = Hashing.randomDigits(6);
-        repository.save(PhoneVerification.issue(phoneHash, Hashing.sha256Hex(code), now.plus(CODE_TTL)));
+        repository.save(PhoneVerification.issue(phoneHash, phoneCipher.encrypt(phone), Hashing.sha256Hex(code),
+                now.plus(CODE_TTL)));
         smsSender.send(PhoneHasher.normalize(phone), "[갓생살기] 인증번호 " + code + " (3분 안에 입력해 주세요)");
         return smsSender.isDemo() ? code : null;
     }
