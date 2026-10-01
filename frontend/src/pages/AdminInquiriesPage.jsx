@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { adminApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
+import { AdminNav } from '../components/AdminNav.jsx'
 
 const CATEGORY = { ACCOUNT: '계정', CHALLENGE: '챌린지 · 인증', POINT: '포인트', BUG: '오류 신고', ETC: '기타' }
 const FILTERS = [
@@ -55,6 +56,7 @@ export function AdminInquiriesPage() {
           <p className="page-sub">회원이 고객센터에 남긴 문의에 답변해요.</p>
         </div>
       </div>
+      <AdminNav />
 
       <div className="cl-tabs" role="group" aria-label="문의 상태">
         {FILTERS.map((f) => (

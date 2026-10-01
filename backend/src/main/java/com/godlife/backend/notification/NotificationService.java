@@ -73,7 +73,7 @@ public class NotificationService {
                                   WHERE v.participant_id = p.id AND v.verify_date = :today)
                   AND (c.frequency_type = 'DAILY'
                        OR (SELECT COUNT(*) FROM verifications v
-                           WHERE v.participant_id = p.id
+                           WHERE v.participant_id = p.id AND v.status <> 'REJECTED'
                              AND v.verify_date >= DATE_ADD(c.start_date,
                                      INTERVAL FLOOR(DATEDIFF(:today, c.start_date) / 7) * 7 DAY)) < c.weekly_count)
                 """, new MapSqlParameterSource("today", today.toString()));

@@ -107,8 +107,8 @@ export function UserMenu() {
             설정
           </Link>
           {user.role === 'ADMIN' && (
-            <Link to="/admin/inquiries" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
-              관리자 · 1:1 문의
+            <Link to="/admin/reviews" role="menuitem" className="user-menu-item" onClick={() => setOpen(false)}>
+              관리자
             </Link>
           )}
           <hr />

@@ -11,6 +11,7 @@ import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.upload.ImageStore;
 import com.godlife.backend.notification.NotificationService;
+import com.godlife.backend.verification.ai.AiVerifier;
 import com.godlife.backend.verification.dto.MyChallengeResponse;
 import com.godlife.backend.verification.dto.MyVerificationResponse;
 import com.godlife.backend.verification.dto.VerificationResponse;
@@ -35,6 +36,7 @@ import java.util.List;
  * 챌린지 인증 사진.
  * - 하루는 서버 시각 기준 밤 12시(00:00)부터 다음 날 밤 12시까지. 하루 한 번, 취소·다시 올리기 없음.
  * - 사진은 같은 챌린지 참가자(개설자 포함)끼리 서로 볼 수 있다.
+ * - 올릴 때 직접 학습한 분류 모델(ai-server)이 사진을 본다: 통과 / 다시 찍기(저장하지 않음) / 관리자 검토 ({@link AiVerifier}).
  */
 @Service
 @RequiredArgsConstructor
@@ -48,6 +50,7 @@ public class VerificationService {
     private final ChallengeService challengeService;
     private final ImageStore imageStore;
     private final NotificationService notificationService;
+    private final AiVerifier aiVerifier;
     private final Clock clock;
     private final EntityManager entityManager;
 
@@ -80,7 +83,16 @@ public class VerificationService {
         String key = imageStore.storeVerificationImage(challengeId, file);
         Verification saved;
         try {
-            saved = verificationRepository.saveAndFlush(Verification.approved(participant.getId(), now, key, hash));
+            // 다시 그려 저장한 사진(촬영 정보가 지워진 JPEG)을 AI 서버에 보낸다
+            AiVerifier.Judgement judgement = aiVerifier.judge(challenge, participant.getId(), userId,
+                    imageStore.resolve(key), now.toLocalDate());
+            if (judgement.rejected()) {
+                // 아래 catch 에서 사진을 지운다. 인증 줄을 만들지 않으므로 바로 다시 찍어 올릴 수 있다
+                throw new BusinessException(ErrorCode.VERIFICATION_REJECTED, AiVerifier.rejectMessage(challenge));
+            }
+            saved = verificationRepository.saveAndFlush(
+                    Verification.of(participant.getId(), now, key, hash, judgement.status()));
+            aiVerifier.record(saved.getId(), judgement);
         } catch (DataIntegrityViolationException e) {
             imageStore.delete(key);
             throw new BusinessException(ErrorCode.ALREADY_VERIFIED_TODAY);
@@ -88,8 +100,8 @@ public class VerificationService {
             imageStore.delete(key);
             throw e;
         }
-        boolean verifiedYesterday = verificationRepository
-                .existsByParticipantIdAndVerifyDate(participant.getId(), now.toLocalDate().minusDays(1));
+        boolean verifiedYesterday = verificationRepository.existsByParticipantIdAndVerifyDateAndStatusNot(
+                participant.getId(), now.toLocalDate().minusDays(1), VerificationStatus.REJECTED);
         participant.recordVerification(verifiedYesterday);
         notificationService.resolve(userId, "verify:" + challengeId + ":" + now.toLocalDate());
 
@@ -183,8 +195,8 @@ public class VerificationService {
 
     private long countThisWeek(Challenge c, ChallengeParticipant p, LocalDate today) {
         LocalDate weekStart = c.weekStartOf(today);
-        return verificationRepository.countByParticipantIdAndVerifyDateBetween(p.getId(), weekStart,
-                weekStart.plusDays(6));
+        return verificationRepository.countByParticipantIdAndVerifyDateBetweenAndStatusNot(p.getId(), weekStart,
+                weekStart.plusDays(6), VerificationStatus.REJECTED);
     }
 
     private static void rejectUnlessOpen(Challenge c, VerifyState state) {

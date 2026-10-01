@@ -48,15 +48,16 @@ public class Verification {
     @Column(nullable = false)
     private VerificationStatus status;
 
-    public static Verification approved(Long participantId, LocalDateTime receivedAt, String imageKey,
-                                        String imageHash) {
+    /** status: AI 가 통과시켰으면 APPROVED, 애매해서 관리자 검토로 넘겼으면 IN_REVIEW */
+    public static Verification of(Long participantId, LocalDateTime receivedAt, String imageKey,
+                                  String imageHash, VerificationStatus status) {
         Verification v = new Verification();
         v.participantId = participantId;
         v.receivedAt = receivedAt;
         v.verifyDate = receivedAt.toLocalDate();
         v.imageKey = imageKey;
         v.imageHash = imageHash;
-        v.status = VerificationStatus.APPROVED;
+        v.status = status;
         return v;
     }
 }
