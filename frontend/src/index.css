@@ -6170,71 +6170,10 @@ a.back-button:hover {
   color: var(--text);
 }
 
-/* ---------- 메시지: 맞팔로우가 아닐 때 안내 ---------- */
+/* ---------- 프로필 [메시지] 버튼 ---------- */
 
 .pf-msg:hover:not(:disabled) {
   border-color: var(--header-nav);
-}
-
-.pf-msg-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-top: 18px;
-  padding: 14px 16px;
-  background: color-mix(in srgb, #6fcf97 10%, var(--surface));
-  border: 1px solid color-mix(in srgb, #6fcf97 40%, var(--border));
-  border-radius: 14px;
-  animation: vcFadeIn 0.2s ease both;
-}
-
-.pf-msg-notice-icon {
-  font-size: 1.2rem;
-  line-height: 1.4;
-}
-
-.pf-msg-notice > div:nth-child(2) {
-  flex: 1;
-}
-
-.pf-msg-notice strong {
-  display: block;
-  font-size: 0.92rem;
-}
-
-.pf-msg-notice p {
-  margin: 4px 0 0;
-  font-size: 0.86rem;
-  line-height: 1.55;
-  color: var(--header-nav);
-}
-
-.pf-msg-notice-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pf-msg-notice-actions .pf-follow {
-  padding: 8px 14px;
-  white-space: nowrap;
-}
-
-.pf-msg-close {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  font: inherit;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.pf-msg-close:hover {
-  color: var(--text);
-  background: var(--surface-alt);
 }
 
 /* ---------- 메시지 목록 ---------- */
@@ -6253,12 +6192,19 @@ a.back-button:hover {
   border-radius: 16px;
 }
 
+.dm-list li {
+  display: flex;
+  align-items: center;
+}
+
 .dm-list li + li {
   border-top: 1px solid var(--border);
 }
 
 .dm-conv {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
@@ -6336,7 +6282,127 @@ a.back-button:hover {
   border-radius: 999px;
 }
 
+/* 메시지 요청: [대화] [요청] 탭, 수락 · 거절 */
+.dm-tab-count {
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+  color: #ffffff;
+  background: #0f9c86;
+  border-radius: 999px;
+}
+
+.dm-request-help {
+  margin: -8px 0 16px;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--header-nav);
+}
+
+.my-ch-empty .dm-empty-only {
+  margin: 0;
+}
+
+.dm-conv-tag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--header-nav);
+  background: var(--surface-alt);
+  border-radius: 999px;
+}
+
+.dm-conv-actions,
+.dm-request-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.dm-conv-actions {
+  padding-right: 18px;
+}
+
+.dm-accept,
+.dm-decline {
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dm-accept {
+  color: #ffffff;
+  background: var(--text);
+  border: 1px solid var(--text);
+}
+
+.dm-decline {
+  color: var(--header-nav);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.dm-decline:hover:not(:disabled) {
+  border-color: var(--header-nav);
+}
+
+.dm-accept:disabled,
+.dm-decline:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dm-accept:focus-visible,
+.dm-decline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
 /* ---------- 대화방 ---------- */
+
+/* 맞팔로우는 아니지만 같은 챌린지라 바로 대화하는 사이 */
+.dm-shared {
+  margin: 0;
+  padding: 8px 18px;
+  font-size: 0.8rem;
+  color: var(--header-nav);
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+/* 대화방 위 안내: 메시지 요청으로 보내져요 / 요청을 받았어요 */
+.dm-request {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 18px;
+  background: color-mix(in srgb, #6fcf97 10%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, #6fcf97 40%, var(--border));
+}
+
+.dm-request p {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--header-nav);
+}
+
+.dm-request strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text);
+}
 
 .dm-room-page {
   max-width: 760px;

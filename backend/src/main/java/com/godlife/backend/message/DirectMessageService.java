@@ -5,6 +5,8 @@ import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
 import com.godlife.backend.follow.FollowRepository;
+import com.godlife.backend.message.DmThreadRepository.Status;
+import com.godlife.backend.message.DmThreadRepository.Thread;
 import com.godlife.backend.message.dto.MessageDtos.ConversationResponse;
 import com.godlife.backend.message.dto.MessageDtos.MessageResponse;
 import com.godlife.backend.message.dto.MessageDtos.Partner;
@@ -24,23 +26,29 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 1:1 메시지. 서로 팔로우(맞팔로우)한 회원끼리만 보낼 수 있다.
- * - 차단한 사이(어느 쪽이든)는 보낼 수 없다 (차단하면 팔로우도 끊긴다)
- * - 맞팔로우가 풀려도 지난 대화는 볼 수 있지만 새로 보낼 수는 없다
- * - 도배 방지: 1분에 30개
+ * 1:1 메시지.
+ * - 맞팔로우거나 같은 챌린지 참가자면 바로 대화한다.
+ * - 그 밖의 사람에게는 '메시지 요청'으로 간다: 받은 사람이 수락(또는 답장)하면 대화가 열리고,
+ *   수락 전에는 보낸 사람이 3개까지만 보낼 수 있다. 거절하면 보낸 사람은 더 보낼 수 없다.
+ * - 차단한 사이(어느 쪽이든)는 보낼 수 없다. 도배 방지: 1분에 30개.
  */
 @Service
 @RequiredArgsConstructor
 public class DirectMessageService {
 
     public static final int PAGE = 50;
+    /** 수락 전 메시지 요청으로 보낼 수 있는 개수 */
+    public static final int REQUEST_MAX = 3;
     private static final int SEND_LIMIT = 30;
     private static final Duration SEND_WINDOW = Duration.ofMinutes(1);
 
     private final DirectMessageRepository messageRepository;
+    private final DmThreadRepository threadRepository;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final UserBlockRepository blockRepository;
@@ -48,12 +56,47 @@ public class DirectMessageService {
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
 
-    /** 대화방 머리: 상대 정보와 지금 보낼 수 있는지 */
+    /** 지금 이 상대에게 보낼 수 있는지 (방 머리 · 보내기 · 목록이 같은 판단을 쓴다) */
+    record Access(boolean canSend, String reason, boolean direct, boolean mutual, boolean shared, String request,
+                  int requestLeft, Thread thread) {
+    }
+
+    Access access(Long me, Long partnerId) {
+        if (blockRepository.existsByBlockerIdAndBlockedId(me, partnerId)
+                || blockRepository.existsByBlockerIdAndBlockedId(partnerId, me)) {
+            return new Access(false, "BLOCKED", false, false, false, null, 0, null);
+        }
+        boolean mutual = followRepository.exists(me, partnerId) && followRepository.exists(partnerId, me);
+        Thread thread = threadRepository.find(me, partnerId).orElse(null);
+        boolean shared = threadRepository.sharesChallenge(me, partnerId);
+        if (mutual || shared || (thread != null && thread.status() == Status.ACCEPTED)) {
+            return new Access(true, null, true, mutual, shared, null, 0, thread);
+        }
+        if (thread == null) {
+            // 첫 메시지가 요청이 된다
+            return new Access(true, null, false, false, false, null, REQUEST_MAX, null);
+        }
+        boolean iRequested = thread.requesterId().equals(me);
+        if (thread.status() == Status.PENDING) {
+            if (!iRequested) {
+                // 받은 요청: 답장하면 수락
+                return new Access(true, null, false, false, false, "RECEIVED", 0, thread);
+            }
+            int left = (int) Math.max(0, REQUEST_MAX - threadRepository.pendingSent(me, partnerId));
+            return new Access(left > 0, left > 0 ? null : "REQUEST_LIMIT", false, false, false, "SENT", left, thread);
+        }
+        // 거절됨: 보낸 사람은 더 못 보내고, 거절한 사람이 먼저 보내면 다시 열린다
+        return iRequested
+                ? new Access(false, "NOT_AVAILABLE", false, false, false, null, 0, thread)
+                : new Access(true, null, false, false, false, null, 0, thread);
+    }
+
     @Transactional(readOnly = true)
     public RoomResponse room(Long me, Long partnerId) {
         User partner = partner(me, partnerId);
-        String reason = blockReason(me, partnerId);
-        return new RoomResponse(toPartner(partner), reason == null, reason);
+        Access a = access(me, partnerId);
+        return new RoomResponse(toPartner(partner), a.canSend(), a.reason(), a.direct(), a.mutual(), a.shared(),
+                a.request(), a.requestLeft());
     }
 
     /**
@@ -74,7 +117,8 @@ public class DirectMessageService {
                     : messageRepository.findLatest(low, high, PageRequest.of(0, PAGE)));
             Collections.reverse(messages);
         }
-        if (before == null) {
+        // 받은 메시지 요청은 수락하기 전까지 읽어도 읽음으로 바꾸지 않는다 (보낸 사람에게 '읽음'이 안 보이게)
+        if (before == null && !isReceivedRequest(me, partnerId)) {
             messageRepository.markRead(me, partnerId, LocalDateTime.now(clock));
         }
         return messages.stream()
@@ -86,19 +130,69 @@ public class DirectMessageService {
     @Transactional
     public MessageResponse send(Long me, Long partnerId, String content) {
         partner(me, partnerId);
-        String reason = blockReason(me, partnerId);
-        if (reason != null) {
-            throw new BusinessException(ErrorCode.MESSAGE_NOT_ALLOWED, messageFor(reason));
+        Access a = access(me, partnerId);
+        if (!a.canSend()) {
+            throw new BusinessException(ErrorCode.MESSAGE_NOT_ALLOWED, messageFor(a.reason()));
         }
         throttle.check("dm:" + me, SEND_LIMIT, SEND_WINDOW);
+        if (!a.direct()) {
+            Thread t = a.thread();
+            if (t == null) {
+                threadRepository.request(me, partnerId); // 첫 메시지 → 메시지 요청
+            } else if (!t.requesterId().equals(me)) {
+                threadRepository.setStatus(me, partnerId, Status.ACCEPTED); // 받은 요청에 답장 = 수락
+            }
+        }
         DirectMessage saved = messageRepository.saveAndFlush(DirectMessage.of(me, partnerId, content.strip()));
         DirectMessage read = messageRepository.findById(saved.getId()).orElse(saved);
         return new MessageResponse(read.getId(), read.getContent(), read.getCreatedAt(), true, false);
     }
 
-    /** 대화 목록: 대화마다 마지막 메시지 + 안 읽은 수. 내가 차단한 사람은 빼고, 최근 대화부터. */
+    /** 받은 메시지 요청 수락 */
+    @Transactional
+    public void accept(Long me, Long partnerId) {
+        respond(me, partnerId, Status.ACCEPTED);
+    }
+
+    /** 받은 메시지 요청 거절 (보낸 사람에게는 '지금은 보낼 수 없어요'로만 보인다) */
+    @Transactional
+    public void decline(Long me, Long partnerId) {
+        respond(me, partnerId, Status.DECLINED);
+    }
+
+    private void respond(Long me, Long partnerId, Status status) {
+        partner(me, partnerId);
+        threadRepository.find(me, partnerId)
+                .filter(th -> th.status() == Status.PENDING && th.requesterId().equals(partnerId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.MESSAGE_NOT_ALLOWED, "받은 메시지 요청이 없어요."));
+        threadRepository.setStatus(me, partnerId, status);
+    }
+
+    private boolean isReceivedRequest(Long me, Long partnerId) {
+        return threadRepository.find(me, partnerId)
+                .filter(th -> th.status() == Status.PENDING && th.requesterId().equals(partnerId))
+                .isPresent() && "RECEIVED".equals(access(me, partnerId).request());
+    }
+
+    /** 대기 중인 요청의 상대별 상태 (RECEIVED / SENT). 맞팔로우·같은 챌린지가 된 사이는 요청이 아니라서 빠진다. */
+    private Map<Long, String> requestStates(Long me) {
+        Map<Long, String> states = new HashMap<>();
+        for (Long partnerId : threadRepository.pendingPartners(me)) {
+            String request = access(me, partnerId).request();
+            if (request != null) {
+                states.put(partnerId, request);
+            }
+        }
+        return states;
+    }
+
+    /**
+     * 대화 목록: 대화마다 마지막 메시지 + 안 읽은 수 + 요청 상태. 최근 대화부터.
+     * 내가 차단한 사람과 내가 거절한 요청은 뺀다. 받은 요청(RECEIVED)은 화면의 '요청' 탭으로 간다.
+     */
     @Transactional(readOnly = true)
     public List<ConversationResponse> conversations(Long me) {
+        Map<Long, String> requests = requestStates(me);
         return jdbc.query("""
                 SELECT u.id AS pid, u.nickname, u.profile_image_url, m.content, m.created_at, m.sender_id,
                        (SELECT COUNT(*) FROM direct_messages x
@@ -109,46 +203,48 @@ public class DirectMessageService {
                 JOIN users u ON u.id = IF(m.sender_id = :me, m.receiver_id, m.sender_id)
                 WHERE u.status = 'ACTIVE'
                   AND NOT EXISTS (SELECT 1 FROM user_blocks b WHERE b.blocker_id = :me AND b.blocked_id = u.id)
+                  AND NOT EXISTS (SELECT 1 FROM dm_threads t
+                                  WHERE t.low_id = LEAST(:me, u.id) AND t.high_id = GREATEST(:me, u.id)
+                                    AND t.status = 'DECLINED' AND t.requester_id = u.id)
                 ORDER BY m.id DESC
                 LIMIT 100
                 """, new MapSqlParameterSource("me", me),
                 (rs, i) -> new ConversationResponse(
                         new Partner(rs.getLong("pid"), rs.getString("nickname"), rs.getString("profile_image_url")),
                         rs.getString("content"), rs.getTimestamp("created_at").toLocalDateTime(),
-                        rs.getLong("sender_id") == me, rs.getLong("unread")));
+                        rs.getLong("sender_id") == me, rs.getLong("unread"), requests.get(rs.getLong("pid"))));
     }
 
-    /** 안 읽은 메시지 수 (헤더 표시용, 내가 차단한 사람 것은 빼고) */
+    /**
+     * 안 읽은 메시지 수(count)와 받은 메시지 요청 수(requests) (헤더 표시용).
+     * 내가 차단한 사람 · 내가 거절한 요청 · 아직 수락 안 한 요청의 메시지는 안 읽은 수에서 뺀다.
+     */
     @Transactional(readOnly = true)
-    public long unreadCount(Long me) {
+    public Map<String, Long> unreadCount(Long me) {
+        List<Long> received = requestStates(me).entrySet().stream()
+                .filter(e -> "RECEIVED".equals(e.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
         Long n = jdbc.queryForObject("""
                 SELECT COUNT(*) FROM direct_messages m
+                  JOIN users u ON u.id = m.sender_id AND u.status = 'ACTIVE'
                 WHERE m.receiver_id = :me AND m.read_at IS NULL
+                  AND m.sender_id NOT IN (:received)
                   AND NOT EXISTS (SELECT 1 FROM user_blocks b WHERE b.blocker_id = :me AND b.blocked_id = m.sender_id)
-                """, new MapSqlParameterSource("me", me), Long.class);
-        return n == null ? 0 : n;
-    }
-
-    /** 보낼 수 없는 이유 (보낼 수 있으면 null) */
-    private String blockReason(Long me, Long partnerId) {
-        if (blockRepository.existsByBlockerIdAndBlockedId(me, partnerId)
-                || blockRepository.existsByBlockerIdAndBlockedId(partnerId, me)) {
-            return "BLOCKED";
-        }
-        if (!followRepository.exists(me, partnerId)) {
-            return "NOT_FOLLOWING";
-        }
-        if (!followRepository.exists(partnerId, me)) {
-            return "NOT_FOLLOWED_BACK";
-        }
-        return null;
+                  AND NOT EXISTS (SELECT 1 FROM dm_threads t
+                                  WHERE t.low_id = m.low_id AND t.high_id = m.high_id
+                                    AND t.status = 'DECLINED' AND t.requester_id = m.sender_id)
+                """, new MapSqlParameterSource("me", me)
+                        // 빈 목록이면 IN () 이 깨지므로 없는 id 하나를 넣는다
+                        .addValue("received", received.isEmpty() ? List.of(-1L) : received), Long.class);
+        return Map.of("count", n == null ? 0 : n, "requests", (long) received.size());
     }
 
     private static String messageFor(String reason) {
         return switch (reason) {
             case "BLOCKED" -> "메시지를 보낼 수 없는 회원이에요.";
-            case "NOT_FOLLOWING" -> "메시지는 서로 팔로우한 친구끼리만 보낼 수 있어요. 먼저 팔로우해 보세요.";
-            default -> "상대도 나를 팔로우하면 메시지를 보낼 수 있어요.";
+            case "REQUEST_LIMIT" -> "상대가 메시지 요청을 수락하기 전에는 " + REQUEST_MAX + "개까지 보낼 수 있어요.";
+            default -> "지금은 메시지를 보낼 수 없어요.";
         };
     }
 

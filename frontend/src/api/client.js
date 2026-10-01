@@ -242,11 +242,12 @@ export const profileApi = {
   unfollow: (userId) => apiFetch(`/api/users/${userId}/follow`, { method: 'DELETE' }),
 }
 
-// 1:1 메시지 (맞팔로우끼리만 보낼 수 있음)
+// 1:1 메시지 (맞팔로우·같은 챌린지는 바로, 그 밖은 메시지 요청)
 export const messageApi = {
   conversations: () => apiFetch('/api/messages'),
+  // { count: 안 읽은 메시지 수, requests: 받은 메시지 요청 수 }
   unreadCount: () => apiFetch('/api/messages/unread-count'),
-  // 상대 + 지금 보낼 수 있는지(canSend, reason)
+  // 상대 + 지금 보낼 수 있는지(canSend, reason) + 메시지 요청 상태(direct, request, requestLeft)
   room: (userId) => apiFetch(`/api/messages/${userId}/room`),
   list: (userId, { after, before } = {}) => {
     const params = new URLSearchParams()
@@ -256,6 +257,9 @@ export const messageApi = {
     return apiFetch(`/api/messages/${userId}${qs ? `?${qs}` : ''}`)
   },
   send: (userId, content) => apiFetch(`/api/messages/${userId}`, { method: 'POST', body: { content } }),
+  // 받은 메시지 요청 수락 · 거절
+  accept: (userId) => apiFetch(`/api/messages/${userId}/accept`, { method: 'POST' }),
+  decline: (userId) => apiFetch(`/api/messages/${userId}/decline`, { method: 'POST' }),
 }
 
 // 랭킹 메뉴 (비로그인도 볼 수 있음, 로그인하면 내 순위가 같이 온다)

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { messageApi } from '../api/client.js'
 import { Avatar } from '../components/UserMenu.jsx'
 
@@ -10,17 +10,18 @@ const MAX = 500
 const RISKY = /(01[016789][-\s.]?\d{3,4}[-\s.]?\d{4})|(https?:\/\/|www\.)/i
 
 const REASON_TEXT = {
-  NOT_FOLLOWING: '메시지는 서로 팔로우한 친구끼리만 보낼 수 있어요. 먼저 팔로우해 보세요.',
-  NOT_FOLLOWED_BACK: '상대도 나를 팔로우하면 메시지를 보낼 수 있어요.',
   BLOCKED: '메시지를 보낼 수 없는 회원이에요.',
+  REQUEST_LIMIT: '상대가 메시지 요청을 수락하면 이어서 보낼 수 있어요.',
 }
 
 /**
  * 1:1 대화방 (/messages/:userId). 3초마다 새 메시지를 불러오고 항상 맨 아래로 내린다.
- * 맞팔로우가 아니면 입력창 대신 이유를 보여 준다 (지난 대화는 볼 수 있다).
+ * 맞팔로우·같은 챌린지가 아니면 '메시지 요청'으로 보내진다: 위에 안내를 띄우고, 받은 요청이면 [수락] [거절]을 보여 준다.
+ * 보낼 수 없으면 입력창 대신 이유를 보여 준다 (지난 대화는 볼 수 있다).
  */
 export function MessageRoomPage() {
   const { userId } = useParams()
+  const navigate = useNavigate()
   const [room, setRoom] = useState({ key: null, data: null, error: '' })
   const [messages, setMessages] = useState([])
   const [hasOlder, setHasOlder] = useState(false)
@@ -52,12 +53,22 @@ export function MessageRoomPage() {
     }
   }, [userId])
 
+  // 메시지 요청 중이면 상대가 수락했는지(또는 남은 개수)도 같이 새로 본다
+  const loaded = room.key === userId && Boolean(room.data)
+  const direct = room.data?.direct
+
   // 3초마다 새 메시지
   useEffect(() => {
-    if (room.key !== userId || !room.data) return
+    if (!loaded) return
     let cancelled = false
     const timer = setInterval(() => {
       if (document.visibilityState !== 'visible') return
+      if (!direct) {
+        messageApi
+          .room(userId)
+          .then((data) => !cancelled && setRoom((r) => (r.key === userId ? { ...r, data } : r)))
+          .catch(() => {})
+      }
       messageApi
         .list(userId, { after: lastId.current })
         .then((fresh) => {
@@ -74,7 +85,7 @@ export function MessageRoomPage() {
       cancelled = true
       clearInterval(timer)
     }
-  }, [room.key, room.data, userId])
+  }, [loaded, direct, userId])
 
   // 새 메시지가 오면 무조건 맨 아래로 (이전 메시지 더 보기만 예외)
   useLayoutEffect(() => {
@@ -103,6 +114,33 @@ export function MessageRoomPage() {
       setText('')
       stickBottom.current = true
       setMessages((cur) => (cur.some((m) => m.id === sent.id) ? cur : [...cur, sent]))
+      // 요청 중이면 남은 개수가 줄거나(보낸 사람), 답장으로 수락된다(받은 사람)
+      if (!direct) refreshRoom()
+    } catch (err) {
+      setError(err.message)
+      if (!direct) refreshRoom()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function refreshRoom() {
+    messageApi
+      .room(userId)
+      .then((data) => setRoom((r) => (r.key === userId ? { ...r, data } : r)))
+      .catch(() => {})
+  }
+
+  async function respond(action) {
+    setBusy(true)
+    setError('')
+    try {
+      await messageApi[action](userId)
+      if (action === 'decline') {
+        navigate('/messages', { replace: true })
+        return
+      }
+      refreshRoom()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -120,7 +158,7 @@ export function MessageRoomPage() {
     )
   }
 
-  const { partner, canSend, reason } = room.data
+  const { partner, canSend, reason, request, requestLeft, mutual, sharedChallenge } = room.data
   const lastMine = [...messages].reverse().find((m) => m.mine)
 
   return (
@@ -143,6 +181,41 @@ export function MessageRoomPage() {
             <strong>{partner.nickname}</strong>
           </Link>
         </header>
+
+        {direct && !mutual && sharedChallenge && (
+          <p className="dm-shared" role="status">
+            같은 챌린지 참가자라 맞팔로우가 아니어도 바로 대화할 수 있어요.
+          </p>
+        )}
+        {!direct && request === 'RECEIVED' && (
+          <div className="dm-request" role="status">
+            <p>
+              <strong>{partner.nickname}님이 메시지 요청을 보냈어요</strong>
+              수락하거나 답장하면 대화가 시작돼요. 수락하기 전에는 읽어도 상대에게 표시되지 않아요.
+            </p>
+            <div className="dm-request-actions">
+              <button type="button" className="dm-accept" onClick={() => respond('accept')} disabled={busy}>
+                수락
+              </button>
+              <button type="button" className="dm-decline" onClick={() => respond('decline')} disabled={busy}>
+                거절
+              </button>
+            </div>
+          </div>
+        )}
+        {!direct && (request === 'SENT' || requestLeft > 0) && (
+          <div className="dm-request" role="status">
+            <p>
+              <strong>맞팔로우도, 같은 챌린지 참가자도 아니라 메시지 요청으로 보내져요</strong>
+              {partner.nickname}님이 수락하면 대화가 시작돼요.{' '}
+              {request !== 'SENT'
+                ? `수락 전에는 ${requestLeft}개까지만 보낼 수 있어요.`
+                : requestLeft > 0
+                  ? `수락 전에는 ${requestLeft}개 더 보낼 수 있어요.`
+                  : '지금은 수락을 기다리고 있어요.'}
+            </p>
+          </div>
+        )}
 
         <div className="dm-messages" ref={listRef}>
           {hasOlder && (
@@ -183,7 +256,7 @@ export function MessageRoomPage() {
                 value={text}
                 maxLength={MAX}
                 rows={1}
-                placeholder="메시지를 입력하세요"
+                placeholder={request === 'RECEIVED' ? '답장하면 요청을 수락해요' : '메시지를 입력하세요'}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) send(e)
@@ -198,7 +271,7 @@ export function MessageRoomPage() {
         ) : (
           <div className="dm-locked">
             <p>{REASON_TEXT[reason] ?? '지금은 메시지를 보낼 수 없어요.'}</p>
-            {reason !== 'BLOCKED' && (
+            {reason !== 'BLOCKED' && reason !== 'REQUEST_LIMIT' && (
               <Link to={`/users/${partner.id}`} className="btn btn-outline">
                 {partner.nickname}님 프로필 보기
               </Link>

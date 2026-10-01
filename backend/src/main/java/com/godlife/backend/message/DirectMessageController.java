@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-/** 1:1 메시지 (로그인 회원, 맞팔로우끼리만 보낼 수 있음) */
+/** 1:1 메시지 (로그인 회원). 맞팔로우·같은 챌린지는 바로, 그 밖은 메시지 요청 */
 @RestController
 @RequiredArgsConstructor
 public class DirectMessageController {
@@ -33,13 +33,27 @@ public class DirectMessageController {
         return messageService.conversations(authUser.id());
     }
 
-    /** 안 읽은 메시지 수 (헤더) */
+    /** 안 읽은 메시지 수와 받은 메시지 요청 수 (헤더) */
     @GetMapping("/api/messages/unread-count")
     public Map<String, Long> unread(@AuthenticationPrincipal AuthUser authUser) {
-        return Map.of("count", messageService.unreadCount(authUser.id()));
+        return messageService.unreadCount(authUser.id());
     }
 
-    /** 대화방 머리: 상대 + 지금 보낼 수 있는지(맞팔로우) */
+    /** 받은 메시지 요청 수락 */
+    @PostMapping("/api/messages/{userId}/accept")
+    public ResponseEntity<Void> accept(@PathVariable Long userId, @AuthenticationPrincipal AuthUser authUser) {
+        messageService.accept(authUser.id(), userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 받은 메시지 요청 거절 */
+    @PostMapping("/api/messages/{userId}/decline")
+    public ResponseEntity<Void> decline(@PathVariable Long userId, @AuthenticationPrincipal AuthUser authUser) {
+        messageService.decline(authUser.id(), userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 대화방 머리: 상대 + 지금 보낼 수 있는지 + 메시지 요청 상태 */
     @GetMapping("/api/messages/{userId}/room")
     public RoomResponse room(@PathVariable Long userId, @AuthenticationPrincipal AuthUser authUser) {
         return messageService.room(authUser.id(), userId);
