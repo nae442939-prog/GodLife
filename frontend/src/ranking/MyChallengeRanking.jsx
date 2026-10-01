@@ -155,8 +155,12 @@ function ChallengePodium({ challenge: c }) {
                 {r.nickname}
                 {r.mine && <small>나</small>}
               </span>
+              {/* rk-stat 은 세로로 쌓는 칸이라, '인증 N회'를 한 덩어리로 묶어야 한 줄에 나온다 */}
               <span className="rk-stat">
-                인증 <strong>{r.successDays}</strong>회<span className="rk-streak">최장 {r.maxStreak}일</span>
+                <span>
+                  인증 <strong>{r.successDays}</strong>회
+                </span>
+                <span className="rk-streak">최장 {r.maxStreak}일</span>
               </span>
               <span className="rk-go" aria-hidden="true">
                 프로필 보기 ›
