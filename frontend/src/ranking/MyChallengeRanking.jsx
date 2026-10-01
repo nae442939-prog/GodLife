@@ -10,7 +10,7 @@ import { Podium } from './Podium.jsx'
 const format = (v) => `${Math.round(v)}회`
 
 /**
- * 챌린지 랭킹: 내가 하는 챌린지를 고르면 그 챌린지 참가자들의 순위를 3D 시상대로 (인증 횟수 → 최장 연속).
+ * 내 챌린지 랭킹: 내가 하는 챌린지를 고르면 그 챌린지 참가자들의 순위를 3D 시상대로 (인증 횟수 → 최장 연속).
  * 고른 챌린지는 주소(?challenge=)에 둔다. 비로그인이면 로그인 안내.
  */
 export function MyChallengeRanking({ selectedId, onSelect }) {

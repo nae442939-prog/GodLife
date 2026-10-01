@@ -5240,15 +5240,16 @@ a.back-button:hover {
 }
 
 
+/* 본문도 제목 줄(밑줄)과 같은 폭으로: 좁게 두면 넓은 화면에서 왼쪽으로 쏠려 보인다 */
 .rn-body {
-  max-width: 860px;
+  max-width: none;
 }
 
 .rn-metrics {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .rn-metric {

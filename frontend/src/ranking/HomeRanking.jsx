@@ -5,7 +5,7 @@ import { Podium } from './Podium.jsx'
 
 const format = (v) => `${Math.round(v)}회`
 
-/** 홈 '실시간 랭킹': 이번 달 인증 수 상위를 3D 시상대로 (비로그인도 볼 수 있음) */
+/** 홈 '실시간 랭킹': 이번 달 랭킹(이번 달 인증 성공 횟수) 상위를 3D 시상대로 (비로그인도 볼 수 있음) */
 export function HomeRanking() {
   const [top, setTop] = useState(null)
 
@@ -33,7 +33,7 @@ export function HomeRanking() {
   }
   return (
     <div className="home-podium">
-      <p className="rn-help">이번 달 인증을 가장 많이 한 사람들이에요.</p>
+      <p className="rn-help">이번 달 랭킹 · 이번 달에 인증에 가장 많이 성공한 사람들이에요.</p>
       <Podium entries={top} format={format} />
     </div>
   )

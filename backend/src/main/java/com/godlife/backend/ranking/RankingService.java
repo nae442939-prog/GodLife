@@ -31,7 +31,8 @@ import java.util.Set;
 
 /**
  * 랭킹 메뉴.
- * - 전체(개인): 이번 달 인증 수 · 최장 연속 · 이번 달 보상 · 누적 성공률. 상위 N명 + 내 순위. 같은 값이면 같은 순위.
+ * - 전체(개인): 누적 성공 · 이번 달 성공 · 최장 연속 (· 이번 달 보상 · 누적 성공률). 상위 N명 + 내 순위. 같은 값이면 같은 순위.
+ *   '성공' = 승인된 인증 한 번 (거절·검토 중인 사진은 세지 않는다).
  * - 친구: 같은 기준을 나 + 내가 팔로우한 사람 안에서만.
  * - 챌린지(팀): 진행 중인 공개 챌린지를 참가자 평균 달성률(어제까지 끝난 기간 기준)로.
  */
@@ -46,10 +47,16 @@ public class RankingService {
 
     /** 기준별 '회원 id → 값' 집계 SQL. 모두 (uid, val) 두 칸을 돌려준다. */
     private static final Map<RankingMetric, String> METRIC_SQL = Map.of(
+            RankingMetric.TOTAL_SUCCESS, """
+                    SELECT p.user_id AS uid, COUNT(*) AS val
+                    FROM verifications v JOIN challenge_participants p ON p.id = v.participant_id
+                    WHERE v.status = 'APPROVED' AND p.status <> 'KICKED'
+                    GROUP BY p.user_id
+                    """,
             RankingMetric.MONTH_VERIFY, """
                     SELECT p.user_id AS uid, COUNT(*) AS val
                     FROM verifications v JOIN challenge_participants p ON p.id = v.participant_id
-                    WHERE v.verify_date >= :monthStart AND p.status <> 'KICKED'
+                    WHERE v.status = 'APPROVED' AND v.verify_date >= :monthStart AND p.status <> 'KICKED'
                     GROUP BY p.user_id
                     """,
             RankingMetric.MAX_STREAK, """

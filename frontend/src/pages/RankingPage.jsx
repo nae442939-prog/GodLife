@@ -10,14 +10,14 @@ import { Podium } from '../ranking/Podium.jsx'
 const PAGES = {
   users: { title: '전체 랭킹', sub: '누가 가장 꾸준히 갓생 살고 있을까요?' },
   friends: { title: '친구 랭킹', sub: '팔로우한 친구들끼리 비교해요.' },
-  challenges: { title: '챌린지 랭킹', sub: '내가 하는 챌린지에서 누가 가장 꾸준할까요?' },
+  challenges: { title: '내 챌린지 랭킹', sub: '내가 하는 챌린지에서 누가 가장 꾸준할까요?' },
 }
 
+// 전체 = 지금까지 인증에 성공한 횟수, 이번 달 = 이번 달에 성공한 횟수 (매달 1일에 새로 시작)
 const METRICS = [
-  { value: 'month_verify', label: '이번 달 인증', unit: '회' },
-  { value: 'max_streak', label: '최장 연속', unit: '일' },
-  { value: 'month_reward', label: '이번 달 보상', unit: 'P' },
-  { value: 'success_rate', label: '누적 성공률', unit: '%' },
+  { value: 'total_success', label: '전체 랭킹', unit: '회', help: '지금까지 인증에 성공한 횟수예요.' },
+  { value: 'month_verify', label: '이번 달 랭킹', unit: '회', help: '이번 달에 인증에 성공한 횟수예요. 매달 1일에 새로 시작해요.' },
+  { value: 'max_streak', label: '최장 연속', unit: '일', help: '하루도 빠지지 않고 가장 길게 이어 간 기록이에요.' },
 ]
 
 /**
@@ -27,7 +27,7 @@ const METRICS = [
 export function RankingPage() {
   const [params, setParams] = useSearchParams()
   const tab = PAGES[params.get('tab')] ? params.get('tab') : 'users'
-  const metric = params.get('metric') ?? 'month_verify'
+  const metric = params.get('metric') ?? 'total_success'
   const page = PAGES[tab]
 
   function update(name, value) {
@@ -62,21 +62,21 @@ export function RankingPage() {
 function UserRanking({ metric, onMetric, friends = false }) {
   const { status } = useAuth()
   const [data, setData] = useState({ key: null, top: [], me: null, error: '' })
-  const key = `${friends}|${metric}|${status}`
   const m = METRICS.find((x) => x.value === metric) ?? METRICS[0]
+  const key = `${friends}|${m.value}|${status}`
 
   useEffect(() => {
     if (status === 'loading' || (friends && status !== 'authed')) return
     let cancelled = false
-    rankingApi[friends ? 'friends' : 'users'](metric)
+    rankingApi[friends ? 'friends' : 'users'](m.value)
       .then((r) => !cancelled && setData({ key, top: r.top, me: r.me, error: '' }))
       .catch((err) => !cancelled && setData({ key, top: [], me: null, error: err.message }))
     return () => {
       cancelled = true
     }
-  }, [metric, status, key, friends])
+  }, [m.value, status, key, friends])
 
-  const value = (v) => `${m.value === 'success_rate' ? v.toFixed(1) : Math.round(v).toLocaleString()}${m.unit}`
+  const value = (v) => `${Math.round(v).toLocaleString()}${m.unit}`
 
   if (friends && status === 'anon') {
     return (
@@ -112,6 +112,7 @@ function UserRanking({ metric, onMetric, friends = false }) {
           </button>
         ))}
       </div>
+      <p className="rn-help">{m.help}</p>
 
       {data.key !== key ? (
         <p className="muted">불러오는 중…</p>

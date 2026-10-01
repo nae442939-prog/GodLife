@@ -21,7 +21,7 @@ public class RankingController {
 
     private final RankingService rankingService;
 
-    /** 전체(개인) 랭킹. ?metric=month_verify(기본) | max_streak | month_reward | success_rate */
+    /** 전체(개인) 랭킹. ?metric=month_verify(기본) | total_success | max_streak | month_reward | success_rate */
     @GetMapping("/api/rankings/users")
     public UserRankingResponse users(@RequestParam(defaultValue = "month_verify") String metric,
                                      @AuthenticationPrincipal AuthUser authUser) {
