@@ -121,7 +121,7 @@ export function TodayChallenges({ open }) {
   )
 }
 
-/** 랭킹 메가 메뉴 오른쪽: 로그인했으면 이번 달 인증 기준 내 순위 (패널이 열릴 때 불러온다) */
+/** 랭킹 메가 메뉴 오른쪽: 로그인했으면 이번 달 랭킹(이번 달 인증 성공 횟수) 내 순위 (패널이 열릴 때 불러온다) */
 export function MyRankSummary({ open }) {
   const { status } = useAuth()
   const [me, setMe] = useState(undefined)
@@ -140,7 +140,7 @@ export function MyRankSummary({ open }) {
 
   return (
     <div className="mega-today">
-      <p className="mega-today-title">이번 달 내 순위</p>
+      <p className="mega-today-title">이번 달 랭킹 내 순위</p>
       {status !== 'authed' ? (
         <p className="mega-today-empty">
           <Link to="/login" tabIndex={open ? 0 : -1}>
@@ -151,11 +151,11 @@ export function MyRankSummary({ open }) {
       ) : me === undefined ? (
         <p className="mega-today-empty">불러오는 중…</p>
       ) : me === null ? (
-        <p className="mega-today-empty">아직 이번 달 인증이 없어요. 오늘 인증하고 순위에 올라 봐요!</p>
+        <p className="mega-today-empty">아직 이번 달 랭킹에 없어요. 오늘 인증하고 순위에 올라 봐요!</p>
       ) : (
         <p className="mega-rank">
           <strong>{me.rank}위</strong>
-          <span>이번 달 인증 {Math.round(me.value)}회</span>
+          <span>이번 달 성공 {Math.round(me.value)}회</span>
         </p>
       )}
     </div>

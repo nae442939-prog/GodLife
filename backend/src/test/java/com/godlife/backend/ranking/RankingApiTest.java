@@ -88,6 +88,10 @@ class RankingApiTest {
         mvc.perform(get("/api/rankings/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.me").doesNotExist());
+
+        // 전체 랭킹(누적 성공 횟수)도 같은 인증을 센다
+        mvc.perform(get("/api/rankings/users").param("metric", "total_success").header("Authorization", "Bearer " + a))
+                .andExpect(jsonPath("$.me.value").value(2.0));
     }
 
     @Test

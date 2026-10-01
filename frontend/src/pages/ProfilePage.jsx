@@ -72,7 +72,7 @@ export function ProfilePage() {
   const u = state.profile
   const today = toIsoDate(new Date())
   const stats = [
-    { key: 'verify', label: '이번 달 인증', value: `${u.monthVerify}회`, icon: <CheckIcon /> },
+    { key: 'verify', label: '이번 달 성공', value: `${u.monthVerify}회`, icon: <CheckIcon /> },
     { key: 'streak', label: '최장 연속', value: `${u.maxStreak}일`, icon: <FlameIcon /> },
     {
       key: 'rate',

@@ -264,7 +264,7 @@ export const messageApi = {
 
 // 랭킹 메뉴 (비로그인도 볼 수 있음, 로그인하면 내 순위가 같이 온다)
 export const rankingApi = {
-  // metric = month_verify | max_streak | month_reward | success_rate
+  // metric = total_success | month_verify | max_streak (서버에는 month_reward | success_rate 도 있다)
   users: (metric) => apiFetch(`/api/rankings/users?metric=${metric}`),
   // 친구 랭킹: 나 + 내가 팔로우한 사람 (로그인 필요)
   friends: (metric) => apiFetch(`/api/rankings/friends?metric=${metric}`),

@@ -13,7 +13,7 @@ const CHALLENGE_LINKS = [
 const RANKING_LINKS = [
   { label: '전체 랭킹', to: '/rankings?tab=users' },
   { label: '친구 랭킹', to: '/rankings?tab=friends' },
-  { label: '챌린지 랭킹', to: '/rankings?tab=challenges' },
+  { label: '내 챌린지 랭킹', to: '/rankings?tab=challenges' },
 ]
 
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
