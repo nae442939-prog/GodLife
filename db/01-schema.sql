@@ -551,7 +551,7 @@ CREATE TABLE follows (
   CONSTRAINT ck_follows_self CHECK (follower_id <> following_id)
 ) ENGINE=InnoDB COMMENT='팔로우';
 
--- 1:1 메시지: 맞팔로우끼리만. (작은 id, 큰 id) 쌍으로 대화방을 묶는다
+-- 1:1 메시지: 맞팔로우·같은 챌린지는 바로, 그 밖은 메시지 요청(dm_threads). (작은 id, 큰 id) 쌍으로 대화방을 묶는다
 CREATE TABLE direct_messages (
   id          BIGINT       NOT NULL AUTO_INCREMENT,
   sender_id   BIGINT       NOT NULL,
@@ -568,7 +568,22 @@ CREATE TABLE direct_messages (
   CONSTRAINT fk_dm_receiver FOREIGN KEY (receiver_id) REFERENCES users (id),
   CONSTRAINT ck_dm_pair CHECK (sender_id <> receiver_id AND low_id < high_id
     AND low_id = LEAST(sender_id, receiver_id) AND high_id = GREATEST(sender_id, receiver_id))
-) ENGINE=InnoDB COMMENT='1:1 메시지 (맞팔로우끼리)';
+) ENGINE=InnoDB COMMENT='1:1 메시지 (맞팔로우·같은 챌린지는 바로, 그 밖은 메시지 요청)';
+
+-- 메시지 요청: 맞팔로우·같은 챌린지가 아닌 사이의 첫 연락. 수락해야 대화가 열린다
+CREATE TABLE dm_threads (
+  low_id       BIGINT   NOT NULL,
+  high_id      BIGINT   NOT NULL,
+  requester_id BIGINT   NOT NULL COMMENT '요청을 보낸 사람',
+  status       ENUM('PENDING','ACCEPTED','DECLINED') NOT NULL DEFAULT 'PENDING',
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (low_id, high_id),
+  KEY idx_dm_threads_status (status),
+  CONSTRAINT fk_dm_threads_low FOREIGN KEY (low_id) REFERENCES users (id),
+  CONSTRAINT fk_dm_threads_high FOREIGN KEY (high_id) REFERENCES users (id),
+  CONSTRAINT ck_dm_threads CHECK (low_id < high_id AND requester_id IN (low_id, high_id))
+) ENGINE=InnoDB COMMENT='메시지 요청 (맞팔로우·같은 챌린지가 아닌 사이)';
 
 CREATE TABLE comments (
   id              BIGINT       NOT NULL AUTO_INCREMENT,

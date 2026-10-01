@@ -25,7 +25,7 @@ export function UserMenu() {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
   const location = useLocation()
-  // 안 읽은 메시지 수: 30초마다, 화면을 옮길 때마다 새로
+  // 안 읽은 메시지 수 + 받은 메시지 요청 수: 30초마다, 화면을 옮길 때마다 새로
   const [unread, setUnread] = useState(0)
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function UserMenu() {
     function load() {
       messageApi
         .unreadCount()
-        .then((r) => !cancelled && setUnread(r.count))
+        .then((r) => !cancelled && setUnread(r.count + (r.requests ?? 0)))
         .catch(() => {}) // 보조 정보라 실패해도 메뉴는 그대로
     }
     load()
@@ -77,7 +77,7 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
       >
         <Avatar src={user.profileImageUrl} />
-        {unread > 0 && <span className="user-menu-dot" aria-label={`안 읽은 메시지 ${unread}개`} />}
+        {unread > 0 && <span className="user-menu-dot" aria-label={`새 메시지 ${unread}개`} />}
         <span className="user-menu-name">{user.nickname}</span>
         <span className="user-menu-caret" aria-hidden="true">
           ▾
