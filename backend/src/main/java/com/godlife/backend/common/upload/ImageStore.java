@@ -74,6 +74,11 @@ public class ImageStore {
         return store("post/" + postId, file);
     }
 
+    /** 상점 상품 사진을 저장하고 파일 키("product/{productId}/{uuid}.jpg")를 돌려준다. */
+    public String storeProductImage(Long productId, MultipartFile file) {
+        return store("product/" + productId, file);
+    }
+
     /** 프로필 사진을 저장하고 파일 키("profile/{userId}/{uuid}.jpg")를 돌려준다. */
     public String storeProfileImage(Long userId, MultipartFile file) {
         return store("profile/" + userId, file, PROFILE_MAX_SIDE);

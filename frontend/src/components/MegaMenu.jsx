@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { rankingApi, recordApi, verificationApi } from '../api/client.js'
+import { rankingApi, recordApi, verificationApi, walletApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 
 /**
@@ -223,6 +223,49 @@ export function MyRankSummary({ open }) {
         <p className="mega-rank">
           <strong>{me.rank}위</strong>
           <span>이번 달 성공 {Math.round(me.value)}회</span>
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** 포인트 상점 메가 메뉴 오른쪽: 내 포인트 (상점에서는 보상 포인트를 먼저 쓴다) */
+export function MyPoints({ open }) {
+  const { status } = useAuth()
+  const [wallet, setWallet] = useState(undefined)
+
+  useEffect(() => {
+    if (!open || status !== 'authed') return
+    let cancelled = false
+    walletApi
+      .get()
+      .then((w) => !cancelled && setWallet(w))
+      .catch(() => !cancelled && setWallet(null))
+    return () => {
+      cancelled = true
+    }
+  }, [open, status])
+
+  return (
+    <div className="mega-today">
+      <p className="mega-today-title">내 포인트</p>
+      {status !== 'authed' ? (
+        <p className="mega-today-empty">
+          <Link to="/login" tabIndex={open ? 0 : -1}>
+            로그인
+          </Link>
+          하면 내 포인트로 살 수 있는 상품을 볼 수 있어요.
+        </p>
+      ) : wallet === undefined ? (
+        <p className="mega-today-empty">불러오는 중…</p>
+      ) : wallet === null ? (
+        <p className="mega-today-empty">포인트를 불러오지 못했어요.</p>
+      ) : (
+        <p className="mega-rank">
+          <strong>{wallet.balance.toLocaleString()}P</strong>
+          <span>
+            보상 {wallet.rewardBalance.toLocaleString()}P · 충전 {wallet.chargedBalance.toLocaleString()}P
+          </span>
         </p>
       )}
     </div>

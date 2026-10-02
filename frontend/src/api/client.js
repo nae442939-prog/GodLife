@@ -457,6 +457,72 @@ export const walletApi = {
     apiFetch('/api/wallet/test-charge', { method: 'POST', body: { amount, requestKey } }),
 }
 
+// 포인트 상점 (상품 보기는 비로그인도 가능, 찜 · 장바구니 · 배송지 · 주문은 로그인)
+export const shopApi = {
+  categories: () => apiFetch('/api/shop/categories'),
+  // sort = popular | latest | price_asc | price_desc
+  // → { items: [{ id, name, categoryId, categoryName, type: PHYSICAL|COUPON, sponsorName, imageUrl, pricePoints,
+  //               stock, soldOut, wished }], page, totalPages, totalElements }
+  products: ({ categoryId, q, sort, page } = {}) => {
+    const params = new URLSearchParams()
+    if (categoryId) params.set('categoryId', categoryId)
+    if (q) params.set('q', q)
+    if (sort) params.set('sort', sort)
+    if (page) params.set('page', page)
+    const qs = params.toString()
+    return apiFetch(`/api/shop/products${qs ? `?${qs}` : ''}`)
+  },
+  // 목록의 값 + description
+  product: (id) => apiFetch(`/api/shop/products/${id}`),
+  wishlist: () => apiFetch('/api/shop/wishlist'),
+  wish: (productId, on) => apiFetch(`/api/shop/wishlist/${productId}`, { method: on ? 'PUT' : 'DELETE' }),
+  // 장바구니 [{ productId, name, imageUrl, type, pricePoints, quantity, stock, available }] (바꾸면 바뀐 장바구니가 온다)
+  cart: () => apiFetch('/api/shop/cart'),
+  putCart: (productId, quantity) => apiFetch(`/api/shop/cart/${productId}`, { method: 'PUT', body: { quantity } }),
+  removeCart: (productId) => apiFetch(`/api/shop/cart/${productId}`, { method: 'DELETE' }),
+  // 배송지 [{ id, recipient, phone, zipcode, address1, address2, isDefault }] (기본 배송지가 먼저)
+  addresses: () => apiFetch('/api/shop/addresses'),
+  addAddress: (address) => apiFetch('/api/shop/addresses', { method: 'POST', body: address }),
+  updateAddress: (id, address) => apiFetch(`/api/shop/addresses/${id}`, { method: 'PUT', body: address }),
+  removeAddress: (id) => apiFetch(`/api/shop/addresses/${id}`, { method: 'DELETE' }),
+  // { items: [{ productId, quantity }], addressId, requestKey, fromCart } → { id }
+  // 보상 포인트를 먼저 쓰고 모자란 만큼 충전 포인트를 쓴다. requestKey 가 같으면 두 번 눌려도 한 번만 주문된다.
+  order: (order) => apiFetch('/api/shop/orders', { method: 'POST', body: order }),
+  // [{ id, status, totalPoints, firstItemName, firstImageUrl, firstType, itemCount, orderedAt }]
+  orders: (page = 0) => apiFetch(`/api/shop/orders?page=${page}`),
+  // { id, status: PREPARING|SHIPPING|DELIVERED|CANCELED, totalPoints, rewardPoints, chargedPoints, trackingNo, orderedAt,
+  //   canceledAt, cancelable, shipping: { recipient, phone, zipcode, address1, address2 } | null,
+  //   items: [{ productId, name, imageUrl, type, quantity, unitPoints, coupons: [쿠폰 번호] }] }
+  orderDetail: (id) => apiFetch(`/api/shop/orders/${id}`),
+  cancelOrder: (id) => apiFetch(`/api/shop/orders/${id}/cancel`, { method: 'POST' }),
+  receiveOrder: (id) => apiFetch(`/api/shop/orders/${id}/receive`, { method: 'POST' }),
+}
+
+// 포인트 상점 관리 (role = ADMIN 만 쓸 수 있다)
+export const shopAdminApi = {
+  // [{ id, name, contactEmail, active, productCount }]
+  sponsors: () => apiFetch('/api/admin/shop/sponsors'),
+  addSponsor: (sponsor) => apiFetch('/api/admin/shop/sponsors', { method: 'POST', body: sponsor }),
+  updateSponsor: (id, sponsor) => apiFetch(`/api/admin/shop/sponsors/${id}`, { method: 'PUT', body: sponsor }),
+  // 숨긴 상품까지 전부 [{ id, name, sponsorId, sponsorName, categoryId, categoryName, type, description, imageUrl,
+  //                        pricePoints, stock, soldCount, status: ON_SALE|SOLD_OUT|HIDDEN }]
+  products: () => apiFetch('/api/admin/shop/products'),
+  addProduct: (product) => apiFetch('/api/admin/shop/products', { method: 'POST', body: product }),
+  updateProduct: (id, product) => apiFetch(`/api/admin/shop/products/${id}`, { method: 'PUT', body: product }),
+  // 상품 사진 (JPG·PNG 5MB 이하) → { imageUrl }
+  async changeProductImage(id, file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await authRaw(`/api/admin/shop/products/${id}/image`, { method: 'POST', body: form })
+    return res.json()
+  },
+  // status = PREPARING | SHIPPING | DELIVERED | CANCELED | '' → [{ userId, nickname, order: 주문 상세 }]
+  orders: (status) => apiFetch(`/api/admin/shop/orders${status ? `?status=${status}` : ''}`),
+  ship: (id, trackingNo) => apiFetch(`/api/admin/shop/orders/${id}/ship`, { method: 'POST', body: { trackingNo } }),
+  deliver: (id) => apiFetch(`/api/admin/shop/orders/${id}/deliver`, { method: 'POST' }),
+  cancel: (id) => apiFetch(`/api/admin/shop/orders/${id}/cancel`, { method: 'POST' }),
+}
+
 // 차단: 나에게만 적용 (차단한 사람의 채팅이 내 화면에서 안 보인다)
 export const blockApi = {
   list: () => apiFetch('/api/users/me/blocks'),

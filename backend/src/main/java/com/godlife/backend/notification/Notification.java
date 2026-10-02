@@ -25,7 +25,7 @@ public class Notification {
 
     public enum Type {
         SETTLEMENT, VERIFY_REMINDER, COMMENT, REPORT_RESULT, REPORT_ALERT, FOLLOW, MESSAGE_REQUEST, INQUIRY_ANSWER,
-        VERIFY_REJECTED
+        VERIFY_REJECTED, ORDER
     }
 
     @Id

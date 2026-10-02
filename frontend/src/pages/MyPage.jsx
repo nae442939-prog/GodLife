@@ -8,8 +8,8 @@ import { ProfileEditPopup } from '../profile/ProfileEditPopup.jsx'
 
 /**
  * 마이페이지 (/me, 사용자 시안): 큰 동그란 사진(카메라 버튼) | 닉네임 [수정] · 한 줄 소개 · 이메일 | 팔로워 · 팔로잉,
- * 제목 줄 오른쪽에 [설정] → 뱃지 → 한눈에 보기(내 챌린지 · 포인트 지갑 · 뱃지 · 랭킹의 지금 숫자)
- * → 계정(알림 설정 · 비밀번호 변경 · 로그아웃) → 포인트 안내.
+ * 제목 줄 오른쪽에 [설정] → 내 칭호(점수 · 다음 칭호까지) → 뱃지 → 한눈에 보기(내 챌린지 · 포인트 지갑 · 뱃지 · 랭킹의 지금 숫자)
+ * → 계정(알림 설정 · 비밀번호 변경 · 포인트 주문 내역 · 로그아웃) → 포인트 안내.
  * 팔로워 · 팔로잉 숫자를 누르면 목록 창이 떠서 팔로우를 취소하거나 맞팔로우할 수 있다.
  * [수정]을 누르면(또는 ?edit=1 로 들어오면) 프로필 수정 창이 뜬다. 프로필 수정은 설정이 아니라 여기서 한다.
  */
@@ -271,6 +271,19 @@ export function MyPage() {
               </svg>
             </span>
             <span className="mp-acctLabel">비밀번호 변경</span>
+            <Chevron />
+          </Link>
+        </li>
+        <li>
+          <Link to="/shop/orders" className="mp-acctRow">
+            <span className="mp-acctIcon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M6 4h12l1 4H5l1-4z" strokeWidth="1.7" strokeLinejoin="round" />
+                <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" strokeWidth="1.7" strokeLinejoin="round" />
+                <path d="M9 12h6M9 16h4" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="mp-acctLabel">포인트 주문 내역</span>
             <Chevron />
           </Link>
         </li>

@@ -19,3 +19,6 @@ INSERT INTO categories (id, name, ai_label) VALUES
   (3, '독서', 'reading'),
   (4, '요리', 'cooking'),
   (5, '기타', 'other');
+
+-- 포인트 상점 상품 카테고리 (이용권 · 상품권은 배송 없이 쿠폰 번호를 발급하는 상품)
+INSERT IGNORE INTO product_categories (name) VALUES ('운동용품'), ('문구류'), ('생활용품'), ('이용권'), ('상품권');

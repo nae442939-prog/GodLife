@@ -23,6 +23,7 @@ import java.util.List;
  * - 아직 정산이 끝나지 않은 챌린지에 참여 중이면 불가 (포기했더라도 정산이 끝나야 한다)
  * - 내가 연 챌린지가 아직 끝나지 않았으면 불가
  * - 쓰지 않은 충전 포인트가 있으면 불가 (지갑에서 환불받은 뒤 탈퇴)
+ * - 포인트 상점에서 아직 받지 못한 주문(준비 중 · 배송 중)이 있으면 불가
  * 보상 포인트는 원래 현금으로 바꿀 수 없는 포인트라 탈퇴하면 그대로 사라진다 (탈퇴 전에 안내한다).
  * 탈퇴하면 이메일 · 닉네임 · 휴대폰 · 사진 · 소개 · 일기 · 팔로우 · 소셜 연결을 지우고 계정을 WITHDRAWN 으로 바꾼다.
  * 챌린지 참여 · 인증 · 채팅 기록은 다른 참가자의 기록과 얽혀 있어 '탈퇴한회원' 이름으로 남는다.
@@ -77,6 +78,11 @@ public class WithdrawalService {
         if (charged > 0) {
             blockers.add("쓰지 않은 충전 포인트 " + String.format("%,d", charged) + "P가 남아 있어요. 포인트 지갑에서 환불받은 뒤에 탈퇴할 수 있어요.");
         }
+        long shipping = count("SELECT COUNT(*) FROM orders WHERE user_id = :me AND status IN ('PREPARING', 'SHIPPING')",
+                me);
+        if (shipping > 0) {
+            blockers.add("포인트 상점에서 아직 받지 못한 주문이 " + shipping + "개 있어요. 받은 뒤(또는 취소한 뒤)에 탈퇴할 수 있어요.");
+        }
         long reward = count("SELECT COALESCE(SUM(reward_balance), 0) FROM wallets WHERE user_id = :me", me);
         return new WithdrawalCheck(blockers.isEmpty(), blockers, reward, user.getPasswordHash() != null);
     }
@@ -120,6 +126,15 @@ public class WithdrawalService {
         jdbc.update("DELETE FROM diary_entries WHERE user_id = :me", me);
         jdbc.update("DELETE FROM follows WHERE follower_id = :me OR following_id = :me", me);
         jdbc.update("DELETE FROM social_accounts WHERE user_id = :me", me);
+        // 포인트 상점: 배송지 · 장바구니 · 찜을 지우고, 지난 주문에 남은 배송 정보(이름 · 연락처 · 주소)도 지운다
+        jdbc.update("""
+                UPDATE orders SET ship_recipient = NULL, ship_phone_enc = NULL, ship_zipcode = NULL,
+                                  ship_address1 = NULL, ship_address2 = NULL
+                WHERE user_id = :me
+                """, me);
+        jdbc.update("DELETE FROM addresses WHERE user_id = :me", me);
+        jdbc.update("DELETE FROM cart_items WHERE user_id = :me", me);
+        jdbc.update("DELETE FROM wishlists WHERE user_id = :me", me);
         // 개인정보를 지우고, 같은 이메일 · 닉네임 · 휴대폰으로 다시 가입할 수 있게 비워 둔다
         user.withdraw("탈퇴한회원" + userId);
         userRepository.flush();

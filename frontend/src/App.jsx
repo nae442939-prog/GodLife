@@ -15,6 +15,7 @@ import { AdminCollusionPage } from './pages/AdminCollusionPage.jsx'
 import { AdminCommunityPage } from './pages/AdminCommunityPage.jsx'
 import { AdminInquiriesPage } from './pages/AdminInquiriesPage.jsx'
 import { AdminReviewsPage } from './pages/AdminReviewsPage.jsx'
+import { AdminShopPage } from './pages/AdminShopPage.jsx'
 import { BadgesPage } from './pages/BadgesPage.jsx'
 import { RankingPage } from './pages/RankingPage.jsx'
 import { RecordPage } from './pages/RecordPage.jsx'
@@ -29,6 +30,13 @@ import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { MyPage } from './pages/MyPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
+import { ShopCartPage } from './pages/ShopCartPage.jsx'
+import { ShopCheckoutPage } from './pages/ShopCheckoutPage.jsx'
+import { ShopOrderPage } from './pages/ShopOrderPage.jsx'
+import { ShopOrdersPage } from './pages/ShopOrdersPage.jsx'
+import { ShopPage } from './pages/ShopPage.jsx'
+import { ShopProductPage } from './pages/ShopProductPage.jsx'
+import { ShopWishlistPage } from './pages/ShopWishlistPage.jsx'
 import { SignupPage } from './pages/SignupPage.jsx'
 import { VerifyPhonePage } from './pages/VerifyPhonePage.jsx'
 
@@ -47,6 +55,8 @@ export default function App() {
         <Route path="/users/:id" element={<ProfilePage />} />
         <Route path="/challenges/:id" element={<ChallengeDetailPage />} />
         <Route path="/challenges/join/:code" element={<ChallengeInvitePage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/shop/products/:id" element={<ShopProductPage />} />
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/community/:id" element={<CommunityPostPage />} />
 
@@ -54,6 +64,11 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route path="/challenges/new" element={<ChallengeCreatePage />} />
           <Route path="/challenges/mine" element={<ChallengeMinePage />} />
+          <Route path="/shop/cart" element={<ShopCartPage />} />
+          <Route path="/shop/checkout" element={<ShopCheckoutPage />} />
+          <Route path="/shop/orders" element={<ShopOrdersPage />} />
+          <Route path="/shop/orders/:id" element={<ShopOrderPage />} />
+          <Route path="/shop/wishlist" element={<ShopWishlistPage />} />
           <Route path="/community/new" element={<CommunityWritePage />} />
           <Route path="/community/:id/edit" element={<CommunityWritePage />} />
           <Route path="/records" element={<DiaryPage />} />
@@ -69,6 +84,7 @@ export default function App() {
           <Route path="/admin/reviews" element={<AdminReviewsPage />} />
           <Route path="/admin/collusion" element={<AdminCollusionPage />} />
           <Route path="/admin/community" element={<AdminCommunityPage />} />
+          <Route path="/admin/shop" element={<AdminShopPage />} />
           <Route path="/verify-phone" element={<VerifyPhonePage />} />
         </Route>
 
