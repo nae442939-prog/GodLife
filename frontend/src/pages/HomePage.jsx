@@ -4,9 +4,10 @@ import { challengeApi, communityApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { ChallengeCard } from '../challenge/ChallengeCard.jsx'
 import { TOPIC_LABEL } from '../community/format.js'
+import { StepCards } from '../home/StepCards.jsx'
 import { HomeRanking } from '../ranking/HomeRanking.jsx'
 
-// body 의 \n 은 문장 단위 줄바꿈이다. (.step-body p 가 white-space: pre-line)
+// body 의 \n 은 문장 단위 줄바꿈이다. (.step-body p 가 white-space: pre-line) 사진은 home/StepCards.jsx
 const STEPS = [
   {
     title: '챌린지에 참여',
@@ -111,7 +112,6 @@ export function HomePage() {
           </div>
 
           <div className="hero-preview" aria-hidden="true">
-            <div className="hero-preview-bg" />
             <div className="hero-preview-card hero-preview-card-challenge">
               <span className="challenge-category">{HERO_CHALLENGE.category}</span>
               <h3>{HERO_CHALLENGE.title}</h3>
@@ -133,6 +133,15 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <div className="hero-scroll" aria-hidden="true">
+        <span>스크롤을 내려 더 알아보세요</span>
+        <span className="hero-scroll-arrow">
+          <svg width="14" height="14" viewBox="0 0 24 24">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </div>
 
       <section className="section section-alt">
         <div className="container">
@@ -161,40 +170,15 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section section-steps">
         <div className="container">
           <h2>이렇게 진행돼요</h2>
-          <ol className="steps">
-            {STEPS.map((step, i) => (
-              <li key={step.title} className={`step${i % 2 === 1 ? ' is-reverse' : ''}`}>
-                <div className="step-num" aria-hidden="true">
-                  <span>{i + 1}</span>
-                </div>
-                <div className="step-body">
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <StepCards steps={STEPS} />
         </div>
       </section>
 
+      {/* 구역 바탕은 번갈아 두 가지 색이다 (section-alt ↔ 기본). 순서를 바꾸면 이 번갈음이 유지되게 클래스도 같이 바꾼다 */}
       <section className="section section-alt">
-        <div className="container">
-          <h2>갓생살기의 특징</h2>
-          <ul className="features">
-            {FEATURES.map((f) => (
-              <li key={f.title} className="feature">
-                <h3>{f.title}</h3>
-                <p>{f.body}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="section">
         <div className="container">
           <div className="section-head">
             <h2>실시간 랭킹</h2>
@@ -206,7 +190,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="section section-alt">
+      <section className="section">
         <div className="container">
           <div className="section-head">
             <h2>커뮤니티 인기글</h2>
@@ -240,6 +224,20 @@ export function HomePage() {
               ))}
             </ul>
           )}
+        </div>
+      </section>
+
+      <section className="section section-alt">
+        <div className="container">
+          <h2>갓생살기의 특징</h2>
+          <ul className="features">
+            {FEATURES.map((f) => (
+              <li key={f.title} className="feature">
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

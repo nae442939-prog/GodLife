@@ -42,10 +42,10 @@ const MEGA = {
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
 const MENU = [
   { label: '챌린지', to: '/challenges', mega: 'challenge' },
-  { label: '갓생기록', to: '/records', mega: 'record' },
+  { label: '커뮤니티', to: '/community' },
   { label: '랭킹', to: '/rankings', mega: 'ranking' },
   { label: '포인트 상점', to: '/shop', mega: 'shop' },
-  { label: '커뮤니티', to: '/community' },
+  { label: '갓생기록', to: '/records', mega: 'record' },
 ]
 
 export function Header() {
