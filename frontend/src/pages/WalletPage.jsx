@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { walletApi } from '../api/client.js'
-
-const CHARGE_AMOUNTS = [1000, 5000, 10000]
+import { ChargeBox } from '../wallet/ChargeBox.jsx'
 
 const TYPE_LABEL = {
-  CHARGE: '테스트 충전',
+  CHARGE: '포인트 충전',
   CHARGE_CANCEL: '충전 포인트 환불',
   ENTRY_FEE: '챌린지 참가',
   REFUND: '참가비 환급',
@@ -27,14 +26,13 @@ const SOURCE_LABEL = { CHARGED: '충전', REWARD: '보상', SHOP: '상점' }
 const p = (n) => `${n.toLocaleString()}P`
 
 /**
- * 포인트 지갑: 충전 포인트 / 보상 포인트를 따로 보여 주고, 테스트 충전과 거래 내역을 둔다.
- * 현금 출금·환전 버튼은 없다 (충전 포인트 미사용분의 결제 취소 환불만 나중에 결제 연동 때 연다).
+ * 포인트 지갑: 충전 포인트 / 보상 포인트를 따로 보여 주고, 충전(토스페이먼츠 테스트 결제)과 거래 내역을 둔다.
+ * 현금 출금·환전 버튼은 없다 (충전 포인트 미사용분의 결제 취소 환불만 있다).
  */
 export function WalletPage() {
   const [wallet, setWallet] = useState(null)
   const [more, setMore] = useState({ items: [], page: 0, done: false })
   const [error, setError] = useState('')
-  const [charging, setCharging] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -46,21 +44,6 @@ export function WalletPage() {
       cancelled = true
     }
   }, [])
-
-  async function charge(amount) {
-    setCharging(amount)
-    setError('')
-    try {
-      // 버튼을 누를 때마다 새 요청 키: 네트워크 재전송·더블클릭이어도 한 번만 충전된다
-      const w = await walletApi.testCharge(amount, crypto.randomUUID())
-      setWallet(w)
-      setMore({ items: [], page: 0, done: false })
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setCharging(null)
-    }
-  }
 
   async function loadMore() {
     try {
@@ -82,7 +65,6 @@ export function WalletPage() {
 
   const transactions = [...wallet.transactions, ...more.items]
   const firstPageFull = wallet.transactions.length === 20
-  const chargeLeft = Math.max(0, wallet.chargeDailyLimit - wallet.chargedToday)
 
   return (
     <div className="container page wallet-page">
@@ -95,9 +77,12 @@ export function WalletPage() {
         <section className="wl-card">
           <p className="wl-label">충전 포인트</p>
           <p className="wl-amount">{p(wallet.chargedBalance)}</p>
-          <p className="wl-help">챌린지 참가에 써요. 쓰지 않은 만큼만 결제 취소로 환불할 수 있어요.</p>
+          <p className="wl-help">
+            챌린지 참가에 써요. 쓰지 않은 만큼만 결제 취소로 환불할 수 있어요.
+            {wallet.refundable < wallet.chargedBalance && ` (지금 환불할 수 있는 금액 ${p(wallet.refundable)})`}
+          </p>
           <RefundBox
-            charged={wallet.chargedBalance}
+            refundable={wallet.refundable}
             onDone={(w) => {
               setWallet(w)
               setMore({ items: [], page: 0, done: false })
@@ -111,28 +96,8 @@ export function WalletPage() {
         </section>
       </div>
 
-      <section className="wl-section">
-        <div className="wl-section-head">
-          <h2>테스트 충전</h2>
-          <span className="wl-sub">
-            결제 연동 전 가상 지급 · 오늘 {p(wallet.chargedToday)} / {p(wallet.chargeDailyLimit)}
-          </span>
-        </div>
-        <div className="wl-charge">
-          {CHARGE_AMOUNTS.map((amount) => (
-            <button
-              key={amount}
-              type="button"
-              className="wl-charge-btn"
-              onClick={() => charge(amount)}
-              disabled={charging !== null || amount > chargeLeft}
-            >
-              {charging === amount ? '충전하는 중…' : `+${p(amount)}`}
-            </button>
-          ))}
-        </div>
-        {error && <p className="form-error">{error}</p>}
-      </section>
+      <ChargeBox chargedToday={wallet.chargedToday} dailyLimit={wallet.chargeDailyLimit} />
+      {error && <p className="form-error">{error}</p>}
 
       <section className="wl-section">
         <div className="wl-section-head">
@@ -199,10 +164,10 @@ export function WalletPage() {
 }
 
 /**
- * 충전 포인트 환불: 쓰지 않은 충전 포인트까지만 (결제 취소). 금액은 100P 단위, 기본은 전액.
- * 결제 연동 전이라 지금은 포인트만 빠진다 (연동 후에는 결제 취소로 돈이 돌아간다).
+ * 충전 포인트 환불: 쓰지 않은 충전 포인트까지만 (PG 결제 취소, 테스트 모드). 금액은 100P 단위, 기본은 전액.
+ * 최근 결제부터 차례로 (부분) 취소된다. refundable 은 서버가 계산한 지금 환불할 수 있는 금액이다.
  */
-function RefundBox({ charged, onDone }) {
+function RefundBox({ refundable: charged, onDone }) {
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState('')
   const [busy, setBusy] = useState(false)
@@ -260,7 +225,7 @@ function RefundBox({ charged, onDone }) {
           {busy ? '환불하는 중…' : '환불'}
         </button>
       </div>
-      <p className="wl-help">결제 취소로 돌려드려요. 지금은 테스트 충전이라 포인트만 빠져요.</p>
+      <p className="wl-help">결제 취소로 돌려드려요. 최근에 결제한 것부터 취소돼요. (테스트 결제라 실제 돈은 오가지 않아요)</p>
       {error && <p className="form-error">{error}</p>}
     </form>
   )

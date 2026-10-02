@@ -1,5 +1,6 @@
 package com.godlife.backend.verification;
 
+import com.godlife.backend.payment.TestCharger;
 import com.godlife.backend.auth.JwtProvider;
 import com.godlife.backend.challenge.ChallengeLifecycleService;
 import com.godlife.backend.user.User;
@@ -54,6 +55,7 @@ class VerificationReportApiTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired ChallengeLifecycleService lifecycle;
     @Autowired EntityManager entityManager;
+    @Autowired TestCharger testCharger;
     @Autowired Clock clock;
 
     private String host;
@@ -229,11 +231,8 @@ class VerificationReportApiTest {
         return mvc.perform(get("/api/challenges/" + id + "/verifications").header("Authorization", "Bearer " + token));
     }
 
-    private void charge(String token) throws Exception {
-        mvc.perform(post("/api/wallet/test-charge").header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"amount\":10000,\"requestKey\":\"" + UUID.randomUUID() + "\"}"))
-                .andExpect(status().isOk());
+    private void charge(String token) {
+        testCharger.charge(token, 10_000);
     }
 
     private static byte[] photo() throws IOException {

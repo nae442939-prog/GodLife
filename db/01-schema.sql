@@ -348,7 +348,7 @@ CREATE TABLE point_transactions (
   source          ENUM('CHARGED','REWARD','SHOP') NOT NULL COMMENT '어느 출처의 포인트가 움직였는지. 환불 로직은 CHARGED 만 본다',
   amount          BIGINT      NOT NULL COMMENT '부호 있는 증감액 (+/-)',
   balance_after   BIGINT      NOT NULL COMMENT '거래 후 그 출처(source)의 잔액',
-  ref_type        VARCHAR(20) NULL COMMENT '다형 참조 (participants / settlement_items / payments / orders)',
+  ref_type        VARCHAR(20) NULL COMMENT '다형 참조 (participant / settlement / payment / order)',
   ref_id          BIGINT      NULL COMMENT 'FK 없음 - 원장은 참조 대상이 삭제돼도 남아야 함',
   idempotency_key VARCHAR(80) NOT NULL COMMENT '같은 요청 재시도 시 이중 지급/차감 방지',
   created_at      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -425,11 +425,12 @@ CREATE TABLE daily_settlements (
 CREATE TABLE payments (
   id             BIGINT       NOT NULL AUTO_INCREMENT,
   user_id        BIGINT       NOT NULL,
-  provider       ENUM('TOSS','KAKAOPAY') NOT NULL,
+  provider       ENUM('TOSS','KAKAOPAY') NOT NULL COMMENT '지금은 토스페이먼츠(TOSS)만 쓴다',
   order_id       VARCHAR(64)  NOT NULL COMMENT '멱등키 역할. 같은 주문 재처리 방지',
-  payment_key    VARCHAR(200) NOT NULL COMMENT 'PG 결제키/토큰만 저장. 카드정보 컬럼 없음',
+  payment_key    VARCHAR(200) NULL COMMENT 'PG 결제키/토큰만 저장. 카드정보 컬럼 없음. 승인 전에는 NULL',
   amount         BIGINT       NOT NULL COMMENT '결제 금액(원)',
   points_granted BIGINT       NOT NULL DEFAULT 0,
+  canceled_amount BIGINT      NOT NULL DEFAULT 0 COMMENT '결제 취소(충전 포인트 환불)된 금액 합',
   status         ENUM('READY','PAID','FAILED','CANCELED') NOT NULL DEFAULT 'READY',
   is_test        BOOLEAN      NOT NULL DEFAULT TRUE COMMENT '샌드박스 결제 여부. 테스트 모드 전용이라 항상 TRUE (프로젝트 규칙 3)',
   transaction_id BIGINT       NULL COMMENT '충전 원장 연결',
@@ -443,7 +444,8 @@ CREATE TABLE payments (
   CONSTRAINT fk_payments_user FOREIGN KEY (user_id) REFERENCES users (id),
   CONSTRAINT fk_payments_tx FOREIGN KEY (transaction_id) REFERENCES point_transactions (id),
   CONSTRAINT ck_payments_test_only CHECK (is_test = TRUE),
-  CONSTRAINT ck_payments_amount CHECK (amount > 0 AND points_granted >= 0)
+  CONSTRAINT ck_payments_amount CHECK (amount > 0 AND points_granted >= 0
+    AND canceled_amount >= 0 AND canceled_amount <= amount)
 ) ENGINE=InnoDB COMMENT='포인트 충전 결제 (PG 샌드박스)';
 
 -- =====================================================================
@@ -858,6 +860,20 @@ CREATE TABLE wishlists (
   CONSTRAINT fk_wishlists_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='찜';
 
+CREATE TABLE cart_items (
+  user_id    BIGINT   NOT NULL,
+  product_id BIGINT   NOT NULL,
+  quantity   INT      NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, product_id),
+  KEY idx_cart_items_product (product_id),
+  CONSTRAINT fk_cart_items_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_cart_items_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
+  CONSTRAINT ck_cart_items_quantity CHECK (quantity BETWEEN 1 AND 99)
+) ENGINE=InnoDB COMMENT='장바구니';
+
+-- 결제는 보상 포인트를 먼저 쓰고 모자란 만큼 충전 포인트로 채운다. 출처별로 쓴 금액을 남겨, 취소하면 원래 출처에 돌려준다.
+-- 원장(point_transactions)은 ref_type = 'order' 로 주문을 가리킨다.
 CREATE TABLE orders (
   id             BIGINT      NOT NULL AUTO_INCREMENT,
   user_id        BIGINT      NOT NULL,

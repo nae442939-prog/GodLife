@@ -15,17 +15,22 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
 
     boolean existsByIdempotencyKey(String idempotencyKey);
 
+    boolean existsByIdempotencyKeyStartingWith(String prefix);
+
     Optional<PointTransaction> findByIdempotencyKey(String idempotencyKey);
 
     Page<PointTransaction> findByWalletIdOrderByIdDesc(Long walletId, Pageable pageable);
 
-    /** from 이후 이 종류 거래 금액 합 (테스트 충전 하루 한도) */
+    /**
+     * from 이후 결제로 충전한 금액 합 (충전 하루 한도). 결제를 가리키는 충전만 센다 —
+     * 결제 연동 전에 있던 테스트 충전(가상 지급)은 결제가 아니라서 한도에 넣지 않는다.
+     */
     @Query("""
             SELECT COALESCE(SUM(t.amount), 0) FROM PointTransaction t
-            WHERE t.walletId = :walletId AND t.type = :type AND t.createdAt >= :from
+            WHERE t.walletId = :walletId AND t.createdAt >= :from
+              AND t.type = com.godlife.backend.wallet.PointTxType.CHARGE AND t.refType = 'payment'
             """)
-    long sumSince(@Param("walletId") Long walletId, @Param("type") PointTxType type,
-                  @Param("from") LocalDateTime from);
+    long chargedSince(@Param("walletId") Long walletId, @Param("from") LocalDateTime from);
 
     /**
      * from 이후 챌린지에 건 포인트 (참가비 - 취소·삭제·강퇴로 돌려받은 것). 베팅 한도 계산용.
