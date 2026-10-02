@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { walletApi } from '../api/client.js'
 
 const CHARGE_AMOUNTS = [1000, 5000, 10000]
@@ -10,6 +11,7 @@ const TYPE_LABEL = {
   REFUND: '참가비 환급',
   REWARD: '챌린지 보상',
   PURCHASE: '상점 구매',
+  PURCHASE_CANCEL: '상점 주문 취소',
   SEASON_BONUS: '시즌 보너스',
   ADJUST: '조정',
 }
@@ -144,6 +146,9 @@ export function WalletPage() {
       <section className="wl-section">
         <div className="wl-section-head">
           <h2>거래 내역</h2>
+          <Link to="/shop/orders" className="wl-sub wl-orders-link">
+            상점 주문 내역 →
+          </Link>
         </div>
         {transactions.length === 0 ? (
           <p className="muted">아직 거래 내역이 없어요.</p>
@@ -153,9 +158,16 @@ export function WalletPage() {
               <li key={t.id}>
                 <div className="wl-tx-main">
                   <strong>{txLabel(t)}</strong>
-                  <span>
-                    {t.challengeTitle ?? (t.type === 'ENTRY_FEE' || t.type === 'REFUND' ? '삭제된 챌린지' : '')}
-                  </span>
+                  {t.orderId ? (
+                    // 상점 구매 · 주문 취소: 주문한 상품을 보여 주고 주문 상세로 간다
+                    <Link to={`/shop/orders/${t.orderId}`} className="wl-tx-order">
+                      {t.orderTitle ?? `주문 ${t.orderId}`}
+                    </Link>
+                  ) : (
+                    <span>
+                      {t.challengeTitle ?? (t.type === 'ENTRY_FEE' || t.type === 'REFUND' ? '삭제된 챌린지' : '')}
+                    </span>
+                  )}
                 </div>
                 <div className="wl-tx-side">
                   <span className={`wl-tx-amount${t.amount > 0 ? ' is-plus' : ''}`}>

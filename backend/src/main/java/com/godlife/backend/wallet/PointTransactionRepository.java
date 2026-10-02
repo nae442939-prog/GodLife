@@ -58,4 +58,14 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             WHERE s.id IN :settlementIds
             """)
     List<Object[]> findSettlementTitles(@Param("settlementIds") Collection<Long> settlementIds);
+
+    /** 거래 내역에 주문한 상품을 붙이려고: 상점 주문 id → [주문 id, 첫 상품 이름, 상품 가짓수] */
+    @Query(value = """
+            SELECT o.id, p.name, (SELECT COUNT(*) FROM order_items x WHERE x.order_id = o.id)
+            FROM orders o
+              JOIN order_items i ON i.id = (SELECT MIN(f.id) FROM order_items f WHERE f.order_id = o.id)
+              JOIN products p ON p.id = i.product_id
+            WHERE o.id IN (:orderIds)
+            """, nativeQuery = true)
+    List<Object[]> findOrderTitles(@Param("orderIds") Collection<Long> orderIds);
 }

@@ -344,7 +344,7 @@ CREATE TABLE wallets (
 CREATE TABLE point_transactions (
   id              BIGINT      NOT NULL AUTO_INCREMENT,
   wallet_id       BIGINT      NOT NULL,
-  type            ENUM('CHARGE','CHARGE_CANCEL','ENTRY_FEE','REFUND','REWARD','PURCHASE','SEASON_BONUS','ADJUST') NOT NULL COMMENT 'CHARGE_CANCEL = 충전 포인트 환불(결제 취소). REFUND = 챌린지 참가비 환급',
+  type            ENUM('CHARGE','CHARGE_CANCEL','ENTRY_FEE','REFUND','REWARD','PURCHASE','PURCHASE_CANCEL','SEASON_BONUS','ADJUST') NOT NULL COMMENT 'CHARGE_CANCEL = 충전 포인트 환불(결제 취소). REFUND = 챌린지 참가비 환급. PURCHASE_CANCEL = 상점 주문 취소로 돌려받음',
   source          ENUM('CHARGED','REWARD','SHOP') NOT NULL COMMENT '어느 출처의 포인트가 움직였는지. 환불 로직은 CHARGED 만 본다',
   amount          BIGINT      NOT NULL COMMENT '부호 있는 증감액 (+/-)',
   balance_after   BIGINT      NOT NULL COMMENT '거래 후 그 출처(source)의 잔액',
@@ -742,7 +742,7 @@ CREATE TABLE notifications (
   id      BIGINT       NOT NULL AUTO_INCREMENT,
   user_id BIGINT       NOT NULL,
   type    ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT','REPORT_ALERT',
-               'FOLLOW','MESSAGE_REQUEST','INQUIRY_ANSWER','VERIFY_REJECTED') NOT NULL,
+               'FOLLOW','MESSAGE_REQUEST','INQUIRY_ANSWER','VERIFY_REJECTED','ORDER') NOT NULL,
   title   VARCHAR(100) NOT NULL,
   body    VARCHAR(300) NOT NULL,
   link       VARCHAR(200) NULL COMMENT '누르면 갈 화면 주소',
@@ -817,12 +817,15 @@ CREATE TABLE products (
   id           BIGINT       NOT NULL AUTO_INCREMENT,
   sponsor_id   BIGINT       NOT NULL,
   category_id  INT          NOT NULL,
+  type         ENUM('PHYSICAL','COUPON') NOT NULL DEFAULT 'PHYSICAL' COMMENT 'PHYSICAL = 배송받는 실물, COUPON = 이용권 · 상품권 (배송 없이 쿠폰 번호 발급)',
   name         VARCHAR(150) NOT NULL,
   description  TEXT         NOT NULL,
-  image_url    VARCHAR(500) NOT NULL,
+  image_url    VARCHAR(500) NOT NULL DEFAULT '' COMMENT '상품 사진 주소. 비어 있으면 화면이 기본 그림을 보여 준다',
   price_points BIGINT       NOT NULL,
   stock        INT          NOT NULL DEFAULT 0,
+  sold_count   INT          NOT NULL DEFAULT 0 COMMENT '판매 수량 (인기순 정렬용)',
   status       ENUM('ON_SALE','SOLD_OUT','HIDDEN') NOT NULL DEFAULT 'ON_SALE',
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_products_category_status (category_id, status),
   KEY idx_products_sponsor (sponsor_id),
@@ -835,7 +838,7 @@ CREATE TABLE addresses (
   id         BIGINT         NOT NULL AUTO_INCREMENT,
   user_id    BIGINT         NOT NULL,
   recipient  VARCHAR(50)    NOT NULL,
-  phone_enc  VARBINARY(255) NOT NULL COMMENT 'AES 암호화 저장 (개인정보)',
+  phone_enc  VARCHAR(100)   NOT NULL COMMENT '받는 사람 연락처의 암호화 값 (AES-GCM, 본인에게만 다시 보여 준다)',
   zipcode    CHAR(5)        NOT NULL,
   address1   VARCHAR(200)   NOT NULL,
   address2   VARCHAR(200)   NOT NULL DEFAULT '',
@@ -858,22 +861,28 @@ CREATE TABLE wishlists (
 CREATE TABLE orders (
   id             BIGINT      NOT NULL AUTO_INCREMENT,
   user_id        BIGINT      NOT NULL,
-  address_id     BIGINT      NOT NULL,
-  transaction_id BIGINT      NOT NULL COMMENT '포인트 차감 원장 연결',
+  address_id     BIGINT      NULL COMMENT '고른 배송지 (지우면 NULL, 쿠폰만 산 주문은 처음부터 NULL). 실제 배송 정보는 ship_* 에 주문 시점 값으로 남긴다',
   request_key    VARCHAR(80) NOT NULL COMMENT '멱등키. 주문 버튼 중복 클릭 방지',
   total_points   BIGINT      NOT NULL,
+  reward_points  BIGINT      NOT NULL DEFAULT 0 COMMENT '보상 포인트로 낸 금액',
+  charged_points BIGINT      NOT NULL DEFAULT 0 COMMENT '충전 포인트로 낸 금액',
   status         ENUM('PREPARING','SHIPPING','DELIVERED','CANCELED') NOT NULL DEFAULT 'PREPARING',
   tracking_no    VARCHAR(50) NULL,
   ordered_at     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ship_recipient VARCHAR(50)  NULL COMMENT '주문 시점의 받는 사람',
+  ship_phone_enc VARCHAR(100) NULL COMMENT '주문 시점의 연락처 (암호화)',
+  ship_zipcode   CHAR(5)      NULL,
+  ship_address1  VARCHAR(200) NULL,
+  ship_address2  VARCHAR(200) NULL,
+  canceled_at    DATETIME     NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uk_orders_tx (transaction_id),
   UNIQUE KEY uk_orders_request_key (request_key),
   KEY idx_orders_user (user_id, ordered_at),
   KEY idx_orders_address (address_id),
   CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users (id),
-  CONSTRAINT fk_orders_address FOREIGN KEY (address_id) REFERENCES addresses (id),
-  CONSTRAINT fk_orders_tx FOREIGN KEY (transaction_id) REFERENCES point_transactions (id),
-  CONSTRAINT ck_orders_total CHECK (total_points > 0)
+  CONSTRAINT fk_orders_address FOREIGN KEY (address_id) REFERENCES addresses (id) ON DELETE SET NULL,
+  CONSTRAINT ck_orders_total CHECK (total_points > 0),
+  CONSTRAINT ck_orders_sources CHECK (reward_points >= 0 AND charged_points >= 0 AND total_points = reward_points + charged_points)
 ) ENGINE=InnoDB COMMENT='주문';
 
 CREATE TABLE order_items (
@@ -889,3 +898,14 @@ CREATE TABLE order_items (
   CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) REFERENCES products (id),
   CONSTRAINT ck_order_items_values CHECK (quantity >= 1 AND unit_points > 0)
 ) ENGINE=InnoDB COMMENT='주문 상품';
+
+CREATE TABLE order_coupons (
+  id            BIGINT      NOT NULL AUTO_INCREMENT,
+  order_item_id BIGINT      NOT NULL,
+  code          VARCHAR(30) NOT NULL COMMENT '발급한 쿠폰 번호 (포트폴리오용 가상 번호)',
+  created_at    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_order_coupons_code (code),
+  KEY idx_order_coupons_item (order_item_id),
+  CONSTRAINT fk_order_coupons_item FOREIGN KEY (order_item_id) REFERENCES order_items (id)
+) ENGINE=InnoDB COMMENT='쿠폰 상품(이용권 · 상품권)을 사면 수량만큼 발급하는 쿠폰 번호';

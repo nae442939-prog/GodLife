@@ -67,6 +67,10 @@ public class SecurityConfig {
                         // 커뮤니티 글 읽기도 비로그인이 가능. 쓰기 · 좋아요 · 댓글 · 신고는 로그인해야 한다.
                         .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/*", "/api/post-images/*")
                         .permitAll()
+                        // 포인트 상점 상품 보기도 비로그인이 가능. 찜 · 장바구니 · 주문은 로그인해야 한다.
+                        .requestMatchers(HttpMethod.GET, "/api/shop/categories", "/api/shop/products",
+                                "/api/shop/products/*", "/api/shop/images/*/*")
+                        .permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e

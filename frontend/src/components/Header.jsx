@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
-import { MegaMenu, MyRankSummary, TodayChallenges, TodayDiary } from './MegaMenu.jsx'
+import { MegaMenu, MyPoints, MyRankSummary, TodayChallenges, TodayDiary } from './MegaMenu.jsx'
 import { NotificationBell } from './NotificationBell.jsx'
 import { UserMenu } from './UserMenu.jsx'
 
@@ -23,11 +23,20 @@ const RECORD_LINKS = [
   { label: '갓생기록 캘린더', to: '/records/calendar' },
 ]
 
+// 포인트 상점 메가 메뉴 항목
+const SHOP_LINKS = [
+  { label: '상점 둘러보기', to: '/shop' },
+  { label: '장바구니', to: '/shop/cart' },
+  { label: '찜한 상품', to: '/shop/wishlist' },
+  { label: '주문 내역', to: '/shop/orders' },
+]
+
 // 메가 메뉴 종류별 링크와 오른쪽 내용(aside)
 const MEGA = {
   challenge: { links: CHALLENGE_LINKS, aside: (open) => <TodayChallenges open={open} /> },
   record: { links: RECORD_LINKS, aside: (open) => <TodayDiary open={open} /> },
   ranking: { links: RANKING_LINKS, aside: (open) => <MyRankSummary open={open} /> },
+  shop: { links: SHOP_LINKS, aside: (open) => <MyPoints open={open} /> },
 }
 
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
@@ -35,7 +44,7 @@ const MENU = [
   { label: '챌린지', to: '/challenges', mega: 'challenge' },
   { label: '갓생기록', to: '/records', mega: 'record' },
   { label: '랭킹', to: '/rankings', mega: 'ranking' },
-  { label: '포인트 상점', to: null },
+  { label: '포인트 상점', to: '/shop', mega: 'shop' },
   { label: '커뮤니티', to: '/community' },
 ]
 

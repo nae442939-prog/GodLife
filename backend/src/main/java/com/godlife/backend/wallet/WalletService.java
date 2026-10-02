@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
  * 포인트 지갑. 모든 증감은 지갑 행을 잠근 채(SELECT ... FOR UPDATE) 원장 한 줄을 쓰고 잔액 캐시를 바꾼다.
  * 원장의 idempotency_key 가 유니크라 같은 요청이 두 번 와도 한 번만 반영된다 (프로젝트 규칙 4).
  * 챌린지 참가비는 충전 포인트에서만 뺀다. 보상 포인트는 상점 전용이다 (규칙 2).
+ * 상점에서는 보상 포인트를 먼저 쓰고 모자란 만큼 충전 포인트를 쓴다.
  */
 @Service
 @RequiredArgsConstructor
@@ -183,6 +184,51 @@ public class WalletService {
         return record(wallet, type, source, amount, refType, refId, key).getId();
     }
 
+    /** 상점 결제에 쓴 포인트 (출처별). 주문을 취소하면 이 값대로 원래 출처에 돌려준다 */
+    public record ShopPayment(long reward, long charged) {
+    }
+
+    /**
+     * 상점 결제: 상점에서만 쓸 수 있는 보상 포인트를 먼저 쓰고, 모자란 만큼 충전 포인트로 채운다 (환불할 수 있는 충전 포인트를 되도록 남긴다).
+     * 부르는 쪽(주문)이 상품 행을 잠근 트랜잭션 안에서 부른다. 주문마다 한 번만 빠진다 (멱등 키 = 주문 id).
+     */
+    @Transactional
+    public ShopPayment payShop(Long userId, long amount, Long orderId) {
+        Wallet wallet = lock(userId);
+        if (wallet.getBalance() < amount) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINTS,
+                    "포인트가 모자라요. 결제할 포인트 %,dP, 지금 %,dP 있어요.".formatted(amount, wallet.getBalance()));
+        }
+        long reward = Math.min(wallet.getRewardBalance(), amount);
+        long charged = amount - reward;
+        if (reward > 0) {
+            record(wallet, PointTxType.PURCHASE, PointSource.REWARD, -reward, PointTransaction.REF_ORDER, orderId,
+                    "shop:" + orderId + ":reward");
+        }
+        if (charged > 0) {
+            record(wallet, PointTxType.PURCHASE, PointSource.CHARGED, -charged, PointTransaction.REF_ORDER, orderId,
+                    "shop:" + orderId + ":charged");
+        }
+        return new ShopPayment(reward, charged);
+    }
+
+    /**
+     * 상점 주문 취소: 낸 포인트를 원래 출처 그대로 돌려준다 (보상으로 낸 만큼은 보상으로, 충전으로 낸 만큼은 충전으로).
+     * 출처를 섞으면 보상 포인트가 환불 가능한 충전 포인트로 바뀌어 현금화 통로가 되므로 반드시 나눠서 돌려준다 (규칙 2).
+     */
+    @Transactional
+    public void refundShop(Long userId, ShopPayment paid, Long orderId) {
+        Wallet wallet = lock(userId);
+        if (paid.reward() > 0) {
+            record(wallet, PointTxType.PURCHASE_CANCEL, PointSource.REWARD, paid.reward(), PointTransaction.REF_ORDER,
+                    orderId, "shop-cancel:" + orderId + ":reward");
+        }
+        if (paid.charged() > 0) {
+            record(wallet, PointTxType.PURCHASE_CANCEL, PointSource.CHARGED, paid.charged(),
+                    PointTransaction.REF_ORDER, orderId, "shop-cancel:" + orderId + ":charged");
+        }
+    }
+
     private static BusinessException insufficient(long amount, long charged) {
         return new BusinessException(ErrorCode.INSUFFICIENT_POINTS,
                 "충전 포인트가 모자라요. 참가 포인트 %,dP, 지금 %,dP 있어요.".formatted(amount, charged));
@@ -230,7 +276,7 @@ public class WalletService {
                 newbie, recent);
     }
 
-    /** 거래 내역 한 페이지 (최신순). 챌린지 참가비·환급·정산에는 챌린지 제목을 붙인다. */
+    /** 거래 내역 한 페이지 (최신순). 챌린지 참가비·환급·정산에는 챌린지 제목을, 상점 구매·취소에는 주문한 상품을 붙인다. */
     private List<PointTransactionResponse> page(Long walletId, int page) {
         List<PointTransaction> txs = txRepository
                 .findByWalletIdOrderByIdDesc(walletId, PageRequest.of(Math.max(page, 0), PAGE_SIZE)).getContent();
@@ -248,11 +294,23 @@ public class WalletService {
         Map<Long, String> settlementTitles = settlementIds.isEmpty() ? Map.of()
                 : txRepository.findSettlementTitles(settlementIds).stream()
                         .collect(Collectors.toMap(row -> (Long) row[0], row -> (String) row[1]));
+        Set<Long> orderIds = txs.stream()
+                .filter(t -> PointTransaction.REF_ORDER.equals(t.getRefType()) && t.getRefId() != null)
+                .map(PointTransaction::getRefId)
+                .collect(Collectors.toSet());
+        Map<Long, String> orderTitles = orderIds.isEmpty() ? Map.of()
+                : txRepository.findOrderTitles(orderIds).stream()
+                        .collect(Collectors.toMap(row -> ((Number) row[0]).longValue(), row -> {
+                            long kinds = ((Number) row[2]).longValue();
+                            return kinds > 1 ? row[1] + " 외 " + (kinds - 1) + "가지" : (String) row[1];
+                        }));
         return txs.stream()
                 .map(t -> PointTransactionResponse.from(t,
                         PointTransaction.REF_SETTLEMENT.equals(t.getRefType()) ? settlementTitles.get(t.getRefId())
                                 : PointTransaction.REF_PARTICIPANT.equals(t.getRefType()) ? titles.get(t.getRefId())
-                                : null))
+                                : null,
+                        PointTransaction.REF_ORDER.equals(t.getRefType()) && t.getRefId() != null
+                                ? orderTitles.get(t.getRefId()) : null))
                 .toList();
     }
 
