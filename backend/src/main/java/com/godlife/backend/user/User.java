@@ -63,6 +63,10 @@ public class User {
     @Column(nullable = false)
     private UserStatus status;
 
+    /** 자동 로그인 (설정 → 보안). 켜면 브라우저를 닫아도 로그인이 유지되고, 끄면 브라우저를 닫을 때 로그아웃된다. */
+    @Column(name = "auto_login", nullable = false)
+    private boolean autoLogin = true;
+
     /** DB DEFAULT CURRENT_TIMESTAMP 가 채우는 값. INSERT 직후 Hibernate 가 다시 읽어 온다. */
     @Generated(event = EventType.INSERT)
     @Column(name = "created_at", insertable = false, updatable = false)
@@ -96,6 +100,10 @@ public class User {
 
     public void changePassword(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public void changeAutoLogin(boolean autoLogin) {
+        this.autoLogin = autoLogin;
     }
 
     /** 닉네임 · 자기소개 고치기 (bio 는 비우면 null) */

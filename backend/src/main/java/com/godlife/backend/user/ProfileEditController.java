@@ -91,6 +91,16 @@ public class ProfileEditController {
         return userService.toResponse(profileEditService.removeImage(authUser.id()));
     }
 
+    /** 자동 로그인 켜기/끄기 (설정 → 보안). 쿠키 수명은 다음 토큰 재발급(/api/auth/refresh) 때부터 바뀐다. */
+    public record AutoLoginRequest(boolean enabled) {
+    }
+
+    @PutMapping("/api/users/me/auto-login")
+    public UserResponse changeAutoLogin(@AuthenticationPrincipal AuthUser authUser,
+                                        @RequestBody AutoLoginRequest request) {
+        return userService.toResponse(profileEditService.changeAutoLogin(authUser.id(), request.enabled()));
+    }
+
     /** 비밀번호 바꾸기. 성공하면 모든 기기에서 로그아웃되므로 다시 로그인해야 한다. */
     @PutMapping("/api/users/me/password")
     public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AuthUser authUser,

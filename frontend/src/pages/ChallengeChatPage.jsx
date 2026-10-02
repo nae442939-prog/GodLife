@@ -308,7 +308,7 @@ export function ChallengeChatPage() {
       const { userId, nickname } = dialog.user
       await blockApi.block(userId)
       setMessages((cur) => cur.filter((m) => m.type === 'SYSTEM' || m.senderId !== userId))
-      flash(`${nickname}님을 차단했어요. 설정에서 풀 수 있어요.`)
+      flash(`${nickname}님을 차단했어요. 설정에서 해제할 수 있어요.`)
     })
 
   const kick = () =>
@@ -526,7 +526,7 @@ export function ChallengeChatPage() {
       {dialog?.kind === 'block' && (
         <ConfirmDialog
           title={`${dialog.user.nickname}님을 차단할까요?`}
-          body="차단하면 이 사람의 채팅이 내 화면에서 보이지 않아요. 상대에게는 알리지 않고, 설정에서 언제든 풀 수 있어요."
+          body="차단하면 이 사람의 채팅이 내 화면에서 보이지 않아요. 상대에게는 알리지 않고, 설정에서 언제든 해제할 수 있어요."
           confirmLabel="차단하기"
           busy={busy}
           onConfirm={block}

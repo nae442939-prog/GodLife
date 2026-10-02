@@ -16,8 +16,9 @@ const BADGE_PREVIEW = 7
  * @param u       프로필 (GET /api/users/:id/profile)
  * @param actions 오른쪽 위 버튼들 (팔로우·메시지 또는 프로필 수정·설정)
  * @param bioHint 한 줄 소개가 없을 때 대신 보여 줄 것 (내 프로필에서 '소개를 남겨 보세요')
+ * @param meta    가입일 옆에 이어 붙일 것 (남의 프로필의 [차단] 글씨 버튼)
  */
-export function ProfileCard({ u, actions, bioHint, error }) {
+export function ProfileCard({ u, actions, bioHint, meta, error }) {
   const tier = TIER[u.tier] ?? TIER.BRONZE
   return (
     <section className="pf-card">
@@ -44,6 +45,7 @@ export function ProfileCard({ u, actions, bioHint, error }) {
             <p className="pf-joined">
               팔로워 <strong>{u.followerCount}</strong> · 팔로잉 <strong>{u.followingCount}</strong>
               {u.joinedAt && ` · ${u.joinedAt.replaceAll('-', '.')} 가입`}
+              {meta && <> · {meta}</>}
             </p>
           </div>
         </div>

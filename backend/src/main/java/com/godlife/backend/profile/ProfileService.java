@@ -1,5 +1,6 @@
 package com.godlife.backend.profile;
 
+import com.godlife.backend.block.UserBlockRepository;
 import com.godlife.backend.challenge.ChallengeParticipantRepository;
 import com.godlife.backend.challenge.ChallengeRepository;
 import com.godlife.backend.challenge.ParticipantStatus;
@@ -50,6 +51,7 @@ public class ProfileService {
     private final ChallengeParticipantRepository participantRepository;
     private final RankingService rankingService;
     private final FollowRepository followRepository;
+    private final UserBlockRepository blockRepository;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
 
@@ -74,6 +76,7 @@ public class ProfileService {
                 followers, followRepository.followingCount(userId),
                 viewerId != null && followRepository.exists(viewerId, userId),
                 viewerId != null && followRepository.exists(userId, viewerId),
+                viewerId != null && blockRepository.existsByBlockerIdAndBlockedId(viewerId, userId),
                 tierOf(user),
                 badges(totalSuccess, maxStreak, completed, count(JOINED_SQL, userId), count(HOSTED_SQL, userId),
                         followers));

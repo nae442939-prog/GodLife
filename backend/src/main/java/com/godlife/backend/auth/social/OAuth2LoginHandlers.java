@@ -47,7 +47,7 @@ public class OAuth2LoginHandlers implements AuthenticationSuccessHandler, Authen
             SocialProfile profile = SocialProfile.of(
                     token.getAuthorizedClientRegistrationId(), token.getPrincipal().getAttributes());
             IssuedTokens tokens = socialLoginService.login(profile);
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookies.issue(tokens.refreshToken()).toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookies.issue(tokens).toString());
             response.sendRedirect(frontendUrl + "/");
         } catch (BusinessException e) {
             redirectToLogin(response, e.getErrorCode());

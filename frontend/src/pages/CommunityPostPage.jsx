@@ -125,9 +125,8 @@ export function CommunityPostPage() {
       </p>
 
       <article className="card cm-post">
+        {/* 순서: 글쓴이 프로필 → 제목 → 내용 */}
         <header className="cm-post-head">
-          <span className={`cm-topic is-${post.topic}`}>{TOPIC_LABEL[post.topic]}</span>
-          <h1>{post.title}</h1>
           <div className="cm-post-by">
             <Link to={`/users/${post.author.id}`} className="cm-author">
               <Avatar src={post.author.profileImageUrl} size={34} />
@@ -138,6 +137,8 @@ export function CommunityPostPage() {
               {post.updatedAt && ' · 수정됨'}
             </time>
           </div>
+          <span className={`cm-topic is-${post.topic}`}>{TOPIC_LABEL[post.topic]}</span>
+          <h1>{post.title}</h1>
         </header>
 
         <VerifyBadge verify={post.verify} />

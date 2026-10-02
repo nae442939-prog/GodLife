@@ -14,14 +14,15 @@ import java.util.List;
  * @param mine        내 프로필인지
  * @param following   내가 이 사람을 팔로우 중인지 (비로그인·내 프로필이면 false)
  * @param followsMe   이 사람이 나를 팔로우하는지
- * @param tier        칭호(티어) — BRONZE / SILVER / GOLD / PLATINUM / DIAMOND
+ * @param blocked     내가 이 사람을 차단했는지 (비로그인·내 프로필이면 false)
+ * @param tier       칭호(티어) — BRONZE / SILVER / GOLD / PLATINUM / DIAMOND
  * @param badges      뱃지 전체 목록(15개)과 땄는지 · 얼마나 왔는지 (기록으로 그때그때 계산한다)
  */
 public record ProfileResponse(Long id, String nickname, String profileImageUrl, String bio, LocalDate joinedAt,
                               long monthVerify, long maxStreak, Double successRate, long completedCount,
                               List<ProfileChallenge> challenges, boolean mine,
                               long followerCount, long followingCount, boolean following, boolean followsMe,
-                              String tier, List<Badge> badges) {
+                              boolean blocked, String tier, List<Badge> badges) {
 
     /**
      * 뱃지 하나.

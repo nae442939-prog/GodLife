@@ -125,6 +125,12 @@ export const userApi = {
     return res.json()
   },
   removeProfileImage: () => apiFetch('/api/users/me/profile-image', { method: 'DELETE' }),
+  // 자동 로그인 켜기/끄기 → 바뀐 내 정보. 쿠키 수명은 토큰을 재발급할 때 바뀌므로 바로 재발급도 한다
+  async setAutoLogin(enabled) {
+    const me = await apiFetch('/api/users/me/auto-login', { method: 'PUT', body: { enabled } })
+    await refreshAccessToken()
+    return me
+  },
   // 성공하면 모든 기기에서 로그아웃된다
   changePassword: (currentPassword, newPassword) =>
     apiFetch('/api/users/me/password', { method: 'PUT', body: { currentPassword, newPassword } }),
