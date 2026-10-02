@@ -2,6 +2,7 @@ package com.godlife.backend.message;
 
 import com.godlife.backend.auth.AuthUser;
 import com.godlife.backend.message.dto.MessageDtos.ConversationResponse;
+import com.godlife.backend.message.dto.MessageDtos.InviteRequest;
 import com.godlife.backend.message.dto.MessageDtos.MessageResponse;
 import com.godlife.backend.message.dto.MessageDtos.RoomResponse;
 import com.godlife.backend.message.dto.MessageDtos.SendRequest;
@@ -72,5 +73,13 @@ public class DirectMessageController {
                                                 @Valid @RequestBody SendRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(messageService.send(authUser.id(), userId, request.content()));
+    }
+
+    /** 대화 상대를 챌린지에 초대한다 (대화방에 초대 카드가 올라간다) */
+    @PostMapping("/api/messages/{userId}/challenge-invite")
+    public ResponseEntity<MessageResponse> invite(@PathVariable Long userId, @AuthenticationPrincipal AuthUser authUser,
+                                                  @Valid @RequestBody InviteRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(messageService.invite(authUser.id(), userId, request.challengeId()));
     }
 }

@@ -40,6 +40,10 @@ public class DirectMessage {
     @Column(nullable = false, updatable = false)
     private String content;
 
+    /** 챌린지 초대 카드면 그 챌린지. 챌린지가 삭제되면 DB 가 비운다 */
+    @Column(name = "challenge_id", updatable = false)
+    private Long challengeId;
+
     @Generated(event = EventType.INSERT)
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -54,6 +58,12 @@ public class DirectMessage {
         m.lowId = Math.min(senderId, receiverId);
         m.highId = Math.max(senderId, receiverId);
         m.content = content;
+        return m;
+    }
+
+    static DirectMessage invite(Long senderId, Long receiverId, String content, Long challengeId) {
+        DirectMessage m = of(senderId, receiverId, content);
+        m.challengeId = challengeId;
         return m;
     }
 }

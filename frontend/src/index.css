@@ -8637,6 +8637,81 @@ button.mp-bio {
   border-radius: 16px 16px 4px 16px;
 }
 
+/* 챌린지 만들기 위 안내: 대화 상대와 같이 만드는 중 */
+.cf-with {
+  margin: 0 0 22px;
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  color: var(--header-nav);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.cf-with strong {
+  color: var(--text);
+}
+
+/* 대화방 머리 오른쪽: 같이 챌린지 만들기 */
+.dm-together {
+  margin-left: auto;
+  padding: 7px 14px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--header-nav);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.dm-together:hover {
+  text-decoration: none;
+  border-color: var(--header-nav);
+  background: var(--surface-alt);
+}
+
+/* 챌린지 초대 카드 (말풍선 자리에 들어간다) */
+.dm-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(280px, 78%);
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--header-nav);
+  border-radius: 14px;
+}
+
+.dm-invite-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--header-nav);
+}
+
+.dm-invite strong {
+  font-size: 1rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.dm-invite-info {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.dm-invite .btn {
+  margin-top: 8px;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.dm-invite-closed {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .dm-meta {
   display: flex;
   flex-direction: column;

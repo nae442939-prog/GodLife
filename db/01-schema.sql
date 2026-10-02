@@ -561,6 +561,7 @@ CREATE TABLE direct_messages (
   low_id      BIGINT       NOT NULL COMMENT '두 사람 중 작은 id (대화방 묶음)',
   high_id     BIGINT       NOT NULL COMMENT '두 사람 중 큰 id',
   content     VARCHAR(500) NOT NULL,
+  challenge_id BIGINT      NULL COMMENT '챌린지 초대 카드면 그 챌린지 (삭제되면 NULL)',
   created_at  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   read_at     DATETIME     NULL COMMENT '받는 사람이 읽은 시각 (안 읽음 표시)',
   PRIMARY KEY (id),
@@ -568,6 +569,7 @@ CREATE TABLE direct_messages (
   KEY idx_dm_unread (receiver_id, read_at),
   CONSTRAINT fk_dm_sender FOREIGN KEY (sender_id) REFERENCES users (id),
   CONSTRAINT fk_dm_receiver FOREIGN KEY (receiver_id) REFERENCES users (id),
+  CONSTRAINT fk_dm_challenge FOREIGN KEY (challenge_id) REFERENCES challenges (id) ON DELETE SET NULL,
   CONSTRAINT ck_dm_pair CHECK (sender_id <> receiver_id AND low_id < high_id
     AND low_id = LEAST(sender_id, receiver_id) AND high_id = GREATEST(sender_id, receiver_id))
 ) ENGINE=InnoDB COMMENT='1:1 메시지 (맞팔로우·같은 챌린지는 바로, 그 밖은 메시지 요청)';

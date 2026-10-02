@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { messageApi } from '../api/client.js'
+import { MODE_LABEL, shortDate } from '../challenge/format.js'
 import { Avatar } from '../components/UserMenu.jsx'
 
 const POLL_MS = 3000
@@ -180,6 +181,11 @@ export function MessageRoomPage() {
             )}
             <strong>{partner.nickname}</strong>
           </Link>
+          {direct && canSend && (
+            <Link to={`/challenges/new?with=${partner.id}`} className="dm-together">
+              같이 챌린지 만들기
+            </Link>
+          )}
         </header>
 
         {direct && !mutual && sharedChallenge && (
@@ -235,7 +241,7 @@ export function MessageRoomPage() {
               <div key={m.id}>
                 {newDay && <p className="dm-day">{dayText(m.createdAt)}</p>}
                 <div className={`dm-msg${m.mine ? ' is-mine' : ''}`}>
-                  <p className="dm-bubble">{m.content}</p>
+                  {m.invite ? <InviteCard invite={m.invite} mine={m.mine} /> : <p className="dm-bubble">{m.content}</p>}
                   <span className="dm-meta">
                     {m.mine && m.id === lastMine?.id && m.read && <span className="dm-read">읽음</span>}
                     <time dateTime={m.createdAt}>{m.createdAt.slice(11, 16)}</time>
@@ -279,6 +285,37 @@ export function MessageRoomPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * 챌린지 초대 카드. 받은 사람은 초대 링크(비공개 챌린지도 열린다)로, 보낸 사람은 챌린지 상세로 간다.
+ * 챌린지가 삭제되면 서버가 카드를 빼고 글만 준다.
+ */
+function InviteCard({ invite, mine }) {
+  return (
+    <div className="dm-invite">
+      <span className="dm-invite-label">{mine ? '챌린지에 초대했어요' : '챌린지 초대가 왔어요'}</span>
+      <strong>{invite.title}</strong>
+      <span className="dm-invite-info">
+        {invite.categoryName} · {MODE_LABEL[invite.mode]}
+        {invite.mode === 'BET' && ` ${invite.entryFee.toLocaleString()}P`}
+      </span>
+      <span className="dm-invite-info">
+        {shortDate(invite.startDate)} - {shortDate(invite.endDate)}
+      </span>
+      {mine ? (
+        <Link to={`/challenges/${invite.challengeId}`} className="btn btn-dark-outline">
+          챌린지 보기
+        </Link>
+      ) : invite.open ? (
+        <Link to={`/challenges/join/${invite.inviteCode}`} className="btn btn-dark">
+          챌린지 보고 참여하기
+        </Link>
+      ) : (
+        <span className="dm-invite-closed">모집이 끝난 챌린지예요</span>
+      )}
     </div>
   )
 }

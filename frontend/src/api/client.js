@@ -215,7 +215,9 @@ export const challengeApi = {
     return apiFetch(`/api/challenges${qs ? `?${qs}` : ''}`)
   },
   get: (id) => apiFetch(`/api/challenges/${id}`),
-  create: (payload) => apiFetch('/api/challenges', { method: 'POST', body: payload }),
+  // join = 만든 사람도 바로 참여 (같이 챌린지 만들기). 포인트 챌린지면 참가 포인트가 바로 빠진다
+  create: (payload, { join = false } = {}) =>
+    apiFetch(`/api/challenges${join ? '?join=true' : ''}`, { method: 'POST', body: payload }),
   join: (id) => apiFetch(`/api/challenges/${id}/participants`, { method: 'POST' }),
   leave: (id) => apiFetch(`/api/challenges/${id}/participants/me`, { method: 'DELETE' }),
   // 진행 중 포기: 실패로 치고 챌린지에서 나간다 (204)
@@ -366,6 +368,9 @@ export const messageApi = {
     return apiFetch(`/api/messages/${userId}${qs ? `?${qs}` : ''}`)
   },
   send: (userId, content) => apiFetch(`/api/messages/${userId}`, { method: 'POST', body: { content } }),
+  // 대화 상대를 내 챌린지에 초대 → 대화방에 초대 카드(message.invite)가 올라간다
+  invite: (userId, challengeId) =>
+    apiFetch(`/api/messages/${userId}/challenge-invite`, { method: 'POST', body: { challengeId } }),
   // 받은 메시지 요청 수락 · 거절
   accept: (userId) => apiFetch(`/api/messages/${userId}/accept`, { method: 'POST' }),
   decline: (userId) => apiFetch(`/api/messages/${userId}/decline`, { method: 'POST' }),

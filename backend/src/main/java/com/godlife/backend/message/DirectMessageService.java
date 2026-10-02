@@ -1,6 +1,8 @@
 package com.godlife.backend.message;
 
 import com.godlife.backend.block.UserBlockRepository;
+import com.godlife.backend.challenge.Challenge;
+import com.godlife.backend.challenge.ChallengeService;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
@@ -8,6 +10,7 @@ import com.godlife.backend.follow.FollowRepository;
 import com.godlife.backend.message.DmThreadRepository.Status;
 import com.godlife.backend.message.DmThreadRepository.Thread;
 import com.godlife.backend.message.dto.MessageDtos.ConversationResponse;
+import com.godlife.backend.message.dto.MessageDtos.InviteCard;
 import com.godlife.backend.message.dto.MessageDtos.MessageResponse;
 import com.godlife.backend.message.dto.MessageDtos.Partner;
 import com.godlife.backend.message.dto.MessageDtos.RoomResponse;
@@ -25,12 +28,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 1:1 메시지.
@@ -56,6 +61,7 @@ public class DirectMessageService {
     private final UserBlockRepository blockRepository;
     private final RequestThrottle throttle;
     private final NotificationService notificationService;
+    private final ChallengeService challengeService;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
 
@@ -124,10 +130,36 @@ public class DirectMessageService {
         if (before == null && !isReceivedRequest(me, partnerId)) {
             messageRepository.markRead(me, partnerId, LocalDateTime.now(clock));
         }
+        Map<Long, InviteCard> cards = inviteCards(messages);
         return messages.stream()
                 .map(m -> new MessageResponse(m.getId(), m.getContent(), m.getCreatedAt(),
-                        m.getSenderId().equals(me), m.getReadAt() != null))
+                        m.getSenderId().equals(me), m.getReadAt() != null,
+                        m.getChallengeId() == null ? null : cards.get(m.getChallengeId())))
                 .toList();
+    }
+
+    /** 메시지에 달린 챌린지들의 초대 카드 (챌린지 id → 카드) */
+    private Map<Long, InviteCard> inviteCards(List<DirectMessage> messages) {
+        List<Long> ids = messages.stream().map(DirectMessage::getChallengeId).filter(Objects::nonNull).distinct()
+                .toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        LocalDate today = LocalDate.now(clock);
+        Map<Long, InviteCard> cards = new HashMap<>();
+        jdbc.query("""
+                SELECT c.id, c.title, cat.name AS category, c.mode, c.start_date, c.end_date, c.entry_fee,
+                       c.invite_code, c.status
+                FROM challenges c JOIN categories cat ON cat.id = c.category_id
+                WHERE c.id IN (:ids)
+                """, new MapSqlParameterSource("ids", ids), rs -> {
+            LocalDate start = rs.getDate("start_date").toLocalDate();
+            boolean open = List.of("RECRUITING", "ONGOING").contains(rs.getString("status")) && !today.isAfter(start);
+            cards.put(rs.getLong("id"), new InviteCard(rs.getLong("id"), rs.getString("title"),
+                    rs.getString("category"), rs.getString("mode"), start, rs.getDate("end_date").toLocalDate(),
+                    rs.getLong("entry_fee"), rs.getString("invite_code"), open));
+        });
+        return cards;
     }
 
     @Transactional
@@ -151,7 +183,30 @@ public class DirectMessageService {
         }
         DirectMessage saved = messageRepository.saveAndFlush(DirectMessage.of(me, partnerId, content.strip()));
         DirectMessage read = messageRepository.findById(saved.getId()).orElse(saved);
-        return new MessageResponse(read.getId(), read.getContent(), read.getCreatedAt(), true, false);
+        return new MessageResponse(read.getId(), read.getContent(), read.getCreatedAt(), true, false, null);
+    }
+
+    /**
+     * 대화 상대를 챌린지에 초대한다: 대화방에 초대 카드가 올라간다 ([같이 챌린지 만들기]로 만든 직후에 부른다).
+     * 내가 개설자·참가자인, 아직 참여할 수 있는 챌린지만. 수락 전인 메시지 요청으로는 초대할 수 없다.
+     */
+    @Transactional
+    public MessageResponse invite(Long me, Long partnerId, Long challengeId) {
+        partner(me, partnerId);
+        Access a = access(me, partnerId);
+        if (!a.canSend()) {
+            throw new BusinessException(ErrorCode.MESSAGE_NOT_ALLOWED, messageFor(a.reason()));
+        }
+        if (!a.direct()) {
+            throw new BusinessException(ErrorCode.MESSAGE_NOT_ALLOWED, "대화가 시작된 뒤에 챌린지에 초대할 수 있어요.");
+        }
+        throttle.check("dm:" + me, SEND_LIMIT, SEND_WINDOW);
+        Challenge challenge = challengeService.requireInvitable(challengeId, me);
+        DirectMessage saved = messageRepository.saveAndFlush(DirectMessage.invite(me, partnerId,
+                "'" + challenge.getTitle() + "' 챌린지에 초대했어요.", challenge.getId()));
+        DirectMessage read = messageRepository.findById(saved.getId()).orElse(saved);
+        return new MessageResponse(read.getId(), read.getContent(), read.getCreatedAt(), true, false,
+                inviteCards(List.of(read)).get(challenge.getId()));
     }
 
     /** 받은 메시지 요청 수락 */
