@@ -1,5 +1,6 @@
 package com.godlife.backend.challenge;
 
+import com.godlife.backend.collusion.CollusionService;
 import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.settlement.SettlementService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
  * 2) 매일 챌린지에서 어제 인증을 빼먹은 참가자의 연속 기록을 0으로 되돌린다
  * 3) 포인트 챌린지 매일 정산 (어제까지 끝난 기간, 밀린 날 포함) → 다 끝나면 정산 완료
  * 4) 시작일이 된 챌린지를 진행 중으로 바꾼다
+ * 5) 정산이 끝난 챌린지에서 담합 의심 조합을 찾아 표시한다 (관리자 화면에서 본다)
  * 서버가 자정에 꺼져 있었을 수 있어 켜질 때도 한 번 돈다. 여러 번 돌아도 결과가 같다.
  */
 @Slf4j
@@ -31,6 +33,7 @@ public class ChallengeLifecycleService {
     private final ChallengeParticipantRepository participantRepository;
     private final SettlementService settlementService;
     private final NotificationService notificationService;
+    private final CollusionService collusionService;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
@@ -65,6 +68,12 @@ public class ChallengeLifecycleService {
         Integer reset = transactionTemplate.execute(
                 status -> participantRepository.resetMissedStreaks(today.minusDays(1)));
         Integer started = transactionTemplate.execute(status -> challengeRepository.startDue(today));
+        int flagged = 0;
+        try {
+            flagged = collusionService.scan();
+        } catch (RuntimeException e) {
+            log.error("담합 의심 조합 찾기 실패", e);
+        }
         int reminded = 0;
         try {
             // 오늘 시작한 챌린지까지 포함하도록 시작 처리 뒤에 만든다
@@ -72,8 +81,8 @@ public class ChallengeLifecycleService {
         } catch (RuntimeException e) {
             log.error("오늘 인증 알림 만들기 실패", e);
         }
-        log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개, 인증 알림 {}건",
-                today, ended, settled, reset, started, reminded);
+        log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개, 인증 알림 {}건, 담합 의심 표시 {}건",
+                today, ended, settled, reset, started, reminded, flagged);
     }
 
     /** 챌린지 행을 잠근 채로 종료하고, 아직 판정 전(ACTIVE)인 참가자를 성공/실패로 판정한다. */

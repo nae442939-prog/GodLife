@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 
 const LINKS = [
   { to: '/admin/reviews', label: '인증 검토' },
+  { to: '/admin/collusion', label: '담합 의심' },
   { to: '/admin/inquiries', label: '1:1 문의' },
 ]
 

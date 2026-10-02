@@ -3725,6 +3725,31 @@ a.back-button:hover {
   border-color: var(--header-nav);
 }
 
+.adm-reports {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  list-style: none;
+}
+
+.adm-reports a {
+  margin-right: 6px;
+  font-weight: 700;
+  color: var(--header-nav);
+}
+
+.adm-collusion-facts {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 14px;
+}
+
+.adm-collusion-facts a {
+  color: var(--header-nav);
+}
+
 .adm-confirm {
   margin-right: auto;
   font-size: 0.86rem;
@@ -5114,6 +5139,143 @@ a.back-button:hover {
   background: #1e1c19;
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* 사진 + 그 아래 신고 칸 */
+.vc-modal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  width: min(380px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.vc-report-wrap {
+  width: 100%;
+  cursor: default;
+}
+
+.vc-report-open {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+}
+
+.vc-report-open:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.vc-report-done {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: #a8a195;
+}
+
+.vc-report {
+  padding: 14px;
+  background: #1e1c19;
+  border-radius: 14px;
+}
+
+.vc-report-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.vc-report-reasons {
+  display: grid;
+  gap: 6px;
+}
+
+.vc-report-reason {
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: #e9e4da;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.vc-report-reason.is-active {
+  font-weight: 700;
+  border-color: #e9e4da;
+}
+
+.vc-report-detail {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+}
+
+.vc-report-detail:focus {
+  outline: none;
+  border-color: #e9e4da;
+}
+
+.vc-report .vc-error {
+  margin-top: 8px;
+  text-align: left;
+}
+
+.vc-report-foot {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.vc-report-cancel,
+.vc-report-submit {
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  border-radius: 10px;
+}
+
+.vc-report-cancel {
+  color: #e9e4da;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.vc-report-submit {
+  color: #2a2925;
+  background: #e9e4da;
+}
+
+.vc-report-submit:disabled,
+.vc-report-cancel:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .vc-modal-name {

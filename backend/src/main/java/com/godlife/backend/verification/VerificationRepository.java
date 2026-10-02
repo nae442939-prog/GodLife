@@ -26,11 +26,11 @@ public interface VerificationRepository extends JpaRepository<Verification, Long
 
     /**
      * 그날 챌린지 참가자들의 인증 (내보내졌거나 포기하고 나간 사람, 거절된 사진 제외), 먼저 올린 순.
-     * mine 은 서비스에서 채운다.
+     * mine · reported 는 서비스에서 채운다.
      */
     @Query("""
             SELECT new com.godlife.backend.verification.dto.VerificationResponse(
-                       v.id, u.id, u.nickname, u.profileImageUrl, v.receivedAt, v.status, false)
+                       v.id, u.id, u.nickname, u.profileImageUrl, v.receivedAt, v.status)
             FROM Verification v
               JOIN com.godlife.backend.challenge.ChallengeParticipant p ON p.id = v.participantId
               JOIN com.godlife.backend.user.User u ON u.id = p.userId
