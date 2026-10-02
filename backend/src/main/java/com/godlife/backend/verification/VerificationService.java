@@ -11,6 +11,7 @@ import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.upload.ImageStore;
 import com.godlife.backend.notification.NotificationService;
+import com.godlife.backend.tier.TierService;
 import com.godlife.backend.verification.ai.AiVerifier;
 import com.godlife.backend.verification.dto.MyChallengeResponse;
 import com.godlife.backend.verification.dto.MyVerificationResponse;
@@ -52,6 +53,7 @@ public class VerificationService {
     private final ChallengeService challengeService;
     private final ImageStore imageStore;
     private final NotificationService notificationService;
+    private final TierService tierService;
     private final AiVerifier aiVerifier;
     private final VerificationReportService reportService;
     private final Clock clock;
@@ -107,6 +109,8 @@ public class VerificationService {
                 participant.getId(), now.toLocalDate().minusDays(1), VerificationStatus.REJECTED);
         participant.recordVerification(verifiedYesterday);
         notificationService.resolve(userId, "verify:" + challengeId + ":" + now.toLocalDate());
+        // 인증 성공으로 점수가 올랐으면 칭호를 올린다
+        tierService.refresh(userId);
 
         return verificationRepository.findByChallengeAndDate(challengeId, now.toLocalDate()).stream()
                 .filter(v -> v.id().equals(saved.getId()))

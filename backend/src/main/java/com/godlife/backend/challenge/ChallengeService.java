@@ -14,6 +14,7 @@ import com.godlife.backend.common.upload.ImageStore;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserService;
+import com.godlife.backend.tier.TierService;
 import com.godlife.backend.wallet.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +49,7 @@ public class ChallengeService {
     private final ImageStore imageStore;
     private final InviteCodeGenerator inviteCodeGenerator;
     private final WalletService walletService;
+    private final TierService tierService;
     private final RequestThrottle throttle;
     private final Clock clock;
 
@@ -292,6 +294,10 @@ public class ChallengeService {
         }
 
         long fee = c.getMode() == ChallengeMode.BET ? c.getEntryFee() : 0;
+        // 고액 챌린지는 높은 칭호(플래티넘부터)만 참여할 수 있다
+        if (fee >= TierService.HIGH_STAKE_MIN_FEE && !tierService.tierOf(userId).highStakeAllowed()) {
+            throw new BusinessException(ErrorCode.HIGH_STAKE_TIER_REQUIRED);
+        }
         if (fee > 0) {
             walletService.checkCanPay(userId, fee);
         }
@@ -369,6 +375,8 @@ public class ChallengeService {
             throw new BusinessException(ErrorCode.CHALLENGE_NOT_IN_PROGRESS);
         }
         p.giveUp();
+        // 포기하면 점수가 깎여 칭호가 내려갈 수 있다
+        tierService.refresh(userId);
         c.removeParticipant();
         return new GaveUp(c.getHostId(), userRepository.findById(userId).map(User::getNickname).orElse("알 수 없음"));
     }

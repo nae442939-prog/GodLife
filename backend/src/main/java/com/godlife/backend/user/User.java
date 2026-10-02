@@ -102,6 +102,11 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    /** 칭호(티어) 바꾸기. 점수에 맞춰 오르내린다 (TierService) */
+    public void changeTier(int tierId) {
+        this.tierId = tierId;
+    }
+
     public void changeAutoLogin(boolean autoLogin) {
         this.autoLogin = autoLogin;
     }

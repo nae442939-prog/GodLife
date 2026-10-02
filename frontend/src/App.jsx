@@ -38,6 +38,7 @@ import { ShopOrdersPage } from './pages/ShopOrdersPage.jsx'
 import { ShopPage } from './pages/ShopPage.jsx'
 import { ShopProductPage } from './pages/ShopProductPage.jsx'
 import { ShopWishlistPage } from './pages/ShopWishlistPage.jsx'
+import { TierPage } from './pages/TierPage.jsx'
 import { SignupPage } from './pages/SignupPage.jsx'
 import { VerifyPhonePage } from './pages/VerifyPhonePage.jsx'
 
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="/challenges/:id/chat" element={<ChallengeChatPage />} />
           <Route path="/me" element={<MyPage />} />
           <Route path="/me/badges" element={<BadgesPage />} />
+          <Route path="/me/tier" element={<TierPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
           <Route path="/admin/reviews" element={<AdminReviewsPage />} />

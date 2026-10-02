@@ -2,6 +2,9 @@ package com.godlife.backend.wallet;
 
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.tier.TierService;
+import com.godlife.backend.tier.TierService.Tier;
+import com.godlife.backend.user.Role;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.wallet.dto.PointTransactionResponse;
@@ -42,15 +45,12 @@ public class WalletService {
     private final UserRepository userRepository;
     private final Clock clock;
     private final EntityManager entityManager;
+    private final TierService tierService;
 
     /** 하루에 충전(결제)할 수 있는 금액 */
     @Value("${app.wallet.charge-daily-limit:50000}")
     private long chargeDailyLimit;
-    @Value("${app.wallet.bet-daily-limit:30000}")
-    private long betDailyLimit;
-    @Value("${app.wallet.bet-monthly-limit:200000}")
-    private long betMonthlyLimit;
-    /** 가입 30일 이내 신규 회원은 한도를 낮춘다 (과도한 손실 방지) */
+    /** 가입 30일 이내 신규 회원은 칭호와 상관없이 한도를 낮춘다 (과도한 손실 방지). 그 뒤로는 칭호별 한도(tiers)를 쓴다 */
     @Value("${app.wallet.newbie-days:30}")
     private int newbieDays;
     @Value("${app.wallet.newbie-bet-daily-limit:10000}")
@@ -253,8 +253,9 @@ public class WalletService {
 
     private void checkBetLimit(Wallet wallet, Long userId, long amount) {
         boolean newbie = isNewbie(userId);
-        long daily = newbie ? newbieBetDailyLimit : betDailyLimit;
-        long monthly = newbie ? newbieBetMonthlyLimit : betMonthlyLimit;
+        Tier tier = tierService.tierOf(userId);
+        long daily = newbie ? newbieBetDailyLimit : tier.dailyBetLimit();
+        long monthly = newbie ? newbieBetMonthlyLimit : tier.monthlyBetLimit();
         long today = txRepository.betSince(wallet.getId(), startOfToday());
         if (today + amount > daily) {
             throw new BusinessException(ErrorCode.BET_LIMIT_EXCEEDED,
@@ -283,8 +284,9 @@ public class WalletService {
 
     private WalletResponse toResponse(Wallet wallet, Long userId) {
         boolean newbie = isNewbie(userId);
-        long daily = newbie ? newbieBetDailyLimit : betDailyLimit;
-        long monthly = newbie ? newbieBetMonthlyLimit : betMonthlyLimit;
+        Tier tier = tierService.tierOf(userId);
+        long daily = newbie ? newbieBetDailyLimit : tier.dailyBetLimit();
+        long monthly = newbie ? newbieBetMonthlyLimit : tier.monthlyBetLimit();
         List<PointTransactionResponse> recent = page(wallet.getId(), 0);
         // 환불은 결제 취소라, 쓰지 않은 충전 포인트 중에서도 아직 취소하지 않은 결제 금액까지만 된다
         long refundable = Math.min(wallet.getChargedBalance(), walletRepository.sumCancelablePayments(userId));
@@ -292,7 +294,7 @@ public class WalletService {
                 refundable, daily, txRepository.betSince(wallet.getId(), startOfToday()),
                 monthly, txRepository.betSince(wallet.getId(), startOfMonth()),
                 chargeDailyLimit, txRepository.chargedSince(wallet.getId(), startOfToday()),
-                newbie, recent);
+                newbie, tier.name(), recent);
     }
 
     /** 거래 내역 한 페이지 (최신순). 챌린지 참가비·환급·정산에는 챌린지 제목을, 상점 구매·취소에는 주문한 상품을 붙인다. */
@@ -350,11 +352,14 @@ public class WalletService {
         return wallet;
     }
 
+    /** 가입 30일 이내인지. 관리자는 신규 회원 제한을 받지 않는다 */
     private boolean isNewbie(Long userId) {
-        return userRepository.findById(userId)
-                .map(User::getCreatedAt)
-                .map(created -> created.isAfter(LocalDateTime.now(clock).minusDays(newbieDays)))
-                .orElse(true);
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null || user.getCreatedAt() == null) {
+            return true;
+        }
+        return user.getRole() != Role.ADMIN
+                && user.getCreatedAt().isAfter(LocalDateTime.now(clock).minusDays(newbieDays));
     }
 
     private LocalDateTime startOfToday() {

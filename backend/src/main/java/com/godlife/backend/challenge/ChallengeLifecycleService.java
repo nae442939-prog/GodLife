@@ -3,6 +3,7 @@ package com.godlife.backend.challenge;
 import com.godlife.backend.collusion.CollusionService;
 import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.settlement.SettlementService;
+import com.godlife.backend.tier.TierService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +35,7 @@ public class ChallengeLifecycleService {
     private final SettlementService settlementService;
     private final NotificationService notificationService;
     private final CollusionService collusionService;
+    private final TierService tierService;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
@@ -65,6 +67,13 @@ public class ChallengeLifecycleService {
             }
         }
         int settled = settlementService.settleDue(today);
+        int tierChanged = 0;
+        try {
+            // 끝난 챌린지의 완주 · 실패가 정해진 뒤에 칭호를 점수에 맞춘다 (승급 · 강등)
+            tierChanged = tierService.refreshAll();
+        } catch (RuntimeException e) {
+            log.error("칭호 맞추기 실패", e);
+        }
         Integer reset = transactionTemplate.execute(
                 status -> participantRepository.resetMissedStreaks(today.minusDays(1)));
         Integer started = transactionTemplate.execute(status -> challengeRepository.startDue(today));
@@ -81,8 +90,8 @@ public class ChallengeLifecycleService {
         } catch (RuntimeException e) {
             log.error("오늘 인증 알림 만들기 실패", e);
         }
-        log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개, 인증 알림 {}건, 담합 의심 표시 {}건",
-                today, ended, settled, reset, started, reminded, flagged);
+        log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개, 인증 알림 {}건, 담합 의심 표시 {}건, 칭호 변경 {}명",
+                today, ended, settled, reset, started, reminded, flagged, tierChanged);
     }
 
     /** 챌린지 행을 잠근 채로 종료하고, 아직 판정 전(ACTIVE)인 참가자를 성공/실패로 판정한다. */

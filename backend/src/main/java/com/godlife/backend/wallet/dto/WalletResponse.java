@@ -10,9 +10,10 @@ import java.util.List;
  * @param betToday       오늘 챌린지에 건 포인트 (취소로 돌려받은 것은 뺌)
  * @param chargedToday   오늘 충전한 포인트
  * @param newbie         가입 30일 이내라 베팅 한도가 낮은지
+ * @param tier           칭호 (BRONZE ~ DIAMOND, 관리자는 ADMIN). 가입 30일이 지나면 베팅 한도가 칭호에 따라 정해진다
  */
 public record WalletResponse(long balance, long chargedBalance, long rewardBalance, long refundable,
                              long betDailyLimit, long betToday, long betMonthlyLimit, long betThisMonth,
-                             long chargeDailyLimit, long chargedToday, boolean newbie,
+                             long chargeDailyLimit, long chargedToday, boolean newbie, String tier,
                              List<PointTransactionResponse> transactions) {
 }

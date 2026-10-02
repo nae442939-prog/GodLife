@@ -12,6 +12,8 @@ import com.godlife.backend.profile.dto.ProfileResponse.Badge;
 import com.godlife.backend.profile.dto.ProfileResponse.ProfileChallenge;
 import com.godlife.backend.ranking.RankingMetric;
 import com.godlife.backend.ranking.RankingService;
+import com.godlife.backend.tier.TierService;
+import com.godlife.backend.user.Role;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserStatus;
@@ -82,7 +84,11 @@ public class ProfileService {
                         followers));
     }
 
+    /** 관리자는 칭호 대신 '관리자'(ADMIN)로 보여 준다 */
     private static String tierOf(User user) {
+        if (user.getRole() == Role.ADMIN) {
+            return TierService.ADMIN;
+        }
         int index = user.getTierId() == null ? 0 : user.getTierId() - 1;
         return index >= 0 && index < TIERS.size() ? TIERS.get(index) : TIERS.get(0);
     }

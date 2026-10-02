@@ -74,6 +74,7 @@ public enum ErrorCode {
     ORDER_CANNOT_CANCEL(HttpStatus.CONFLICT, "취소할 수 없는 주문이에요."),
     ORDER_STATUS_CONFLICT(HttpStatus.CONFLICT, "주문 상태가 바뀌어 처리할 수 없어요. 새로고침해 주세요."),
     INSUFFICIENT_POINTS(HttpStatus.CONFLICT, "충전 포인트가 모자라요."),
+    HIGH_STAKE_TIER_REQUIRED(HttpStatus.FORBIDDEN, "참가 포인트 30,000P 이상인 챌린지는 플래티넘 칭호부터 참여할 수 있어요."),
     BET_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "챌린지에 걸 수 있는 포인트 한도를 넘었어요."),
     INVALID_CHARGE_AMOUNT(HttpStatus.BAD_REQUEST, "충전할 금액을 골라 주세요."),
     CHARGE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘 충전 한도를 넘었어요."),

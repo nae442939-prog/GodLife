@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { profileApi, rankingApi, userApi, verificationApi, walletApi } from '../api/client.js'
+import { profileApi, rankingApi, tierApi, userApi, verificationApi, walletApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { FollowListPopup } from '../profile/FollowListPopup.jsx'
 import { ProfileBadges, TierChip } from '../profile/ProfileCard.jsx'
 import { ProfileEditPopup } from '../profile/ProfileEditPopup.jsx'
+import { TierProgress } from './TierPage.jsx'
 
 /**
  * 마이페이지 (/me, 사용자 시안): 큰 동그란 사진(카메라 버튼) | 닉네임 [수정] · 한 줄 소개 · 이메일 | 팔로워 · 팔로잉,
@@ -25,6 +26,8 @@ export function MyPage() {
   const [photo, setPhoto] = useState({ busy: false, error: '' })
   // 한눈에 보기 카드의 숫자 (못 불러온 것은 숫자 없이 보여 준다)
   const [glance, setGlance] = useState({ ongoing: null, points: null, rank: undefined })
+  // 내 칭호 카드: 점수와 다음 칭호까지 (못 불러오면, 또는 칭호 대상이 아닌 관리자면 카드를 그리지 않는다)
+  const [tier, setTier] = useState(null)
   // 떠 있는 팔로우 목록 창: 'following' | 'followers' | null
   const [followList, setFollowList] = useState(null)
   // 팔로우를 바꾸면 숫자를 다시 불러온다
@@ -45,6 +48,10 @@ export function MyPage() {
 
   useEffect(() => {
     let cancelled = false
+    tierApi
+      .me()
+      .then((t) => !cancelled && setTier(t))
+      .catch(() => {})
     Promise.allSettled([verificationApi.myChallenges(), walletApi.get(), rankingApi.users('month_verify')]).then(
       ([challenges, wallet, ranking]) => {
         if (cancelled) return
@@ -174,6 +181,8 @@ export function MyPage() {
           </div>
         )}
       </div>
+
+      {tier && !tier.admin && <TierProgress t={tier} to="/me/tier" />}
 
       {state.error && <p className="form-error">{state.error}</p>}
       {u && (

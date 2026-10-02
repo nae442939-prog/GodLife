@@ -452,6 +452,13 @@ export const rankingApi = {
   friends: (metric) => apiFetch(`/api/rankings/friends?metric=${metric}`),
 }
 
+// 내 칭호(티어): 인증 · 완주로 점수가 쌓이면 승급, 실패 · 포기로 깎이면 강등
+// → { tier, score, record: { verified, completed, failed, gaveUp }, next, tiers: [{ id, name, minScore,
+//     dailyBetLimit, monthlyBetLimit, highStakeAllowed }], highStakeMinFee }
+export const tierApi = {
+  me: () => apiFetch('/api/users/me/tier'),
+}
+
 // 포인트 지갑. 충전 포인트(참가비·결제 취소 환불 대상)와 보상 포인트(상점 전용)를 따로 보여 준다.
 export const walletApi = {
   get: () => apiFetch('/api/wallet'),
