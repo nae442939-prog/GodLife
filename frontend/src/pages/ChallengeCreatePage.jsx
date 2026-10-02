@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { challengeApi } from '../api/client.js'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { challengeApi, messageApi } from '../api/client.js'
 import { MODE_LABEL, addDays, daysBetween, toIsoDate } from '../challenge/format.js'
 import { DatePicker } from '../components/DatePicker.jsx'
 import { Field } from '../components/Field.jsx'
@@ -91,6 +91,7 @@ function validate(mode, f) {
   if (!f.categoryId) errors.categoryId = '카테고리를 골라 주세요.'
   if (!f.title.trim()) errors.title = '제목을 입력해 주세요.'
   else if (f.title.trim().length > 50) errors.title = '제목은 50자 이하로 입력해 주세요.'
+  if (!f.visibility) errors.visibility = '공개 범위를 골라 주세요.'
   if (!f.description.trim()) errors.description = '설명을 입력해 주세요.'
   else if (f.description.trim().length > 1000) errors.description = '설명은 1000자 이하로 입력해 주세요.'
   if (!f.startDate) errors.startDate = '시작일을 골라 주세요.'
@@ -124,10 +125,14 @@ const SERVER_FIELD = {
 
 export function ChallengeCreatePage() {
   const navigate = useNavigate()
+  // 대화방의 [같이 챌린지 만들기]로 들어오면 ?with=상대 id: 만든 뒤 그 대화방에 초대 카드를 보낸다
+  const withId = useSearchParams()[0].get('with')
+  const [partner, setPartner] = useState(null)
   const [mode, setMode] = useState('FREE')
   // false = 종류 고르는 첫 화면, true = 입력 폼
   const [picked, setPicked] = useState(false)
-  const [form, setForm] = useState(initialForm)
+  // 같이 만들 때는 공개 범위를 미리 골라 두지 않는다 (둘이 할지, 다른 사람도 받을지 직접 고르게)
+  const [form, setForm] = useState(() => ({ ...initialForm(), visibility: withId ? '' : 'PUBLIC' }))
   const [categories, setCategories] = useState([])
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
@@ -139,6 +144,18 @@ export function ChallengeCreatePage() {
       .then(setCategories)
       .catch(() => setCategories([]))
   }, [])
+
+  useEffect(() => {
+    if (!withId) return
+    let cancelled = false
+    messageApi
+      .room(withId)
+      .then((room) => !cancelled && room.direct && room.canSend && setPartner(room.partner))
+      .catch(() => {}) // 초대할 수 없는 상대면 보통 만들기로 진행한다
+    return () => {
+      cancelled = true
+    }
+  }, [withId])
 
   const setField = (name, value) => {
     setForm((f) => {
@@ -164,21 +181,34 @@ export function ChallengeCreatePage() {
 
     setSubmitting(true)
     try {
-      const created = await challengeApi.create({
-        categoryId: Number(form.categoryId),
-        title: form.title.trim(),
-        description: form.description.trim(),
-        mode,
-        startDate: form.startDate,
-        endDate: form.endDate,
-        frequencyType: form.frequencyType,
-        weeklyCount: form.frequencyType === 'WEEKLY_N' ? Number(form.weeklyCount) : null,
-        entryFee: mode === 'BET' ? Number(form.entryFee) : null,
-        maxParticipants: Number(form.maxParticipants),
-        verifyFrom: form.useWindow ? form.verifyFrom : null,
-        verifyUntil: form.useWindow ? form.verifyUntil : null,
-        visibility: form.visibility,
-      })
+      const created = await challengeApi.create(
+        {
+          categoryId: Number(form.categoryId),
+          title: form.title.trim(),
+          description: form.description.trim(),
+          mode,
+          startDate: form.startDate,
+          endDate: form.endDate,
+          frequencyType: form.frequencyType,
+          weeklyCount: form.frequencyType === 'WEEKLY_N' ? Number(form.weeklyCount) : null,
+          entryFee: mode === 'BET' ? Number(form.entryFee) : null,
+          maxParticipants: Number(form.maxParticipants),
+          verifyFrom: form.useWindow ? form.verifyFrom : null,
+          verifyUntil: form.useWindow ? form.verifyUntil : null,
+          visibility: form.visibility,
+        },
+        // 같이 만드는 챌린지는 만든 사람도 바로 참여한다
+        { join: Boolean(partner) },
+      )
+      if (partner) {
+        try {
+          await messageApi.invite(partner.id, created.id)
+          navigate(`/messages/${partner.id}`, { replace: true })
+          return
+        } catch {
+          // 챌린지는 만들어졌으니 상세로 보낸다 (초대 링크를 직접 보낼 수 있다)
+        }
+      }
       navigate(`/challenges/${created.id}`, { replace: true })
     } catch (err) {
       const fieldErrors = Object.fromEntries(
@@ -191,6 +221,14 @@ export function ChallengeCreatePage() {
     }
   }
 
+  const withBanner = partner && (
+    <p className="cf-with" role="status">
+      <strong>{partner.nickname}</strong>님과 같이 할 챌린지예요. 만들면 나는 바로 참여되고, 대화방에 초대 카드가
+      올라가요.
+      {picked && mode === 'BET' && ' 참가 포인트는 만들 때 내 충전 포인트에서 빠져요.'}
+    </p>
+  )
+
   if (!picked) {
     const choice = MODE_CHOICES.find((m) => m.value === mode)
     return (
@@ -199,6 +237,7 @@ export function ChallengeCreatePage() {
           <h1 className="page-title">챌린지 만들기</h1>
           <p className="page-sub">어떤 챌린지를 만들까요?</p>
         </div>
+        {withBanner}
 
         <div>
           <div className="segment" role="radiogroup" aria-label="챌린지 종류">
@@ -262,6 +301,7 @@ export function ChallengeCreatePage() {
           </button>
         </p>
       </div>
+      {withBanner}
 
       <form className="card form-card cf" onSubmit={onSubmit} noValidate>
         {/* 넓은 화면: 왼쪽 = 무엇을(카테고리·제목·설명), 오른쪽 = 어떻게(기간·주기·인원·포인트·시간대) */}
@@ -412,7 +452,10 @@ export function ChallengeCreatePage() {
                   </label>
                 ))}
               </div>
-              <p className="field-hint">{VISIBILITY_CHOICES.find((v) => v.value === form.visibility).hint}</p>
+              {form.visibility && (
+                <p className="field-hint">{VISIBILITY_CHOICES.find((v) => v.value === form.visibility).hint}</p>
+              )}
+              {errors.visibility && <p className="field-error">{errors.visibility}</p>}
             </fieldset>
 
             {mode === 'BET' && (

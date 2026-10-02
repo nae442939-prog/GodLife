@@ -3,6 +3,7 @@ package com.godlife.backend.message;
 import com.godlife.backend.auth.JwtProvider;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -41,6 +43,7 @@ class DirectMessageApiTest {
     @Autowired UserRepository userRepository;
     @Autowired JwtProvider jwtProvider;
     @Autowired Clock clock;
+    @Autowired EntityManager entityManager;
 
     private User aUser;
     private User bUser;
@@ -195,7 +198,84 @@ class DirectMessageApiTest {
         send(a, aUser, "나야").andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("대화 상대를 내 챌린지에 초대하면 대화방에 초대 카드가 올라간다")
+    void challengeInvite() throws Exception {
+        mutual();
+        long id = challenge(a);
+
+        invite(a, bUser, id).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.mine").value(true))
+                .andExpect(jsonPath("$.invite.challengeId").value(id))
+                .andExpect(jsonPath("$.invite.title").value("메시지 테스트"))
+                .andExpect(jsonPath("$.invite.open").value(true));
+
+        list(b, aUser).andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].content").value("'메시지 테스트' 챌린지에 초대했어요."))
+                .andExpect(jsonPath("$[0].invite.inviteCode").isNotEmpty());
+        conversations(b).andExpect(jsonPath("$[0].lastContent").value("'메시지 테스트' 챌린지에 초대했어요."));
+
+        // 보통 메시지에는 카드가 없다
+        send(b, aUser, "좋아요!").andExpect(jsonPath("$.invite").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("같이 만드는 챌린지(?join=true)는 만든 사람도 바로 참여한다")
+    void createTogetherJoinsHost() throws Exception {
+        LocalDate start = LocalDate.now(clock).plusDays(1);
+        mvc.perform(post("/api/challenges?join=true").header("Authorization", "Bearer " + a)
+                        .contentType(MediaType.APPLICATION_JSON).content(challengeBody("FREE", null, start)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.joined").value(true))
+                .andExpect(jsonPath("$.participantCount").value(1));
+
+        // 포인트 챌린지는 참가 포인트를 바로 내야 해서, 충전 포인트가 없으면 만들 수 없다 (개설과 한 트랜잭션)
+        mvc.perform(post("/api/challenges?join=true").header("Authorization", "Bearer " + a)
+                        .contentType(MediaType.APPLICATION_JSON).content(challengeBody("BET", 1000L, start)))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("내가 참여하지 않은 챌린지나, 아직 수락되지 않은 메시지 요청으로는 초대할 수 없다")
+    void challengeInviteNotAllowed() throws Exception {
+        long mine = challenge(a);
+        // 맞팔로우도 같은 챌린지도 아닌 사이 (메시지 요청 단계)
+        invite(a, bUser, mine).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MESSAGE_NOT_ALLOWED"));
+
+        mutual();
+        // b 는 이 챌린지의 개설자도 참가자도 아니다
+        invite(b, aUser, mine).andExpect(status().isNotFound());
+        invite(a, bUser, 999_999_999L).andExpect(status().isNotFound());
+        list(b, aUser).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("초대한 챌린지가 삭제되면 카드는 사라지고 글만 남는다")
+    void challengeInviteAfterDelete() throws Exception {
+        mutual();
+        LocalDate start = LocalDate.now(clock).plusDays(3);
+        long id = challenge(a, start);
+        invite(a, bUser, id).andExpect(status().isCreated());
+
+        mvc.perform(delete("/api/challenges/" + id).header("Authorization", "Bearer " + a))
+                .andExpect(status().isNoContent());
+        // 테스트는 한 트랜잭션이라 삭제를 DB 에 내보내고, 메시지를 다시 읽게 한다
+        entityManager.flush();
+        entityManager.clear();
+
+        list(b, aUser).andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].invite").doesNotExist());
+    }
+
     // ---------- helpers ----------
+
+    private ResultActions invite(String token, User partner, long challengeId) throws Exception {
+        return mvc.perform(post("/api/messages/" + partner.getId() + "/challenge-invite")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"challengeId\":" + challengeId + "}"));
+    }
 
     private void mutual() throws Exception {
         follow(a, bUser);
@@ -208,11 +288,18 @@ class DirectMessageApiTest {
     }
 
     private long challenge(String hostToken) throws Exception {
-        LocalDate today = LocalDate.now(clock);
-        String body = """
-                {"categoryId":1,"title":"메시지 테스트","description":"매일 인증","mode":"FREE","visibility":"PUBLIC",
-                 "startDate":"%s","endDate":"%s","frequencyType":"DAILY","maxParticipants":10}
-                """.formatted(today, today.plusDays(6)).replace("\n", "");
+        return challenge(hostToken, LocalDate.now(clock));
+    }
+
+    private static String challengeBody(String mode, Long entryFee, LocalDate start) {
+        return """
+                {"categoryId":1,"title":"메시지 테스트","description":"매일 인증","mode":"%s","entryFee":%s,
+                 "visibility":"PUBLIC","startDate":"%s","endDate":"%s","frequencyType":"DAILY","maxParticipants":10}
+                """.formatted(mode, entryFee, start, start.plusDays(6)).replace("\n", "");
+    }
+
+    private long challenge(String hostToken, LocalDate start) throws Exception {
+        String body = challengeBody("FREE", null, start);
         String res = mvc.perform(post("/api/challenges").header("Authorization", "Bearer " + hostToken)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

@@ -1,8 +1,10 @@
 package com.godlife.backend.message.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /** 1:1 메시지 요청·응답 */
@@ -29,7 +31,18 @@ public final class MessageDtos {
                                boolean sharedChallenge, String request, int requestLeft) {
     }
 
-    public record MessageResponse(Long id, String content, LocalDateTime createdAt, boolean mine, boolean read) {
+    /** @param invite 챌린지 초대 카드 (보통 메시지면 null) */
+    public record MessageResponse(Long id, String content, LocalDateTime createdAt, boolean mine, boolean read,
+                                  InviteCard invite) {
+    }
+
+    /**
+     * 메시지에 달린 챌린지 초대 카드.
+     * @param inviteCode 초대 링크 코드 (비공개 챌린지도 이 코드로 열린다)
+     * @param open       아직 참여할 수 있는지 (시작일까지)
+     */
+    public record InviteCard(Long challengeId, String title, String categoryName, String mode, LocalDate startDate,
+                             LocalDate endDate, long entryFee, String inviteCode, boolean open) {
     }
 
     /**
@@ -42,5 +55,8 @@ public final class MessageDtos {
 
     public record SendRequest(@NotBlank(message = "메시지를 입력해 주세요.")
                               @Size(max = 500, message = "메시지는 500자까지 보낼 수 있어요.") String content) {
+    }
+
+    public record InviteRequest(@NotNull(message = "초대할 챌린지를 골라 주세요.") Long challengeId) {
     }
 }

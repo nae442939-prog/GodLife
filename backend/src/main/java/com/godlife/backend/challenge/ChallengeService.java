@@ -75,6 +75,15 @@ public class ChallengeService {
 
     @Transactional
     public Challenge create(Long userId, ChallengeCreateRequest req) {
+        return create(userId, req, false);
+    }
+
+    /**
+     * 개설. joinHost 면 만든 사람도 바로 참가자가 된다 (대화방의 [같이 챌린지 만들기]).
+     * 포인트 챌린지는 참가 포인트를 바로 내므로, 잔액·한도가 모자라면 챌린지도 만들어지지 않는다.
+     */
+    @Transactional
+    public Challenge create(Long userId, ChallengeCreateRequest req, boolean joinHost) {
         User host = requirePhoneVerified(userId);
         if (req.startDate().isBefore(today())) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "시작일은 오늘 이후로 정해 주세요.");
@@ -89,7 +98,11 @@ public class ChallengeService {
                 req.frequencyType(),
                 req.weeklyCount(), req.entryFee() == null ? 0 : req.entryFee(), req.maxParticipants(),
                 req.verifyFrom(), req.verifyUntil(), Boolean.TRUE.equals(req.partialRefund()));
-        return challengeRepository.save(challenge);
+        Challenge saved = challengeRepository.save(challenge);
+        if (joinHost) {
+            addParticipant(saved, userId);
+        }
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -239,6 +252,20 @@ public class ChallengeService {
         challengeRepository.findById(challengeId)
                 .filter(c -> isMember(c, userId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+    }
+
+    /**
+     * 1:1 메시지로 초대할 챌린지. 개설자·참가자만 초대할 수 있고(아니면 404), 아직 참여할 수 있는 챌린지여야 한다.
+     */
+    @Transactional(readOnly = true)
+    public Challenge requireInvitable(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findById(challengeId)
+                .filter(found -> isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (!c.isRecruiting(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_NOT_RECRUITING);
+        }
+        return c;
     }
 
     /**

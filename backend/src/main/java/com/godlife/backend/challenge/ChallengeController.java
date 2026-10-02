@@ -52,10 +52,12 @@ public class ChallengeController {
         return challengeService.detail(id, authUser == null ? null : authUser.id());
     }
 
+    /** ?join=true 면 만든 사람도 바로 참여한다 (대화방의 [같이 챌린지 만들기]) */
     @PostMapping("/api/challenges")
     public ResponseEntity<ChallengeDetailResponse> create(@AuthenticationPrincipal AuthUser authUser,
+                                                          @RequestParam(defaultValue = "false") boolean join,
                                                           @Valid @RequestBody ChallengeCreateRequest request) {
-        Challenge created = challengeService.create(authUser.id(), request);
+        Challenge created = challengeService.create(authUser.id(), request, join);
         return ResponseEntity.status(HttpStatus.CREATED).body(challengeService.detail(created.getId(), authUser.id()));
     }
 
