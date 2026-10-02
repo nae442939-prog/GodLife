@@ -729,48 +729,71 @@ a:focus-visible,
 
 /* ---------- 홈 ---------- */
 
+/* 첫 화면을 꽉 채운다: 화면 높이 - 헤더(.header-inner 104px + 아래 선 1px) - 아래 스크롤 안내 띠(.hero-scroll 76px) */
 .hero {
   position: relative;
+  display: flex;
+  align-items: center;
+  min-height: calc(100svh - 105px - 76px);
   overflow: hidden;
-  padding: 72px 0 64px;
-  background:
-    radial-gradient(55% 70% at 90% -15%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 70%),
-    radial-gradient(50% 60% at 0% 60%, color-mix(in srgb, var(--accent-mint) 16%, transparent), transparent 70%),
-    var(--bg);
+  padding: 48px 0;
+  /* 배경 번짐은 아래 '이렇게 진행돼요'(.section-steps)와 같이 쓴다 */
 }
 
+/* 본문(1080px)보다 넓게 써서 글은 왼쪽, 카드는 오른쪽 끝으로 벌린다 (왼쪽 끝은 헤더 로고와 같은 선) */
 .hero-split-inner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 48px;
+  max-width: 1400px;
+  padding: 0 40px;
   text-align: left;
+}
+
+@keyframes hero-text-in {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-copy {
   flex: 1;
   min-width: 0;
+  max-width: 600px;
+  animation: hero-text-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .eyebrow {
   display: inline-block;
-  margin: 0 0 16px;
-  padding: 4px 12px;
-  font-size: 0.85rem;
-  font-weight: 700;
+  margin: 0 0 22px;
+  padding: 7px 16px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--primary);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
   border-radius: 999px;
 }
 
 .hero h1 {
-  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-size: clamp(1.9rem, 4vw, 3.1rem);
   font-weight: 800;
+  line-height: 1.28;
+  letter-spacing: -0.03em;
 }
 
 .hero-sub {
-  margin: 16px 0 0;
+  margin: 18px 0 0;
   max-width: 30rem;
-  font-size: 1.05rem;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--muted);
 }
 
@@ -780,68 +803,107 @@ a:focus-visible,
   flex-wrap: wrap;
   gap: 12px;
   min-height: 48px;
-  margin-top: 24px;
+  margin-top: 32px;
+}
+
+.hero-actions .btn {
+  padding: 15px 30px;
+  border-radius: 13px;
+}
+
+.hero-actions .btn-primary {
+  box-shadow: 0 16px 28px -14px color-mix(in srgb, var(--primary) 55%, transparent);
 }
 
 .hero-stat {
-  margin: 20px 0 0;
-  font-size: 0.85rem;
+  margin: 22px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
+/* 오른쪽 장식: 바탕 상자 없이 카드 두 장만 떠 있다 */
 .hero-preview {
   position: relative;
-  flex: 1;
-  min-width: 0;
-  height: 340px;
+  flex: none;
+  /* 창이 좁아지면 칸도 줄어 카드 두 장이 서로 가까워진다 */
+  width: clamp(360px, 40vw, 500px);
+  height: 460px;
   display: none;
 }
 
-.hero-preview-bg {
-  position: absolute;
-  inset: 0;
-  border-radius: 24px;
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
+/* 실시간 알림처럼 아래에서 올라와 머물다가 위로 떠오르며 사라진다 (두 카드가 시차를 두고 되풀이) */
+@keyframes hero-card-cycle {
+  0% {
+    opacity: 0;
+    transform: translateY(22px);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  14% {
+    opacity: 1;
+    transform: translateY(0);
+    animation-timing-function: linear;
+  }
+
+  78% {
+    opacity: 1;
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.6, 0, 1, 1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
 }
 
 .hero-preview-card {
   position: absolute;
-  padding: 18px 20px;
   background: var(--surface);
-  border-radius: 16px;
-  box-shadow: 0 16px 32px rgba(43, 32, 20, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 30px 60px -24px rgba(60, 40, 20, 0.22);
+  opacity: 0;
+  animation: hero-card-cycle 4.4s 0.3s infinite;
 }
 
 .hero-preview-card-challenge {
-  width: 220px;
-  top: 24px;
-  left: 12px;
-  transform: rotate(-4deg);
+  top: 10px;
+  left: 0;
+  width: 300px;
+  padding: 24px 22px;
 }
 
 .hero-preview-card-challenge h3 {
-  margin: 8px 0;
-  font-size: 0.95rem;
+  margin: 4px 0 18px;
+  font-size: 1rem;
 }
 
 .hero-preview-card-ranking {
-  width: 200px;
-  bottom: 20px;
-  right: 10px;
-  transform: rotate(3deg);
+  right: 0;
+  bottom: 10px;
+  width: 230px;
+  padding: 20px;
+  animation-delay: 1.8s;
 }
 
 .hero-preview-meta {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 10px;
   font-size: 0.78rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
+.hero-preview-meta span:last-child {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
 .hero-preview-label {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   font-size: 0.78rem;
   font-weight: 800;
   color: var(--muted);
@@ -851,7 +913,7 @@ a:focus-visible,
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .hero-preview-rank-row:last-child {
@@ -887,9 +949,60 @@ a:focus-visible,
   color: var(--muted);
 }
 
-@media (min-width: 761px) {
+/* 카드 칸(최소 360px)과 글이 나란히 들어갈 폭부터 보인다 */
+@media (min-width: 861px) {
   .hero-preview {
     display: block;
+  }
+}
+
+/* 첫 화면 아래 띠: 스크롤 안내 (바로 아래 구역과 같은 바탕색) */
+@keyframes hero-arrow-bounce {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: translateY(5px);
+  }
+}
+
+.hero-scroll {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  height: 76px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--muted);
+  background: var(--surface-alt);
+}
+
+.hero-scroll-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  animation: hero-arrow-bounce 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-copy,
+  .hero-preview-card,
+  .hero-scroll-arrow {
+    animation: none;
+  }
+
+  .hero-preview-card {
+    opacity: 1;
   }
 }
 
@@ -925,20 +1038,39 @@ a:focus-visible,
   border-radius: var(--radius);
 }
 
-/* 홈 '갓생살기 특징' 카드: 누르는 곳은 아니지만 마우스를 올리면 살짝 들어 올린다 */
+/* 홈 '갓생살기 특징' 카드: 누르는 곳은 아니지만 마우스를 올리면 들어 올리고, 위쪽에 민트 띠가 왼쪽부터 채워진다 */
 .feature {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease;
+}
+
+.feature::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #14b8a0, #0f9c86);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .feature:hover {
-  border-color: color-mix(in srgb, var(--text) 18%, transparent);
-  box-shadow: 0 16px 30px -18px rgba(43, 32, 20, 0.35);
-  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--accent-mint) 30%, var(--surface));
+  transform: translateY(-10px);
+}
+
+.feature:hover::before {
+  transform: scaleX(1);
 }
 
 /* 움직임을 줄이도록 설정한 사람에게는 들어 올리지 않는다 */
 @media (prefers-reduced-motion: reduce) {
-  .feature {
+  .feature,
+  .feature::before {
     transition: none;
   }
 
@@ -960,12 +1092,31 @@ a:focus-visible,
   font-size: 0.95rem;
 }
 
-/* ---------- 홈: 이렇게 진행돼요 (지그재그 단계) ---------- */
+/* ---------- 홈: 이렇게 진행돼요 (지그재그 단계, 한 줄에 그림 칸 + 글) ---------- */
+
+/* 단계 사이와 제목 아래를 벌린 만큼 구역 위아래 여백(기본 64px)을 줄여 전체 높이가 크게 늘지 않게 한다 */
+.section-steps {
+  padding: 28px 0;
+}
+
+.section-steps h2 {
+  margin-bottom: 48px;
+}
+
+/* 배경 번짐은 맨 위 .hero 와 같다: 오른쪽 위 코랄 + 왼쪽 민트 + 오른쪽 아래 앰버 */
+.hero,
+.section-steps {
+  background:
+    radial-gradient(55% 45% at 92% -8%, color-mix(in srgb, var(--primary) 28%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 0% 45%, color-mix(in srgb, var(--accent-mint) 26%, transparent), transparent 70%),
+    radial-gradient(48% 32% at 100% 76%, color-mix(in srgb, var(--accent-amber) 24%, transparent), transparent 70%),
+    var(--bg);
+}
 
 .steps {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 56px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -974,28 +1125,11 @@ a:focus-visible,
 .step {
   display: flex;
   align-items: center;
-  gap: 44px;
+  gap: 100px;
 }
 
 .step.is-reverse {
   flex-direction: row-reverse;
-}
-
-.step-num {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  height: 180px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-}
-
-.step-num span {
-  font-size: 3.2rem;
-  font-weight: 800;
-  color: var(--primary);
 }
 
 .step-body {
@@ -1004,41 +1138,60 @@ a:focus-visible,
 }
 
 .step-body h3 {
-  margin: 0 0 10px;
-  font-size: 1.2rem;
+  margin: 0 0 12px;
+  font-size: 1.4rem;
 }
 
 .step-body p {
   margin: 0;
   white-space: pre-line;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   line-height: 1.7;
 }
 
-.steps li:nth-child(2) .step-num {
-  background: color-mix(in srgb, var(--accent-blue) 16%, transparent);
+/* 그림 칸: 사진을 꽉 채우고 왼쪽 위에 숫자. 사진이 2:1 이라 칸도 2:1 로 잡아 창 폭이 바뀌어도 잘리지 않는다 */
+.hs-art {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: linear-gradient(165deg, #fbf4e8, #f3e2bb);
+  border-radius: 22px;
 }
 
-.steps li:nth-child(2) .step-num span {
-  color: var(--accent-blue);
+.hs-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.steps li:nth-child(3) .step-num {
-  background: color-mix(in srgb, var(--accent-mint) 16%, transparent);
+.hs-num {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
-.steps li:nth-child(3) .step-num span {
-  color: var(--accent-mint);
-}
+@media (max-width: 760px) {
+  .step,
+  .step.is-reverse {
+    flex-direction: column;
+    gap: 20px;
+  }
 
-/* 4번째는 1번째와 같은 코랄 */
-.steps li:nth-child(4) .step-num {
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-}
-
-.steps li:nth-child(4) .step-num span {
-  color: var(--primary);
+  .hs-art {
+    flex: none;
+    width: 100%;
+  }
 }
 
 /* ---------- 홈: 섹션 제목 + 배지 ---------- */
@@ -4400,12 +4553,18 @@ a.back-button:hover {
   }
 
   .hero {
+    min-height: 0;
     padding: 56px 0 48px;
+  }
+
+  .hero-scroll {
+    display: none;
   }
 
   .hero-split-inner {
     flex-direction: column;
     gap: 32px;
+    padding: 0 20px;
   }
 
   .hero-actions {
@@ -4431,17 +4590,6 @@ a.back-button:hover {
   .cl-head {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .step,
-  .step.is-reverse {
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .step-num {
-    width: 100%;
-    height: 120px;
   }
 
   .ranking-row,
