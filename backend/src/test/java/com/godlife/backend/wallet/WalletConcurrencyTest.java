@@ -1,5 +1,6 @@
 package com.godlife.backend.wallet;
 
+import com.godlife.backend.payment.TestCharger;
 import com.godlife.backend.challenge.Challenge;
 import com.godlife.backend.challenge.ChallengeService;
 import com.godlife.backend.challenge.dto.ChallengeCreateRequest;
@@ -29,7 +30,7 @@ import java.util.concurrent.Future;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 동시에 요청이 몰려도 이중 충전·잔액 초과 차감이 없는지 (CLAUDE.md 규칙 4).
+ * 동시에 요청이 몰려도 잔액 초과 차감이 없는지 (CLAUDE.md 규칙 4). 이중 충전은 PaymentConcurrencyTest 가 본다.
  * 스레드마다 트랜잭션이 따로 돌아야 해서 롤백하지 않고, 만든 데이터를 끝나고 직접 지운다.
  */
 @SpringBootTest
@@ -39,6 +40,7 @@ class WalletConcurrencyTest {
     private static final int THREADS = 8;
 
     @Autowired WalletService walletService;
+    @Autowired TestCharger testCharger;
     @Autowired ChallengeService challengeService;
     @Autowired UserRepository userRepository;
     @Autowired JdbcTemplate jdbc;
@@ -54,6 +56,7 @@ class WalletConcurrencyTest {
             jdbc.update("DELETE FROM challenges WHERE id = ?", id);
         });
         userIds.forEach(id -> {
+            jdbc.update("DELETE FROM payments WHERE user_id = ?", id);
             jdbc.update("DELETE t FROM point_transactions t JOIN wallets w ON w.id = t.wallet_id WHERE w.user_id = ?", id);
             jdbc.update("DELETE FROM wallets WHERE user_id = ?", id);
             jdbc.update("DELETE FROM users WHERE id = ?", id);
@@ -61,22 +64,11 @@ class WalletConcurrencyTest {
     }
 
     @Test
-    @DisplayName("같은 충전 요청이 동시에 8번 와도 한 번만 충전된다")
-    void sameChargeKeyOnce() throws Exception {
-        Long me = newUser();
-        runAll(() -> walletService.testCharge(me, 10_000, "double-click"));
-
-        assertThat(walletService.wallet(me).chargedBalance()).isEqualTo(10_000);
-        assertThat(count("SELECT COUNT(*) FROM point_transactions t JOIN wallets w ON w.id = t.wallet_id "
-                + "WHERE w.user_id = ?", me)).isEqualTo(1);
-    }
-
-    @Test
     @DisplayName("5,000P 로 3,000P 챌린지 8개에 동시에 참여해도 1개만 들어가고 잔액이 음수가 되지 않는다")
     void noOverspendUnderConcurrency() throws Exception {
         Long host = newUser();
         Long me = newUser();
-        walletService.testCharge(me, 5_000, "seed");
+        testCharger.charge(me, 5_000);
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < THREADS; i++) {
             ids.add(betChallenge(host, 3_000));

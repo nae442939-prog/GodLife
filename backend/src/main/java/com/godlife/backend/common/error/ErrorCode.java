@@ -75,10 +75,16 @@ public enum ErrorCode {
     ORDER_STATUS_CONFLICT(HttpStatus.CONFLICT, "주문 상태가 바뀌어 처리할 수 없어요. 새로고침해 주세요."),
     INSUFFICIENT_POINTS(HttpStatus.CONFLICT, "충전 포인트가 모자라요."),
     BET_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "챌린지에 걸 수 있는 포인트 한도를 넘었어요."),
-    INVALID_CHARGE_AMOUNT(HttpStatus.BAD_REQUEST, "테스트 충전은 1,000P · 5,000P · 10,000P 중에서 골라 주세요."),
-    CHARGE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘 테스트 충전 한도를 넘었어요."),
+    INVALID_CHARGE_AMOUNT(HttpStatus.BAD_REQUEST, "충전할 금액을 골라 주세요."),
+    CHARGE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘 충전 한도를 넘었어요."),
     INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "환불할 금액을 100P 단위로 입력해 주세요."),
     REFUND_EXCEEDS_CHARGED(HttpStatus.CONFLICT, "쓰지 않은 충전 포인트까지만 환불할 수 있어요."),
+    PAYMENT_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "이 결제 수단은 아직 쓸 수 없어요."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 정보를 찾을 수 없어요."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 주문과 달라요. 처음부터 다시 결제해 주세요."),
+    PAYMENT_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 끝난 결제예요. 처음부터 다시 결제해 주세요."),
+    PAYMENT_FAILED(HttpStatus.BAD_GATEWAY, "결제가 승인되지 않았어요."),
+    REFUND_FAILED(HttpStatus.BAD_GATEWAY, "결제 취소가 처리되지 않았어요. 잠시 후 다시 시도해 주세요."),
     DUPLICATE_REQUEST(HttpStatus.CONFLICT, "이미 처리된 요청이에요.");
 
     private final HttpStatus status;

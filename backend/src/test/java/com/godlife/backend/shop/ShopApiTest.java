@@ -1,5 +1,6 @@
 package com.godlife.backend.shop;
 
+import com.godlife.backend.payment.TestCharger;
 import com.godlife.backend.auth.JwtProvider;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
@@ -44,6 +45,7 @@ class ShopApiTest {
     @Autowired UserRepository userRepository;
     @Autowired JwtProvider jwtProvider;
     @Autowired WalletService walletService;
+    @Autowired TestCharger testCharger;
 
     private User user;
     private String me;
@@ -284,7 +286,7 @@ class ShopApiTest {
         String key = UUID.randomUUID().toString();
         walletService.settle(user.getId(), PointTxType.REWARD, PointSource.REWARD, reward, null, null, "test:" + key);
         if (charged > 0) {
-            walletService.testCharge(user.getId(), charged, key);
+            testCharger.charge(user.getId(), charged);
         }
     }
 

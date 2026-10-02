@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 /**
  * 포인트 지갑. 모든 증감은 지갑 행을 잠근 채(SELECT ... FOR UPDATE) 원장 한 줄을 쓰고 잔액 캐시를 바꾼다.
  * 원장의 idempotency_key 가 유니크라 같은 요청이 두 번 와도 한 번만 반영된다 (CLAUDE.md 규칙 4).
+ * 충전은 PG 결제 승인(테스트 모드)을 거쳐서만 들어오고, 환불은 PG 결제 취소로만 나간다 (payment 패키지가 부른다).
  * 챌린지 참가비는 충전 포인트에서만 뺀다. 보상 포인트는 상점 전용이다 (규칙 2).
  * 상점에서는 보상 포인트를 먼저 쓰고 모자란 만큼 충전 포인트를 쓴다.
  */
@@ -35,8 +36,6 @@ import java.util.stream.Collectors;
 public class WalletService {
 
     public static final int PAGE_SIZE = 20;
-    /** 테스트 충전 버튼 금액 (결제 연동 전 가상 지급) */
-    static final Set<Long> TEST_CHARGE_AMOUNTS = Set.of(1_000L, 5_000L, 10_000L);
 
     private final WalletRepository walletRepository;
     private final PointTransactionRepository txRepository;
@@ -44,8 +43,9 @@ public class WalletService {
     private final Clock clock;
     private final EntityManager entityManager;
 
-    @Value("${app.wallet.test-charge-daily-limit:50000}")
-    private long testChargeDailyLimit;
+    /** 하루에 충전(결제)할 수 있는 금액 */
+    @Value("${app.wallet.charge-daily-limit:50000}")
+    private long chargeDailyLimit;
     @Value("${app.wallet.bet-daily-limit:30000}")
     private long betDailyLimit;
     @Value("${app.wallet.bet-monthly-limit:200000}")
@@ -73,50 +73,67 @@ public class WalletService {
     }
 
     /**
-     * 테스트 충전 (결제 연동 전 가상 지급). 정해진 금액만, 하루 한도까지.
-     * requestKey 는 화면이 버튼을 누를 때마다 만드는 값이라, 같은 요청이 두 번 와도(더블클릭·재전송) 한 번만 충전된다.
+     * 오늘 충전 한도 안인지 확인한다 (지갑을 잠근 채). 결제 준비 때 한 번, PG 승인을 부르기 직전에 한 번 더 부른다.
+     * 승인 쪽은 이 잠금을 쥔 채 충전까지 가므로, 동시에 여러 결제를 승인해도 한도를 넘지 않는다.
      */
     @Transactional
-    public WalletResponse testCharge(Long userId, long amount, String requestKey) {
-        if (!TEST_CHARGE_AMOUNTS.contains(amount)) {
-            throw new BusinessException(ErrorCode.INVALID_CHARGE_AMOUNT);
-        }
-        String key = "charge:" + userId + ":" + requestKey;
+    public void checkChargeLimit(Long userId, long amount) {
         Wallet wallet = lock(userId);
-        if (txRepository.existsByIdempotencyKey(key)) {
-            return toResponse(wallet, userId);
-        }
-        long today = txRepository.sumSince(wallet.getId(), PointTxType.CHARGE, startOfToday());
-        if (today + amount > testChargeDailyLimit) {
+        long today = txRepository.chargedSince(wallet.getId(), startOfToday());
+        if (today + amount > chargeDailyLimit) {
             throw new BusinessException(ErrorCode.CHARGE_LIMIT_EXCEEDED,
-                    "테스트 충전은 하루 %,dP까지예요. 오늘 %,dP 더 충전할 수 있어요."
-                            .formatted(testChargeDailyLimit, Math.max(0, testChargeDailyLimit - today)));
+                    "충전은 하루 %,dP까지예요. 오늘 %,dP 더 충전할 수 있어요."
+                            .formatted(chargeDailyLimit, Math.max(0, chargeDailyLimit - today)));
         }
-        record(wallet, PointTxType.CHARGE, PointSource.CHARGED, amount, null, null, key);
-        return toResponse(wallet, userId);
     }
 
     /**
-     * 충전 포인트 환불 (CLAUDE.md 규칙 2): 쓰지 않은 충전 포인트까지만. 보상 포인트는 환불·현금화하지 않는다.
-     * 출금·송금이 아니라 결제 취소다. 결제 연동 전이라 지금은 원장에 '충전 취소'를 남기고 충전 포인트를 뺀다.
-     * (결제 연동 후에는 여기서 PG 결제 취소 API 를 테스트 모드로 부르고, 충전 건별로 나눠 취소한다)
+     * PG 가 승인한 결제 금액을 충전 포인트로 넣는다. 부르는 쪽(결제)이 결제 행을 잠근 트랜잭션 안에서 부른다.
+     * 결제 한 건에 한 번만 들어간다 (멱등 키 = 결제 id). 넣은 원장 줄 id 를 돌려준다.
      */
     @Transactional
-    public WalletResponse refundCharged(Long userId, long amount, String requestKey) {
-        if (amount < 100 || amount % 100 != 0) {
-            throw new BusinessException(ErrorCode.INVALID_REFUND_AMOUNT);
+    public Long charge(Long userId, long amount, Long paymentId) {
+        String key = "pay:" + paymentId;
+        Wallet wallet = lock(userId);
+        Optional<PointTransaction> existing = txRepository.findByIdempotencyKey(key);
+        if (existing.isPresent()) {
+            return existing.get().getId();
         }
-        String key = "charge-cancel:" + userId + ":" + requestKey;
+        return record(wallet, PointTxType.CHARGE, PointSource.CHARGED, amount, PointTransaction.REF_PAYMENT,
+                paymentId, key).getId();
+    }
+
+    /**
+     * 충전 포인트 환불 (CLAUDE.md 규칙 2): 쓰지 않은 충전 포인트를 결제 취소로 돌려줄 때, 그만큼 충전 포인트를 뺀다.
+     * 보상 포인트는 환불·현금화하지 않는다 (충전 출처만 건드린다). 출금·송금이 아니라 결제 취소다.
+     * 부르는 쪽(환불)이 결제 행을 잠근 트랜잭션 안에서 부르고, 이어서 PG 결제 취소를 부른다. PG 가 거절하면 함께 되돌려진다.
+     * 같은 키가 이미 있으면(같은 요청의 재전송) false 를 돌려주고 아무것도 하지 않는다.
+     */
+    @Transactional
+    public boolean cancelCharge(Long userId, long amount, Long paymentId, String key) {
         Wallet wallet = lock(userId);
         if (txRepository.existsByIdempotencyKey(key)) {
-            return toResponse(wallet, userId);
+            return false;
         }
         if (amount > wallet.getChargedBalance()) {
             throw new BusinessException(ErrorCode.REFUND_EXCEEDS_CHARGED,
                     "쓰지 않은 충전 포인트 %,dP까지만 환불할 수 있어요.".formatted(wallet.getChargedBalance()));
         }
-        record(wallet, PointTxType.CHARGE_CANCEL, PointSource.CHARGED, -amount, null, null, key);
-        return toResponse(wallet, userId);
+        record(wallet, PointTxType.CHARGE_CANCEL, PointSource.CHARGED, -amount, PointTransaction.REF_PAYMENT,
+                paymentId, key);
+        return true;
+    }
+
+    /** 이 요청 키로 이미 환불한 줄이 있는지 (같은 환불 요청이 두 번 왔을 때 다시 처리하지 않는다) */
+    @Transactional(readOnly = true)
+    public boolean hasTransactionsWithKeyPrefix(String keyPrefix) {
+        return txRepository.existsByIdempotencyKeyStartingWith(keyPrefix);
+    }
+
+    /** 지금 남아 있는 충전 포인트 (환불 계획을 세울 때 본다. 실제로 뺄 때 잠근 채 다시 확인한다) */
+    @Transactional(readOnly = true)
+    public long chargedBalance(Long userId) {
+        return walletRepository.findByUserId(userId).map(Wallet::getChargedBalance).orElse(0L);
     }
 
     /**
@@ -269,10 +286,12 @@ public class WalletService {
         long daily = newbie ? newbieBetDailyLimit : betDailyLimit;
         long monthly = newbie ? newbieBetMonthlyLimit : betMonthlyLimit;
         List<PointTransactionResponse> recent = page(wallet.getId(), 0);
+        // 환불은 결제 취소라, 쓰지 않은 충전 포인트 중에서도 아직 취소하지 않은 결제 금액까지만 된다
+        long refundable = Math.min(wallet.getChargedBalance(), walletRepository.sumCancelablePayments(userId));
         return new WalletResponse(wallet.getBalance(), wallet.getChargedBalance(), wallet.getRewardBalance(),
-                daily, txRepository.betSince(wallet.getId(), startOfToday()),
+                refundable, daily, txRepository.betSince(wallet.getId(), startOfToday()),
                 monthly, txRepository.betSince(wallet.getId(), startOfMonth()),
-                testChargeDailyLimit, txRepository.sumSince(wallet.getId(), PointTxType.CHARGE, startOfToday()),
+                chargeDailyLimit, txRepository.chargedSince(wallet.getId(), startOfToday()),
                 newbie, recent);
     }
 

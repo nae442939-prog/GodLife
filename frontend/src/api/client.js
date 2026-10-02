@@ -450,11 +450,22 @@ export const rankingApi = {
 export const walletApi = {
   get: () => apiFetch('/api/wallet'),
   transactions: (page) => apiFetch(`/api/wallet/transactions?page=${page}`),
-  // 충전 포인트 환불: 쓰지 않은 충전 포인트까지만 (결제 취소). 보상 포인트는 환불하지 않는다.
+  // 충전 포인트 환불: 쓰지 않은 충전 포인트까지만 (PG 결제 취소). 보상 포인트는 환불하지 않는다.
+  // requestKey 가 같으면 두 번 눌려도 한 번만 환불된다.
   refund: (amount, requestKey) => apiFetch('/api/wallet/refund', { method: 'POST', body: { amount, requestKey } }),
-  // 테스트 충전(결제 연동 전 가상 지급). requestKey 가 같으면 두 번 눌려도 한 번만 충전된다.
-  testCharge: (amount, requestKey) =>
-    apiFetch('/api/wallet/test-charge', { method: 'POST', body: { amount, requestKey } }),
+}
+
+// 포인트 충전 결제 (토스페이먼츠 테스트 모드). 카드 정보는 토스 결제창에서만 입력하고 우리 서버로 오지 않는다.
+export const paymentApi = {
+  // → { amounts: [1000, ...], enabled, tossClientKey }
+  config: () => apiFetch('/api/payments/config'),
+  // 주문 만들기 → { orderId, amount, orderName }
+  ready: (amount) => apiFetch('/api/payments/ready', { method: 'POST', body: { amount } }),
+  // 승인 → 충전된 지갑. 같은 주문을 다시 보내도 한 번만 충전된다.
+  confirm: (paymentKey, orderId, amount) =>
+    apiFetch('/api/payments/toss/confirm', { method: 'POST', body: { paymentKey, orderId, amount } }),
+  // 결제를 그만뒀을 때 승인 전 주문을 닫는다
+  fail: (orderId) => apiFetch(`/api/payments/${encodeURIComponent(orderId)}/fail`, { method: 'POST' }),
 }
 
 // 포인트 상점 (상품 보기는 비로그인도 가능, 찜 · 장바구니 · 배송지 · 주문은 로그인)

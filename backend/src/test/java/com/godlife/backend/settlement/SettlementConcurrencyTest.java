@@ -1,5 +1,6 @@
 package com.godlife.backend.settlement;
 
+import com.godlife.backend.payment.TestCharger;
 import com.godlife.backend.challenge.Challenge;
 import com.godlife.backend.challenge.ChallengeLifecycleService;
 import com.godlife.backend.challenge.ChallengeMode;
@@ -42,6 +43,7 @@ class SettlementConcurrencyTest {
     @Autowired ChallengeLifecycleService lifecycle;
     @Autowired ChallengeService challengeService;
     @Autowired WalletService walletService;
+    @Autowired TestCharger testCharger;
     @Autowired UserRepository userRepository;
     @Autowired JdbcTemplate jdbc;
     @Autowired Clock clock;
@@ -64,6 +66,7 @@ class SettlementConcurrencyTest {
             jdbc.update("DELETE FROM challenges WHERE id = ?", challengeId);
         }
         userIds.forEach(id -> {
+            jdbc.update("DELETE FROM payments WHERE user_id = ?", id);
             jdbc.update("DELETE t FROM point_transactions t JOIN wallets w ON w.id = t.wallet_id WHERE w.user_id = ?", id);
             jdbc.update("DELETE FROM wallets WHERE user_id = ?", id);
             // 정산이 끝나면 참가자에게 알림이 가므로 회원을 지우기 전에 같이 지운다
@@ -79,8 +82,8 @@ class SettlementConcurrencyTest {
         Long host = newUser();
         Long winner = newUser();
         Long loser = newUser();
-        walletService.testCharge(winner, 10_000, "seed");
-        walletService.testCharge(loser, 10_000, "seed");
+        testCharger.charge(winner, 10_000);
+        testCharger.charge(loser, 10_000);
         Challenge c = challengeService.create(host, new ChallengeCreateRequest(1, "동시 정산", "테스트", ChallengeMode.BET,
                 null, today, today, FrequencyType.DAILY, null, 3_000L, 10, null, null, false));
         challengeId = c.getId();

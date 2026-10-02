@@ -1,5 +1,6 @@
 package com.godlife.backend.user;
 
+import com.godlife.backend.payment.TestCharger;
 import com.godlife.backend.auth.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +42,7 @@ class SettingsApiTest {
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired JwtProvider jwtProvider;
+    @Autowired TestCharger testCharger;
     @Autowired Clock clock;
 
     private User me;
@@ -129,10 +131,7 @@ class SettingsApiTest {
         assertThat(m.find()).isTrue();
         mvc.perform(post("/api/challenges/" + m.group(1) + "/participants").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
-        mvc.perform(post("/api/wallet/test-charge").header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"amount\":1000,\"requestKey\":\"" + UUID.randomUUID() + "\"}"))
-                .andExpect(status().is2xxSuccessful());
+        testCharger.charge(token, 1_000);
 
         mvc.perform(get("/api/users/me/withdrawal").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.canWithdraw").value(false))

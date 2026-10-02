@@ -27,6 +27,8 @@ public class PointTransaction {
     public static final String REF_PARTICIPANT = "participant";
     /** 챌린지 최종 정산 (settlements.id) */
     public static final String REF_SETTLEMENT = "settlement";
+    /** 충전 결제 (payments.id). 충전과 충전 취소(환불)가 가리킨다 */
+    public static final String REF_PAYMENT = "payment";
     /** 포인트 상점 주문 (orders.id) */
     public static final String REF_ORDER = "order";
 

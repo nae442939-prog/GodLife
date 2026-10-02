@@ -29,6 +29,7 @@ import { CommunityWritePage } from './pages/CommunityWritePage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { MyPage } from './pages/MyPage.jsx'
+import { PaymentReturnPage } from './pages/PaymentReturnPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
 import { ShopCartPage } from './pages/ShopCartPage.jsx'
 import { ShopCheckoutPage } from './pages/ShopCheckoutPage.jsx'
@@ -74,6 +75,8 @@ export default function App() {
           <Route path="/records" element={<DiaryPage />} />
           <Route path="/records/calendar" element={<RecordPage />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/wallet/charge/success" element={<PaymentReturnPage step="success" />} />
+          <Route path="/wallet/charge/fail" element={<PaymentReturnPage step="fail" />} />
           <Route path="/messages" element={<MessagesPage />} />
           <Route path="/messages/:userId" element={<MessageRoomPage />} />
           <Route path="/challenges/:id/chat" element={<ChallengeChatPage />} />
