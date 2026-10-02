@@ -36,7 +36,7 @@ const MENU = [
   { label: '갓생기록', to: '/records', mega: 'record' },
   { label: '랭킹', to: '/rankings', mega: 'ranking' },
   { label: '포인트 상점', to: null },
-  { label: '커뮤니티', to: null },
+  { label: '커뮤니티', to: '/community' },
 ]
 
 export function Header() {

@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 채팅 사진·인증 사진·일기 사진·프로필 사진을 서버 디스크에 저장한다. 받은 파일을 그대로 두지 않고 다시 그려서 JPEG 로 저장하므로
+ * 채팅 사진·인증 사진·일기 사진·커뮤니티 글 사진·프로필 사진을 서버 디스크에 저장한다. 받은 파일을 그대로 두지 않고 다시 그려서 JPEG 로 저장하므로
  * - 진짜 사진(JPG/PNG)인지 확인되고
  * - 위치(GPS)·기기 정보 같은 촬영 정보(EXIF)가 지워지고
  * - 긴 쪽이 1600px(프로필 사진은 512px)를 넘으면 줄어든다.
@@ -67,6 +67,11 @@ public class ImageStore {
     /** 일기 사진을 저장하고 파일 키("diary/{userId}/{uuid}.jpg")를 돌려준다. */
     public String storeDiaryImage(Long userId, MultipartFile file) {
         return store("diary/" + userId, file);
+    }
+
+    /** 커뮤니티 글 사진을 저장하고 파일 키("post/{postId}/{uuid}.jpg")를 돌려준다. */
+    public String storePostImage(Long postId, MultipartFile file) {
+        return store("post/" + postId, file);
     }
 
     /** 프로필 사진을 저장하고 파일 키("profile/{userId}/{uuid}.jpg")를 돌려준다. */

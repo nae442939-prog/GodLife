@@ -25,6 +25,15 @@ DELETE p FROM challenge_participants p
   JOIN users u ON u.id = c.host_id WHERE u.email LIKE '%@dummy.godlife';
 DELETE c FROM challenges c
   JOIN users u ON u.id = c.host_id WHERE u.email LIKE '%@dummy.godlife';
+-- 커뮤니티 더미(dev-community.sql)가 있으면 회원을 지울 수 없으므로 같이 지운다
+DELETE l FROM post_comment_likes l
+  JOIN users u ON u.id = l.user_id WHERE u.email LIKE '%@dummy.godlife';
+DELETE c FROM post_comments c
+  JOIN users u ON u.id = c.user_id WHERE u.email LIKE '%@dummy.godlife';
+DELETE l FROM post_likes l
+  JOIN users u ON u.id = l.user_id WHERE u.email LIKE '%@dummy.godlife';
+DELETE p FROM posts p
+  JOIN users u ON u.id = p.user_id WHERE u.email LIKE '%@dummy.godlife';
 DELETE FROM users WHERE email LIKE '%@dummy.godlife';
 
 -- ---------- 더미 회원 12명 (비밀번호·휴대폰 없음 → 로그인 불가, 화면 표시용) ----------

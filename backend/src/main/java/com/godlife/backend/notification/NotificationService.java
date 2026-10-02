@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 알림함. 알림은 서버가 만들어 쌓아 두고, 화면(헤더의 종)이 불러와 보여 준다. (휴대폰 푸시는 앱을 만들 때 붙인다)
  * - 같은 알림은 한 번만: (회원, dedupe_key) 가 같으면 다시 만들지 않는다.
- * - 회원이 설정에서 끈 종류는 만들지 않는다 (인증 알림 / 챌린지 결과 / 팔로우·메시지). 문의 답변 · 신고 알림은 항상 간다.
+ * - 회원이 설정에서 끈 종류는 만들지 않는다 (인증 알림 / 챌린지 결과 / 팔로우·메시지·댓글). 문의 답변 · 신고 알림은 항상 간다.
  */
 @Service
 @RequiredArgsConstructor
@@ -153,7 +153,7 @@ public class NotificationService {
         return switch (type) {
             case VERIFY_REMINDER -> s.verifyReminder();
             case SETTLEMENT -> s.challengeResult();
-            case FOLLOW, MESSAGE_REQUEST -> s.social();
+            case FOLLOW, MESSAGE_REQUEST, COMMENT -> s.social();
             default -> true;
         };
     }
