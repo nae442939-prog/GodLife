@@ -7273,6 +7273,12 @@ a.back-button:hover {
   background: #e2e9fb;
 }
 
+/* 관리자: 칭호(점수) 대상이 아니라 따로 표시한다 */
+.pf-tier.is-admin {
+  color: #ffffff;
+  background: var(--header-nav);
+}
+
 /* 뱃지: 딴 것은 또렷하게, 아직인 것은 흐리게 + 따는 조건 */
 .pf-badges {
   margin-top: 24px;
@@ -7368,6 +7374,129 @@ a.back-button:hover {
   font-size: 0.84rem;
   font-weight: 700;
   color: var(--muted);
+}
+
+/* ---------- 내 칭호 (/me/tier · 마이페이지 카드): 뱃지 화면의 요약 카드 · 진행 막대를 같이 쓴다 ---------- */
+
+.tr-summary {
+  color: var(--text);
+}
+
+/* 마이페이지에서는 누르면 내 칭호 화면으로 간다 */
+.tr-summary.is-link {
+  margin: 14px 0 0;
+  transition: border-color 0.15s;
+}
+
+.tr-summary.is-link:hover {
+  text-decoration: none;
+  border-color: var(--header-nav);
+}
+
+.tr-now {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tr-rules {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tr-rules li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.tr-rules strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f9c86;
+}
+
+.tr-rules .is-minus strong {
+  color: var(--danger);
+}
+
+.tr-rules span {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.tr-rules small {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.tr-tableWrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.tr-table {
+  width: 100%;
+  min-width: 560px;
+  font-size: 0.92rem;
+  border-collapse: collapse;
+}
+
+.tr-table th,
+.tr-table td {
+  padding: 14px 18px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tr-table th:first-child,
+.tr-table td:first-child {
+  text-align: left;
+}
+
+.tr-table th {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tr-table tbody tr {
+  border-top: 1px solid var(--border);
+}
+
+.tr-table tr.is-mine {
+  font-weight: 700;
+  background: var(--surface-alt);
+}
+
+.tr-table td small {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--header-nav);
+}
+
+.tr-note {
+  margin: 12px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .tr-rules {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .bg-grid {

@@ -17,10 +17,10 @@ SET NAMES utf8mb4;
 CREATE TABLE tiers (
   id                 INT          NOT NULL AUTO_INCREMENT,
   name               VARCHAR(20)  NOT NULL COMMENT 'BRONZE ~ DIAMOND',
-  min_score          INT          NOT NULL COMMENT '승급 기준 누적 점수',
+  min_score          INT          NOT NULL COMMENT '이 칭호가 되는 점수 (인증 +10, 완주 +50, 실패 -30, 포기 -50). 점수가 내려가면 강등된다',
   daily_bet_limit    BIGINT       NOT NULL COMMENT '일일 총 베팅 상한. 저티어일수록 낮음',
   monthly_bet_limit  BIGINT       NOT NULL COMMENT '월간 총 베팅 상한',
-  high_stake_allowed BOOLEAN      NOT NULL DEFAULT FALSE COMMENT '고액 베팅방 입장 가능 여부',
+  high_stake_allowed BOOLEAN      NOT NULL DEFAULT FALSE COMMENT '고액 챌린지(참가 포인트 30,000P 이상) 참여 가능 여부',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tiers_name (name),
   CONSTRAINT ck_tiers_limits CHECK (daily_bet_limit >= 0 AND monthly_bet_limit >= daily_bet_limit)
@@ -745,7 +745,7 @@ CREATE TABLE notifications (
   id      BIGINT       NOT NULL AUTO_INCREMENT,
   user_id BIGINT       NOT NULL,
   type    ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT','REPORT_ALERT',
-               'FOLLOW','MESSAGE_REQUEST','INQUIRY_ANSWER','VERIFY_REJECTED','ORDER') NOT NULL,
+               'FOLLOW','MESSAGE_REQUEST','INQUIRY_ANSWER','VERIFY_REJECTED','ORDER','TIER') NOT NULL,
   title   VARCHAR(100) NOT NULL,
   body    VARCHAR(300) NOT NULL,
   link       VARCHAR(200) NULL COMMENT '누르면 갈 화면 주소',

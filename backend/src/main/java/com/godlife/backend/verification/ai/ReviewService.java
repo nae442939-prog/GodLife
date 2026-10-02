@@ -5,6 +5,7 @@ import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.upload.ImageStore;
 import com.godlife.backend.notification.Notification;
 import com.godlife.backend.notification.NotificationService;
+import com.godlife.backend.tier.TierService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -61,6 +62,7 @@ public class ReviewService {
     private final NamedParameterJdbcTemplate jdbc;
     private final ImageStore imageStore;
     private final NotificationService notificationService;
+    private final TierService tierService;
     private final Clock clock;
 
     /** 검토 목록 (status 를 주면 그 상태만). 대기는 오래된 것부터, 그 밖은 최근 것부터 */
@@ -128,6 +130,8 @@ public class ReviewService {
                 new MapSqlParameterSource("id", row.get("verification_id")));
         close(reviewId, "APPROVED", reviewerId, memo);
         closeReports(row, false);
+        // 검토에서 인정된 인증은 점수에 들어간다
+        tierService.refresh(((Number) row.get("user_id")).longValue());
     }
 
     @Transactional
@@ -159,6 +163,8 @@ public class ReviewService {
                 "'" + row.get("title") + "' " + row.get("verify_date") + " 인증 사진이 검토에서 인정되지 않았어요.",
                 "/challenges/" + row.get("challenge_id"), "verify-rejected:" + verificationId);
         closeReports(row, true);
+        // 취소된 인증만큼 점수가 줄어 칭호가 내려갈 수 있다
+        tierService.refresh(((Number) row.get("user_id")).longValue());
     }
 
     /** 이 인증에 들어와 있던 신고를 닫고(인정 / 기각) 신고한 사람들에게 결과를 알린다 */

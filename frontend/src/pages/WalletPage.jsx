@@ -21,6 +21,8 @@ function txLabel(t) {
   return TYPE_LABEL[t.type] ?? t.type
 }
 
+const TIER_LABEL = { BRONZE: '브론즈', SILVER: '실버', GOLD: '골드', PLATINUM: '플래티넘', DIAMOND: '다이아몬드', ADMIN: '관리자' }
+
 const SOURCE_LABEL = { CHARGED: '충전', REWARD: '보상', SHOP: '상점' }
 
 const p = (n) => `${n.toLocaleString()}P`
@@ -102,7 +104,14 @@ export function WalletPage() {
       <section className="wl-section">
         <div className="wl-section-head">
           <h2>챌린지에 건 포인트</h2>
-          {wallet.newbie && <span className="wl-sub">가입 30일 이내라 한도가 낮아요</span>}
+          {wallet.newbie ? (
+            <span className="wl-sub">가입 30일 이내라 한도가 낮아요</span>
+          ) : (
+            // 가입 30일이 지나면 한도는 칭호에 따라 정해진다
+            <Link to="/me/tier" className="wl-sub wl-orders-link">
+              {wallet.tier === 'ADMIN' ? '관리자 한도 →' : `${TIER_LABEL[wallet.tier] ?? wallet.tier} 칭호 한도 →`}
+            </Link>
+          )}
         </div>
         <Limit label="오늘" used={wallet.betToday} limit={wallet.betDailyLimit} />
         <Limit label="이번 달" used={wallet.betThisMonth} limit={wallet.betMonthlyLimit} />

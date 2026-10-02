@@ -4,10 +4,10 @@
 
 -- 티어: users.tier_id 기본값 1 = BRONZE (신규/저티어는 가장 낮은 베팅 상한)
 INSERT INTO tiers (id, name, min_score, daily_bet_limit, monthly_bet_limit, high_stake_allowed) VALUES
-  (1, 'BRONZE',       0,   1000,    10000, FALSE),
-  (2, 'SILVER',     100,   3000,    30000, FALSE),
-  (3, 'GOLD',       300,  10000,   100000, FALSE),
-  (4, 'PLATINUM',   700,  30000,   300000, TRUE),
+  (1, 'BRONZE',       0,  30000,   200000, FALSE),
+  (2, 'SILVER',     100,  40000,   300000, FALSE),
+  (3, 'GOLD',       300,  50000,   400000, FALSE),
+  (4, 'PLATINUM',   700,  70000,   600000, TRUE),
   (5, 'DIAMOND',   1500, 100000,  1000000, TRUE);
 
 -- 챌린지 카테고리: ai_label 은 ai-server 분류 모델의 클래스 라벨과 반드시 일치해야 한다.

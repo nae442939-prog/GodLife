@@ -7,6 +7,8 @@ const TIER = {
   GOLD: { label: '골드', emoji: '🥇' },
   PLATINUM: { label: '플래티넘', emoji: '💠' },
   DIAMOND: { label: '다이아몬드', emoji: '💎' },
+  // 관리자는 칭호(점수) 대상이 아니다
+  ADMIN: { label: '관리자', emoji: '🛡️' },
 }
 // 프로필 카드에는 일부만 보여 준다: 딴 뱃지 먼저, 남는 자리는 아직인 뱃지 (전체는 마이페이지의 '뱃지 전체 보기')
 const BADGE_PREVIEW = 7
