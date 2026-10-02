@@ -22,7 +22,8 @@ const LABEL = { exercise: '운동', study: '공부', reading: '독서', cooking:
 const percent = (value) => (value == null ? null : `${Math.round(Number(value) * 100)}%`)
 
 /**
- * 관리자 화면: AI 가 애매하다고 넘긴 인증 사진 검토 (/admin/reviews). 관리자(role = ADMIN)만 들어올 수 있다.
+ * 관리자 화면: AI 가 애매하다고 넘긴 인증 사진과 참가자가 신고한 인증 사진 검토 (/admin/reviews).
+ * 관리자(role = ADMIN)만 들어올 수 있다.
  * 검토 중인 인증은 일단 인정된 상태다. 승인하면 그대로 인정되고, 거절하면 그 인증이 취소되고 회원에게 알림이 간다.
  */
 export function AdminReviewsPage() {
@@ -61,7 +62,7 @@ export function AdminReviewsPage() {
       <div className="ch-head cl-head">
         <div>
           <h1 className="page-title">관리자 · 인증 검토</h1>
-          <p className="page-sub">AI 가 판단하기 애매했던 인증 사진을 직접 보고 승인하거나 거절해요.</p>
+          <p className="page-sub">AI 가 판단하기 애매했거나 참가자가 신고한 인증 사진을 직접 보고 승인하거나 거절해요.</p>
         </div>
       </div>
       <AdminNav />
@@ -163,6 +164,20 @@ function ReviewRow({ review: r, onDecided }) {
             <div>
               <dt>예전 사진과 닮은 정도</dt>
               <dd>{percent(r.maxSimilarity)}</dd>
+            </div>
+          )}
+          {r.reports.length > 0 && (
+            <div>
+              <dt>들어온 신고 {r.reports.length}건</dt>
+              <dd>
+                <ul className="adm-reports">
+                  {r.reports.map((report) => (
+                    <li key={report.reporterId}>
+                      <Link to={`/users/${report.reporterId}`}>{report.nickname}</Link> {report.reason}
+                    </li>
+                  ))}
+                </ul>
+              </dd>
             </div>
           )}
           {!open && r.memo && (

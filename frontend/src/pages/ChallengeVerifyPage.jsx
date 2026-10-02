@@ -128,7 +128,15 @@ function VerifyScreen({ challenge: c, initialMine, initialItems }) {
         onOpen={setZoom}
       />
       {phase === 'reveal' && <RevealPopup url={shotUrl} inReview={shotInReview} />}
-      {zoom && <PhotoModal challengeId={c.id} item={zoom} onClose={() => setZoom(null)} />}
+      {zoom && (
+        <PhotoModal
+          challengeId={c.id}
+          // 신고하면 목록의 값이 바뀌므로 목록에서 다시 찾는다
+          item={items.find((v) => v.id === zoom.id) ?? zoom}
+          onClose={() => setZoom(null)}
+          onReported={(id) => setItems((list) => list.map((v) => (v.id === id ? { ...v, reported: true } : v)))}
+        />
+      )}
     </>
   )
 }
@@ -426,7 +434,85 @@ function RevealPopup({ url, inReview }) {
   )
 }
 
-function PhotoModal({ challengeId, item, onClose }) {
+const REPORT_REASONS = ['챌린지와 관계없는 사진이에요', '예전에 찍은 사진 같아요', '다른 사람의 사진 같아요']
+
+/** 사진 크게 보기 아래의 신고 (남의 인증만). 신고하면 관리자가 사진을 확인한다 */
+function ReportBox({ challengeId, item, onReported }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState(REPORT_REASONS[0])
+  const [detail, setDetail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  if (item.reported) {
+    return <p className="vc-report-done">신고한 인증이에요. 관리자가 확인한 뒤 결과를 알림으로 알려 드려요.</p>
+  }
+  if (!open) {
+    return (
+      <button type="button" className="vc-report-open" onClick={() => setOpen(true)}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <path d="M5 21V4m0 1h11l-2 4 2 4H5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        이 인증 신고하기
+      </button>
+    )
+  }
+
+  async function submit(e) {
+    e.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      const text = detail.trim()
+      await verificationApi.report(challengeId, item.id, text ? `${reason} — ${text}` : reason)
+      onReported(item.id)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="vc-report" onSubmit={submit}>
+      <p className="vc-report-title">어떤 점이 의심되나요?</p>
+      <div className="vc-report-reasons" role="radiogroup" aria-label="신고 이유">
+        {REPORT_REASONS.map((r) => (
+          <button
+            key={r}
+            type="button"
+            role="radio"
+            aria-checked={reason === r}
+            className={`vc-report-reason${reason === r ? ' is-active' : ''}`}
+            onClick={() => setReason(r)}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+      <input
+        type="text"
+        className="vc-report-detail"
+        value={detail}
+        maxLength={120}
+        placeholder="자세한 내용 (선택)"
+        aria-label="자세한 내용"
+        onChange={(e) => setDetail(e.target.value)}
+      />
+      {error && <p className="vc-error">{error}</p>}
+      <div className="vc-report-foot">
+        <button type="button" className="vc-report-cancel" disabled={busy} onClick={() => setOpen(false)}>
+          취소
+        </button>
+        <button type="submit" className="vc-report-submit" disabled={busy}>
+          {busy ? '보내는 중…' : '신고하기'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function PhotoModal({ challengeId, item, onClose, onReported }) {
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === 'Escape') onClose()
@@ -438,16 +524,24 @@ function PhotoModal({ challengeId, item, onClose }) {
   const name = item.mine ? '나' : item.nickname
   return (
     <div className="vc-modal" role="dialog" aria-modal="true" aria-label={`${name}의 인증 사진`} onClick={onClose}>
-      <div className="vc-modal-card">
-        {item.localUrl ? (
-          <img className="vf-photo" src={item.localUrl} alt="" />
-        ) : (
-          <VerifyPhoto challengeId={challengeId} verificationId={item.id} alt="" />
+      <div className="vc-modal-col">
+        <div className="vc-modal-card">
+          {item.localUrl ? (
+            <img className="vf-photo" src={item.localUrl} alt="" />
+          ) : (
+            <VerifyPhoto challengeId={challengeId} verificationId={item.id} alt="" />
+          )}
+          <span className="vc-modal-name">
+            {name} · {item.receivedAt.slice(11, 16)}
+          </span>
+          <CheckBadge large />
+        </div>
+        {!item.mine && (
+          // 신고 칸을 눌러도 창이 닫히지 않게
+          <div className="vc-report-wrap" onClick={(e) => e.stopPropagation()}>
+            <ReportBox challengeId={challengeId} item={item} onReported={onReported} />
+          </div>
         )}
-        <span className="vc-modal-name">
-          {name} · {item.receivedAt.slice(11, 16)}
-        </span>
-        <CheckBadge large />
       </div>
     </div>
   )

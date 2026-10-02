@@ -15,6 +15,7 @@ import com.godlife.backend.verification.ai.AiVerifier;
 import com.godlife.backend.verification.dto.MyChallengeResponse;
 import com.godlife.backend.verification.dto.MyVerificationResponse;
 import com.godlife.backend.verification.dto.VerificationResponse;
+import com.godlife.backend.verification.report.VerificationReportService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 챌린지 인증 사진.
@@ -51,6 +53,7 @@ public class VerificationService {
     private final ImageStore imageStore;
     private final NotificationService notificationService;
     private final AiVerifier aiVerifier;
+    private final VerificationReportService reportService;
     private final Clock clock;
     private final EntityManager entityManager;
 
@@ -117,8 +120,9 @@ public class VerificationService {
     public List<VerificationResponse> list(Long challengeId, Long userId, LocalDate date) {
         challengeService.requireMember(challengeId, userId);
         LocalDate day = date == null ? LocalDate.now(clock) : date;
+        Set<Long> reported = reportService.reportedBy(challengeId, userId);
         return verificationRepository.findByChallengeAndDate(challengeId, day).stream()
-                .map(v -> v.withMine(userId))
+                .map(v -> v.withViewer(userId, reported))
                 .toList();
     }
 
