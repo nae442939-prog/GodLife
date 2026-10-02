@@ -64,6 +64,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/challenges", "/api/challenges/*",
                                 "/api/challenges/invite/*")
                         .permitAll()
+                        // 커뮤니티 글 읽기도 비로그인이 가능. 쓰기 · 좋아요 · 댓글 · 신고는 로그인해야 한다.
+                        .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/*", "/api/post-images/*")
+                        .permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e

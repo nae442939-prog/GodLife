@@ -178,6 +178,58 @@ export const adminApi = {
   collusion: (status) => apiFetch(`/api/admin/collusion${status ? `?status=${status}` : ''}`),
   confirmCollusion: (id) => apiFetch(`/api/admin/collusion/${id}/confirm`, { method: 'POST' }),
   dismissCollusion: (id) => apiFetch(`/api/admin/collusion/${id}/dismiss`, { method: 'POST' }),
+  // 커뮤니티 신고 (처리 전인 것만, 같은 글 · 댓글은 한 줄로)
+  // → [{ targetType: POST|COMMENT, targetId, postId, title, content, authorNickname, reportCount, reasons, firstReportedAt }]
+  communityReports: () => apiFetch('/api/admin/community-reports'),
+  // action = hide(가리기) | dismiss(문제없음)
+  handleCommunityReport: (targetType, targetId, action) =>
+    apiFetch(`/api/admin/community-reports/${targetType}/${targetId}/${action}`, { method: 'POST' }),
+}
+
+// 커뮤니티 (글 읽기는 비로그인도 가능, 쓰기 · 좋아요 · 댓글 · 신고는 로그인)
+export const communityApi = {
+  // → { items: [{ id, topic, title, excerpt, author, verify, thumbnailId, imageCount, likeCount, commentCount, createdAt }],
+  //     page, totalPages, totalElements }
+  list: ({ topic, q, sort, page } = {}) => {
+    const params = new URLSearchParams()
+    if (topic) params.set('topic', topic)
+    if (q) params.set('q', q)
+    if (sort) params.set('sort', sort)
+    if (page) params.set('page', page)
+    const qs = params.toString()
+    return apiFetch(`/api/posts${qs ? `?${qs}` : ''}`)
+  },
+  // → { id, topic, title, content, author, verify: { challengeTitle, date, success } | null, imageIds, likeCount,
+  //     commentCount, liked, mine, reported, createdAt, updatedAt, comments: [{ id, parentId, author, content, createdAt, likeCount, liked, mine, reported, removed }] }
+  //     (removed = 지워진 댓글의 자리: author 없음, 답글이 달려 있을 때만 온다)
+  get: (id) => apiFetch(`/api/posts/${id}`),
+  // 글 사진 주소 (공개라 img 태그에 바로 쓴다)
+  imageUrl: (imageId) => `/api/post-images/${imageId}`,
+  // 인증 결과를 붙일 수 있는 내 챌린지 [{ challengeId, title, verifiedToday }]
+  attachable: () => apiFetch('/api/community/attachable'),
+  // { topic, title, content, challengeId } → { id }. 인증 결과는 서버가 붙인다
+  create: (post) => apiFetch('/api/posts', { method: 'POST', body: post }),
+  update: (id, post) => apiFetch(`/api/posts/${id}`, { method: 'PUT', body: post }),
+  remove: (id) => apiFetch(`/api/posts/${id}`, { method: 'DELETE' }),
+  // 사진 한 장 붙이기 (JPG·PNG 5MB 이하, 글마다 4장까지) → { id }
+  async addImage(id, file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await authRaw(`/api/posts/${id}/images`, { method: 'POST', body: form })
+    return res.json()
+  },
+  removeImage: (id, imageId) => apiFetch(`/api/posts/${id}/images/${imageId}`, { method: 'DELETE' }),
+  // → { liked, likeCount }
+  like: (id, on) => apiFetch(`/api/posts/${id}/like`, { method: on ? 'PUT' : 'DELETE' }),
+  // parentId 가 있으면 그 댓글의 답글(대댓글). 답글은 한 단계만 둔다
+  comment: (id, content, parentId = null) =>
+    apiFetch(`/api/posts/${id}/comments`, { method: 'POST', body: { content, parentId } }),
+  removeComment: (commentId) => apiFetch(`/api/post-comments/${commentId}`, { method: 'DELETE' }),
+  // 댓글 좋아요 → { liked, likeCount }
+  likeComment: (commentId, on) => apiFetch(`/api/post-comments/${commentId}/like`, { method: on ? 'PUT' : 'DELETE' }),
+  reportPost: (id, reason) => apiFetch(`/api/posts/${id}/reports`, { method: 'POST', body: { reason } }),
+  reportComment: (commentId, reason) =>
+    apiFetch(`/api/post-comments/${commentId}/reports`, { method: 'POST', body: { reason } }),
 }
 
 // 휴대폰 인증: 인증번호 발송 → 확인하면 1회용 증표(phoneProof)를 받아 가입/아이디 찾기/번호 등록에 제출한다.
@@ -293,6 +345,16 @@ export const verificationApi = {
       method: 'POST',
       body: { reason },
     }),
+  // 인증 사진 응원 댓글 [{ id, userId, nickname, profileImageUrl, content, createdAt, mine }]
+  cheers: (challengeId, verificationId) =>
+    apiFetch(`/api/challenges/${challengeId}/verifications/${verificationId}/comments`),
+  cheer: (challengeId, verificationId, content) =>
+    apiFetch(`/api/challenges/${challengeId}/verifications/${verificationId}/comments`, {
+      method: 'POST',
+      body: { content },
+    }),
+  removeCheer: (challengeId, commentId) =>
+    apiFetch(`/api/challenges/${challengeId}/verification-comments/${commentId}`, { method: 'DELETE' }),
   // 채팅 사진처럼 토큰을 붙여 받아 Blob 으로
   async imageBlob(challengeId, verificationId) {
     const res = await authRaw(`/api/challenges/${challengeId}/verifications/${verificationId}/image`)

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { challengeApi } from '../api/client.js'
+import { challengeApi, communityApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { ChallengeCard } from '../challenge/ChallengeCard.jsx'
+import { TOPIC_LABEL } from '../community/format.js'
 import { HomeRanking } from '../ranking/HomeRanking.jsx'
 
 // body 의 \n 은 문장 단위 줄바꿈이다. (.step-body p 가 white-space: pre-line)
@@ -37,7 +38,7 @@ const FEATURES = [
   },
 ]
 
-// 아래 목록(HERO_CHALLENGE / RANKING / COMMUNITY)은 첫 화면 장식·커뮤니티용 목업 데이터다.
+// 아래 목록(HERO_CHALLENGE / RANKING)은 첫 화면 장식용 목업 데이터다.
 // ('실시간 랭킹' 구역은 실제 랭킹 API 를 시상대로 보여 준다. RANKING 은 첫 화면 오른쪽 장식 카드에만 쓴다)
 // HERO_CHALLENGE 는 첫 화면 오른쪽 장식 그림용. ('지금 모집 중인 챌린지' 칸은 실제 API 를 쓴다)
 const HERO_CHALLENGE = { category: '운동', title: '아침 6시 기상 러닝', participants: 32, points: 10000 }
@@ -48,19 +49,16 @@ const RANKING = [
   { rank: 3, nickname: '습관마스터', streak: 21, successRate: 90 },
 ]
 
-const COMMUNITY = [
-  { title: '러닝 챌린지 3주차, 확실히 아침에 덜 피곤해요', author: '갓생러123', comments: 12, likes: 34 },
-  { title: '인증샷 팁 - 이렇게 찍으면 한 번에 통과돼요', author: '오늘도완주', comments: 8, likes: 21 },
-  { title: '포기하고 싶을 때 저는 이렇게 버텨요', author: '습관마스터', comments: 15, likes: 40 },
-]
-
 const HOME_CHALLENGE_COUNT = 3
+const HOME_POST_COUNT = 3
 
 export function HomePage() {
   const { user, status } = useAuth()
   const authed = status === 'authed'
   // 모집 중인 공개 챌린지 중 참가자 많은 순 3개 (누르면 상세로). 실패하면 빈 목록으로 둔다.
   const [popular, setPopular] = useState(null)
+  // 커뮤니티 인기글 (좋아요 많은 순 3개)
+  const [posts, setPosts] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -68,6 +66,10 @@ export function HomePage() {
       .list({ sort: 'popular' })
       .then((data) => !cancelled && setPopular(data.items.slice(0, HOME_CHALLENGE_COUNT)))
       .catch(() => !cancelled && setPopular([]))
+    communityApi
+      .list({ sort: 'popular' })
+      .then((data) => !cancelled && setPosts(data.items.slice(0, HOME_POST_COUNT)))
+      .catch(() => !cancelled && setPosts([]))
     return () => {
       cancelled = true
     }
@@ -208,22 +210,36 @@ export function HomePage() {
         <div className="container">
           <div className="section-head">
             <h2>커뮤니티 인기글</h2>
-            <span className="badge">준비 중</span>
+            <Link to="/community" className="section-more">
+              전체 보기 →
+            </Link>
           </div>
-          <ul className="community-list">
-            {COMMUNITY.map((p) => (
-              <li key={p.title} className="community-row">
-                <div className="community-main">
-                  <h3>{p.title}</h3>
-                  <p>{p.author}</p>
-                </div>
-                <div className="community-stats">
-                  <span>댓글 {p.comments}</span>
-                  <span>좋아요 {p.likes}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {posts === null ? (
+            <p className="muted">불러오는 중…</p>
+          ) : posts.length === 0 ? (
+            <p className="muted community-empty">
+              아직 글이 없어요. <Link to="/community/new">첫 글을 남겨 보세요.</Link>
+            </p>
+          ) : (
+            <ul className="community-list">
+              {posts.map((p) => (
+                <li key={p.id}>
+                  <Link to={`/community/${p.id}`} className="community-row">
+                    <div className="community-main">
+                      <h3>{p.title}</h3>
+                      <p>
+                        {TOPIC_LABEL[p.topic]} · {p.author.nickname}
+                      </p>
+                    </div>
+                    <div className="community-stats">
+                      <span>댓글 {p.commentCount}</span>
+                      <span>좋아요 {p.likeCount}</span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 

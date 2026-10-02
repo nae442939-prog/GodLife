@@ -12,6 +12,7 @@ import { ChallengeMinePage } from './pages/ChallengeMinePage.jsx'
 import { WalletPage } from './pages/WalletPage.jsx'
 import { DiaryPage } from './pages/DiaryPage.jsx'
 import { AdminCollusionPage } from './pages/AdminCollusionPage.jsx'
+import { AdminCommunityPage } from './pages/AdminCommunityPage.jsx'
 import { AdminInquiriesPage } from './pages/AdminInquiriesPage.jsx'
 import { AdminReviewsPage } from './pages/AdminReviewsPage.jsx'
 import { BadgesPage } from './pages/BadgesPage.jsx'
@@ -21,6 +22,9 @@ import { ProfilePage } from './pages/ProfilePage.jsx'
 import { MessagesPage } from './pages/MessagesPage.jsx'
 import { MessageRoomPage } from './pages/MessageRoomPage.jsx'
 import { ChallengeListPage } from './pages/ChallengeListPage.jsx'
+import { CommunityPage } from './pages/CommunityPage.jsx'
+import { CommunityPostPage } from './pages/CommunityPostPage.jsx'
+import { CommunityWritePage } from './pages/CommunityWritePage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { MyPage } from './pages/MyPage.jsx'
@@ -43,11 +47,15 @@ export default function App() {
         <Route path="/users/:id" element={<ProfilePage />} />
         <Route path="/challenges/:id" element={<ChallengeDetailPage />} />
         <Route path="/challenges/join/:code" element={<ChallengeInvitePage />} />
+        <Route path="/community" element={<CommunityPage />} />
+        <Route path="/community/:id" element={<CommunityPostPage />} />
 
         {/* 로그인해야 볼 수 있는 화면 */}
         <Route element={<RequireAuth />}>
           <Route path="/challenges/new" element={<ChallengeCreatePage />} />
           <Route path="/challenges/mine" element={<ChallengeMinePage />} />
+          <Route path="/community/new" element={<CommunityWritePage />} />
+          <Route path="/community/:id/edit" element={<CommunityWritePage />} />
           <Route path="/records" element={<DiaryPage />} />
           <Route path="/records/calendar" element={<RecordPage />} />
           <Route path="/wallet" element={<WalletPage />} />
@@ -60,6 +68,7 @@ export default function App() {
           <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
           <Route path="/admin/reviews" element={<AdminReviewsPage />} />
           <Route path="/admin/collusion" element={<AdminCollusionPage />} />
+          <Route path="/admin/community" element={<AdminCommunityPage />} />
           <Route path="/verify-phone" element={<VerifyPhonePage />} />
         </Route>
 

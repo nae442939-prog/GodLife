@@ -512,6 +512,87 @@ function ReportBox({ challengeId, item, onReported }) {
   )
 }
 
+/** 사진 크게 보기 아래의 응원 댓글 (같은 챌린지 사람끼리). 내 댓글은 지울 수 있다 */
+function CheerBox({ challengeId, verificationId }) {
+  const [cheers, setCheers] = useState(null)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    verificationApi
+      .cheers(challengeId, verificationId)
+      .then((list) => !cancelled && setCheers(list))
+      .catch(() => !cancelled && setCheers([]))
+    return () => {
+      cancelled = true
+    }
+  }, [challengeId, verificationId])
+
+  async function submit(e) {
+    e.preventDefault()
+    const content = text.trim()
+    if (!content || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await verificationApi.cheer(challengeId, verificationId, content)
+      setText('')
+      setCheers(await verificationApi.cheers(challengeId, verificationId))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove(id) {
+    setError('')
+    try {
+      await verificationApi.removeCheer(challengeId, id)
+      setCheers((list) => list.filter((c) => c.id !== id))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  return (
+    <div className="vc-cheer">
+      <p className="vc-cheer-title">응원 {cheers?.length ?? 0}</p>
+      {cheers && cheers.length > 0 && (
+        <ul className="vc-cheer-list">
+          {cheers.map((c) => (
+            <li key={c.id}>
+              <strong>{c.mine ? '나' : c.nickname}</strong>
+              <span>{c.content}</span>
+              {c.mine && (
+                <button type="button" aria-label="내 응원 지우기" onClick={() => remove(c.id)}>
+                  ×
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <form className="vc-cheer-form" onSubmit={submit}>
+        <input
+          type="text"
+          value={text}
+          maxLength={300}
+          placeholder="응원 한마디 남기기"
+          aria-label="응원 댓글"
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button type="submit" disabled={busy || !text.trim()}>
+          보내기
+        </button>
+      </form>
+      {error && <p className="vc-error">{error}</p>}
+    </div>
+  )
+}
+
 function PhotoModal({ challengeId, item, onClose, onReported }) {
   useEffect(() => {
     function onKeyDown(e) {
@@ -536,8 +617,11 @@ function PhotoModal({ challengeId, item, onClose, onReported }) {
           </span>
           <CheckBadge large />
         </div>
+        {/* 응원 · 신고 칸을 눌러도 창이 닫히지 않게 */}
+        <div className="vc-report-wrap" onClick={(e) => e.stopPropagation()}>
+          <CheerBox challengeId={challengeId} verificationId={item.id} />
+        </div>
         {!item.mine && (
-          // 신고 칸을 눌러도 창이 닫히지 않게
           <div className="vc-report-wrap" onClick={(e) => e.stopPropagation()}>
             <ReportBox challengeId={challengeId} item={item} onReported={onReported} />
           </div>
