@@ -54,6 +54,17 @@ public class ProfileEditService {
                 socialAccountRepository.findByUserId(userId).stream().map(a -> a.getProvider().name()).sorted().toList());
     }
 
+    /**
+     * 자동 로그인 설정. 켜면 리프레시 쿠키가 14일 남고, 끄면 브라우저를 닫을 때 사라진다.
+     * 쿠키는 토큰을 재발급할 때 새 수명으로 내려가므로, 화면이 저장 직후 재발급을 한 번 부른다.
+     */
+    @Transactional
+    public User changeAutoLogin(Long userId, boolean enabled) {
+        User user = userService.getActive(userId);
+        user.changeAutoLogin(enabled);
+        return user;
+    }
+
     /** 닉네임 · 자기소개 고치기. 다른 회원이 쓰는 닉네임이면 거절한다. */
     @Transactional
     public User updateProfile(Long userId, String nickname, String bio) {

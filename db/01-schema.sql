@@ -38,6 +38,7 @@ CREATE TABLE users (
   tier_id           INT          NOT NULL DEFAULT 1 COMMENT '신규 가입자는 최저 티어(id=1, BRONZE)',
   role              ENUM('USER','ADMIN') NOT NULL DEFAULT 'USER',
   status            ENUM('ACTIVE','SUSPENDED','WITHDRAWN') NOT NULL DEFAULT 'ACTIVE',
+  auto_login        BOOLEAN      NOT NULL DEFAULT TRUE COMMENT '자동 로그인. TRUE = 브라우저를 닫아도 로그인 유지(14일), FALSE = 브라우저를 닫으면 로그아웃',
   created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_users_email (email),

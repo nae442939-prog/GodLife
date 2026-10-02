@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -246,6 +247,33 @@ class AuthApiTest {
 
         mvc.perform(post("/api/auth/refresh").cookie(deviceA)).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/auth/refresh").cookie(deviceB)).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("자동 로그인: 켜져 있으면(기본) 쿠키가 14일 남고, 끄면 브라우저를 닫을 때 사라지는 쿠키로 바뀐다")
+    void autoLoginControlsCookieLifetime() throws Exception {
+        signup(EMAIL, PASSWORD, "테스터").andExpect(status().isCreated());
+        MvcResult loggedIn = login(EMAIL, PASSWORD).andReturn();
+        assertThat(loggedIn.getResponse().getHeader("Set-Cookie")).contains("Max-Age=" + 14 * 24 * 60 * 60);
+        String access = accessTokenOf(loggedIn);
+
+        mvc.perform(put("/api/users/me/auto-login").header("Authorization", "Bearer " + access)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.autoLogin").value(false));
+
+        // 설정을 바꾼 뒤 토큰을 재발급하면 Max-Age 없는(세션) 쿠키로 내려온다. 새로 로그인해도 같다
+        MvcResult refreshed = mvc.perform(post("/api/auth/refresh").cookie(refreshCookieOf(loggedIn)))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(refreshed.getResponse().getHeader("Set-Cookie")).contains("refresh_token=", "HttpOnly")
+                .doesNotContain("Max-Age");
+        assertThat(login(EMAIL, PASSWORD).andReturn().getResponse().getHeader("Set-Cookie"))
+                .doesNotContain("Max-Age");
+
+        mvc.perform(put("/api/users/me/auto-login").header("Authorization", "Bearer " + access)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true}"))
+                .andExpect(jsonPath("$.autoLogin").value(true));
+        assertThat(login(EMAIL, PASSWORD).andReturn().getResponse().getHeader("Set-Cookie")).contains("Max-Age=");
     }
 
     // ---------- helpers ----------

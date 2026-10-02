@@ -152,7 +152,7 @@ public class AuthService {
         String rawRefresh = Hashing.randomToken();
         LocalDateTime expiresAt = LocalDateTime.now(clock).plusDays(jwtProperties.refreshTokenDays());
         refreshTokenRepository.save(RefreshToken.issue(user.getId(), Hashing.sha256Hex(rawRefresh), expiresAt));
-        return new IssuedTokens(access, jwtProvider.accessTtlSeconds(), rawRefresh);
+        return new IssuedTokens(access, jwtProvider.accessTtlSeconds(), rawRefresh, user.isAutoLogin());
     }
 
     private static String normalizeEmail(String email) {

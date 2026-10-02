@@ -53,7 +53,7 @@ public class AuthController {
 
     private ResponseEntity<TokenResponse> withRefreshCookie(IssuedTokens tokens) {
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, refreshCookies.issue(tokens.refreshToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookies.issue(tokens).toString())
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .body(TokenResponse.bearer(tokens.accessToken(), tokens.accessExpiresInSeconds()));
     }

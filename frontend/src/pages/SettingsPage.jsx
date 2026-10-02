@@ -13,6 +13,7 @@ const SOCIAL_LABEL = { KAKAO: '카카오', GOOGLE: '구글', NAVER: '네이버' 
 const TABS = [
   { key: 'info', label: '내 정보' },
   { key: 'password', label: '비밀번호 변경' },
+  { key: 'security', label: '보안' },
   { key: 'blocked', label: '차단한 사용자' },
   { key: 'alarm', label: '알림' },
   { key: 'support', label: '고객센터' },
@@ -21,7 +22,7 @@ const TABS = [
 
 /**
  * 설정 (/settings): 왼쪽 메뉴에서 고르면 오른쪽에 그 내용이 나온다.
- * 내 정보(휴대폰 번호 변경) · 비밀번호 변경 · 차단한 사용자 · 알림(종류별 켜기/끄기) · 고객센터(자주 묻는 질문 · 1:1 문의) · 회원 탈퇴.
+ * 내 정보(휴대폰 번호 변경) · 비밀번호 변경 · 보안(자동 로그인) · 차단한 사용자 · 알림(종류별 켜기/끄기) · 고객센터(자주 묻는 질문 · 1:1 문의) · 회원 탈퇴.
  * 프로필(사진 · 닉네임 · 한 줄 소개) 수정은 마이페이지에서 한다.
  */
 export function SettingsPage() {
@@ -71,6 +72,7 @@ export function SettingsPage() {
         <div className="settings-panel">
           {tab === 'info' && <InfoSection account={account} />}
           {tab === 'password' && <PasswordSection account={account} />}
+          {tab === 'security' && <SecuritySection />}
           {tab === 'blocked' && <BlockedUsers />}
           {tab === 'alarm' && <AlarmSection />}
           {tab === 'support' && <SupportSection />}
@@ -268,6 +270,62 @@ function PasswordSection({ account }) {
           </button>
         </form>
       )}
+    </section>
+  )
+}
+
+/**
+ * 보안: 자동 로그인 켜기/끄기. 누르는 즉시 저장한다.
+ * 켜면 브라우저를 닫았다 열어도 로그인이 유지되고(14일), 끄면 브라우저를 닫을 때 로그아웃된다.
+ */
+function SecuritySection() {
+  const { user, updateUser } = useAuth()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function toggle() {
+    setBusy(true)
+    setError('')
+    try {
+      updateUser(await userApi.setAutoLogin(!user.autoLogin))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card settings-block">
+      <h2>보안</h2>
+      <p className="settings-help">로그인 상태를 어떻게 유지할지 정해요.</p>
+      {error && <p className="form-error">{error}</p>}
+      <ul className="alarm-list">
+        <li>
+          <span className="alarm-text">
+            <strong>자동 로그인</strong>
+            <span>
+              {user.autoLogin
+                ? '브라우저를 닫았다 다시 열어도 로그인이 유지돼요. (마지막으로 쓴 뒤 14일 동안)'
+                : '브라우저를 닫으면 로그아웃돼요. 다시 올 때마다 로그인해야 해요.'}
+            </span>
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={user.autoLogin}
+            aria-label="자동 로그인"
+            className={`alarm-switch${user.autoLogin ? ' is-on' : ''}`}
+            onClick={toggle}
+            disabled={busy}
+          >
+            <span aria-hidden="true" />
+          </button>
+        </li>
+      </ul>
+      <p className="settings-help settings-help-last alarm-note">
+        여럿이 같이 쓰는 컴퓨터라면 꺼 두는 게 안전해요. 이 설정은 내 계정으로 로그인하는 모든 기기에 적용돼요.
+      </p>
     </section>
   )
 }
@@ -682,7 +740,7 @@ function BlockedUsers() {
               <Avatar src={u.profileImageUrl} size={32} />
               <span className="blocked-name">{u.nickname}</span>
               <button type="button" className="btn btn-outline btn-sm" onClick={() => unblock(u.userId)}>
-                차단 풀기
+                차단 해제
               </button>
             </li>
           ))}
