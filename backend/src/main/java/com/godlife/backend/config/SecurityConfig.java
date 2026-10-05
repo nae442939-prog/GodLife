@@ -56,6 +56,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/api/phone-verifications/**", "/api/account/**").permitAll()
                         // 랭킹은 비로그인도 볼 수 있다 (로그인하면 내 순위가 같이 온다)
                         .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
+                        // 시즌 랭킹도 비로그인이 볼 수 있다
+                        .requestMatchers(HttpMethod.GET, "/api/seasons/**").permitAll()
                         // 회원 프로필도 비로그인이 볼 수 있다 (개인정보는 싣지 않음)
                         .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
                         // 프로필 사진은 랭킹·프로필처럼 비로그인 화면에도 나온다

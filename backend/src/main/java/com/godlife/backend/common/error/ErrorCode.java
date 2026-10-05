@@ -85,6 +85,7 @@ public enum ErrorCode {
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 주문과 달라요. 처음부터 다시 결제해 주세요."),
     PAYMENT_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 끝난 결제예요. 처음부터 다시 결제해 주세요."),
     PAYMENT_FAILED(HttpStatus.BAD_GATEWAY, "결제가 승인되지 않았어요."),
+    SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "아직 시즌 랭킹이 시작되지 않았어요."),
     REFUND_FAILED(HttpStatus.BAD_GATEWAY, "결제 취소가 처리되지 않았어요. 잠시 후 다시 시도해 주세요."),
     DUPLICATE_REQUEST(HttpStatus.CONFLICT, "이미 처리된 요청이에요.");
 

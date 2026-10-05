@@ -452,6 +452,14 @@ export const rankingApi = {
   friends: (metric) => apiFetch(`/api/rankings/friends?metric=${metric}`),
 }
 
+// 시즌 랭킹 (주간 · 월간이 같이 돌아간다). 시즌이 끝나면 상위 3명에게 보너스 포인트
+// → { id, type, start, end, status, daysLeft, top: [{ rank, userId, nickname, profileImageUrl, score,
+//     bonusPoints, mine }], me, previousSeasonId }
+export const seasonApi = {
+  current: (type) => apiFetch(`/api/seasons/current?type=${type}`),
+  byId: (id) => apiFetch(`/api/seasons/${id}`),
+}
+
 // 내 칭호(티어): 인증 · 완주로 점수가 쌓이면 승급, 실패 · 포기로 깎이면 강등
 // → { tier, score, record: { verified, completed, failed, gaveUp }, next, tiers: [{ id, name, minScore,
 //     dailyBetLimit, monthlyBetLimit, highStakeAllowed }], highStakeMinFee }
