@@ -1,5 +1,5 @@
--- GodLife 스키마 (MySQL 8.0 / InnoDB / utf8mb4) — 1~3차 전체, 테이블 41개
--- 설계도: docs/erd.html
+-- GodLife 스키마 (MySQL 8.0 / InnoDB / utf8mb4) — 1~3차 전체, 테이블 56개
+-- 설계도: docs/erd.md (이 파일에서 자동 생성: python docs/gen-erd.py), docs/erd.html (초기 38개 테이블 시안)
 -- 실행: mysql -u godlife_user -p godlife < db/01-schema.sql   (빈 DB 기준, DROP 문 없음)
 --
 -- 규칙
