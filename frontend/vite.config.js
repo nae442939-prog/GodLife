@@ -15,6 +15,8 @@ export default defineConfig({
       // Host 를 바꾸지 않으므로 콜백에서 심는 리프레시 쿠키가 5173 출처에 저장된다.
       '/oauth2': { target: 'http://localhost:8080', xfwd: true },
       '/login/oauth2': { target: 'http://localhost:8080', xfwd: true },
+      // 오픈채팅 실시간 알림 소켓. Host · Origin 을 바꾸지 않아 백엔드가 같은 출처 연결로 받는다.
+      '/ws': { target: 'ws://localhost:8080', ws: true },
     },
   },
 })

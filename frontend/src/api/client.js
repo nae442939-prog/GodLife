@@ -8,6 +8,11 @@ export function setAccessToken(token) {
   accessToken = token
 }
 
+/** 지금 가진 액세스 토큰 (없으면 null). 헤더를 실을 수 없는 WebSocket 연결이 첫 메시지로 보낼 때 쓴다. */
+export function getAccessToken() {
+  return accessToken
+}
+
 export class ApiError extends Error {
   constructor(status, body) {
     super(body?.message ?? '요청을 처리하지 못했습니다.')

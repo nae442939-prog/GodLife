@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { blockApi, challengeApi, chatApi } from '../api/client.js'
+import { blockApi, challengeApi, chatApi, getAccessToken, refreshAccessToken } from '../api/client.js'
 import { ConfirmDialog, MessageMenu, NoticeBar, ReportAlerts, ReportDialog } from '../chat/ChatParts.jsx'
 import { ChatImage } from '../chat/ChatImage.jsx'
 import { Avatar } from '../components/UserMenu.jsx'
 
-const POLL_MS = 3000
+const POLL_MS = 3000 // 실시간 연결이 없을 때
+const LIVE_POLL_MS = 15000 // 실시간 연결이 있을 때 (놓친 알림 대비)
+const RETRY_MAX_MS = 30000
 const ALERT_POLL_MS = 15000
 const PAGE_SIZE = 50 // 서버 ChatService.PAGE_SIZE 와 같게
 const MAX_LENGTH = 500
@@ -30,7 +32,10 @@ function merge(current, incoming) {
 }
 
 /**
- * 챌린지 오픈채팅 (1단계: 3초 폴링). 개설자·참가자만 들어올 수 있다.
+ * 챌린지 오픈채팅. 개설자·참가자만 들어올 수 있다.
+ *
+ * 실시간: WebSocket(/ws/chat)으로 "새 메시지가 있다"는 알림만 받고, 받는 즉시 새 메시지를 REST 로 읽어 온다.
+ * 연결돼 있는 동안은 15초마다만 확인하고, 연결이 안 되거나 끊기면 예전처럼 3초마다 확인하며 다시 연결을 시도한다.
  *
  * 스크롤 규칙: 새 메시지가 오면 항상 맨 아래(마지막 메시지)로 간다.
  * - 메시지 렌더 직후 + 다음 프레임(이모지·글꼴이 늦게 그려져 높이가 바뀌는 경우)에 한 번 더 내린다
@@ -104,16 +109,75 @@ export function ChallengeChatPage() {
     }
   }, [id])
 
+  // 실시간 알림 소켓: 들어가면 { type: 'ready' }, 새 메시지가 저장되면 { type: 'changed' } 가 온다
+  const [live, setLive] = useState({ id: null, on: false })
+  const isLive = live.on && live.id === id
+
   useEffect(() => {
     if (!loaded || error) return
-    const timer = setInterval(poll, POLL_MS)
-    // 다른 탭에 있다 돌아오면 3초 기다리지 않고 바로 새 메시지를 가져온다
+    let socket = null
+    let retry = null
+    let stopped = false
+    let attempts = 0
+    let needFreshToken = false
+
+    async function connect() {
+      let token = needFreshToken ? null : getAccessToken()
+      if (!token) {
+        try {
+          token = await refreshAccessToken()
+        } catch {
+          return // 로그인이 풀렸다. 다음 폴링이 401 을 받아 처리한다
+        }
+      }
+      if (stopped) return
+      let ready = false
+      socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat`)
+      socket.onopen = () => socket.send(JSON.stringify({ token, challengeId: Number(id) }))
+      socket.onmessage = (e) => {
+        let type
+        try {
+          type = JSON.parse(e.data).type
+        } catch {
+          return
+        }
+        if (type === 'ready') {
+          ready = true
+          attempts = 0
+          setLive({ id, on: true })
+          poll() // 연결하는 사이에 온 메시지
+        } else if (type === 'changed') {
+          poll()
+        }
+      }
+      socket.onclose = () => {
+        if (stopped) return
+        setLive({ id, on: false })
+        // 들어가기 전에 끊겼으면 토큰이 만료됐을 수 있다 → 다음에는 새로 받아서 시도
+        needFreshToken = !ready
+        retry = setTimeout(connect, Math.min(RETRY_MAX_MS, 1000 * 2 ** attempts))
+        attempts += 1
+      }
+    }
+
+    connect()
+    return () => {
+      stopped = true
+      clearTimeout(retry)
+      socket?.close()
+    }
+  }, [loaded, error, id, poll])
+
+  useEffect(() => {
+    if (!loaded || error) return
+    const timer = setInterval(poll, isLive ? LIVE_POLL_MS : POLL_MS)
+    // 다른 탭에 있다 돌아오면 기다리지 않고 바로 새 메시지를 가져온다
     document.addEventListener('visibilitychange', poll)
     return () => {
       clearInterval(timer)
       document.removeEventListener('visibilitychange', poll)
     }
-  }, [loaded, error, poll])
+  }, [loaded, error, poll, isLive])
 
   // 방장: 신고 알림 (15초마다)
   const loadAlerts = useCallback(() => {

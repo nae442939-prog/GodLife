@@ -54,6 +54,9 @@ public class SecurityConfig {
                         .failureHandler(oauth2Handlers))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/phone-verifications/**", "/api/account/**").permitAll()
+                        // 오픈채팅 실시간 알림 소켓: 브라우저가 연결 요청에 토큰을 실을 수 없어서 연결은 받고,
+                        // 첫 메시지로 온 토큰 · 참가 여부를 ChatSocketHandler 가 확인한다 (통과 못 하면 바로 끊는다)
+                        .requestMatchers("/ws/**").permitAll()
                         // 랭킹은 비로그인도 볼 수 있다 (로그인하면 내 순위가 같이 온다)
                         .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
                         // 시즌 랭킹도 비로그인이 볼 수 있다

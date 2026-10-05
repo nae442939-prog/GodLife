@@ -10,6 +10,7 @@ import com.godlife.backend.common.ratelimit.RequestThrottle;
 import com.godlife.backend.common.upload.ImageStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,8 +22,9 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * 챌린지 오픈채팅 (1단계: 폴링). 개설자와 참가자만 읽고 쓴다.
- * 나중에 WebSocket(STOMP)으로 바꿔도 저장·권한은 이 서비스를 그대로 쓰고, 저장 후 방송만 더하면 된다.
+ * 챌린지 오픈채팅. 개설자와 참가자만 읽고 쓴다.
+ * 읽기 · 쓰기는 모두 이 서비스(REST)로 하고, 메시지가 저장되면 ChatChangedEvent 를 내서
+ * 그 방을 보고 있는 화면에 WebSocket 으로 "새 메시지가 있다"만 알린다 (ChatSocketHandler). 내용은 화면이 다시 읽어 간다.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,7 @@ public class ChatService {
     private final ChallengeService challengeService;
     private final RequestThrottle throttle;
     private final ImageStore imageStore;
+    private final ApplicationEventPublisher events;
 
     /** 한 사람이 10초 동안 보낼 수 있는 메시지 수 (도배 방지) */
     @Value("${app.chat.send-limit:5}")
@@ -110,11 +113,13 @@ public class ChatService {
     @Transactional
     public void postSystem(Long challengeId, Long hostId, String content) {
         messageRepository.save(ChatMessage.system(challengeId, hostId, content));
+        events.publishEvent(new ChatChangedEvent(challengeId));
     }
 
     /** 닉네임·보낸 시각(DB 기본값)을 같이 돌려주려고 방금 저장한 한 건을 다시 읽는다. */
     private ChatMessageResponse saveAndRead(ChatMessage message, Long viewerId) {
         ChatMessage saved = messageRepository.saveAndFlush(message);
+        events.publishEvent(new ChatChangedEvent(saved.getChallengeId()));
         return messageRepository.findAfter(saved.getChallengeId(), viewerId, saved.getId() - 1, PageRequest.of(0, 1))
                 .stream()
                 .map(row -> ChatMessageResponse.of(row, viewerId))
