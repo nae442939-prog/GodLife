@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { MegaMenu, MyPoints, MyRankSummary, TodayChallenges, TodayDiary } from './MegaMenu.jsx'
+import { MobileMenu } from './MobileMenu.jsx'
 import { NotificationBell } from './NotificationBell.jsx'
 import { UserMenu } from './UserMenu.jsx'
 
@@ -39,6 +40,14 @@ const MEGA = {
   record: { links: RECORD_LINKS, aside: (open) => <TodayDiary open={open} /> },
   ranking: { links: RANKING_LINKS, aside: (open) => <MyRankSummary open={open} /> },
   shop: { links: SHOP_LINKS, aside: (open) => <MyPoints open={open} /> },
+}
+
+// 좁은 화면 메뉴(MobileMenu)는 오른쪽 내용 없이 링크만 쓴다
+const MOBILE_LINKS = {
+  challenge: CHALLENGE_LINKS,
+  record: RECORD_LINKS,
+  ranking: RANKING_LINKS,
+  shop: SHOP_LINKS,
 }
 
 // 아직 만들지 않은 메뉴는 링크 대신 "준비 중"으로 표시한다. 만들어지면 to 만 채우면 된다.
@@ -96,6 +105,8 @@ export function Header() {
               로그인
             </Link>
           )}
+          {/* 좁은 화면에서는 가로 메뉴 대신 ☰ 단추로 펼친다 */}
+          <MobileMenu menu={MENU} links={MOBILE_LINKS} />
         </div>
       </div>
     </header>

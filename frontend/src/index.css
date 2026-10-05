@@ -13146,3 +13146,122 @@ a.sh-line-name:hover {
 .adm-device-members a:hover {
   color: var(--header-nav);
 }
+
+/* ---------- 좁은 화면 주 메뉴 (☰) ---------- */
+.mnav {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .mnav {
+    display: block;
+  }
+}
+
+.mnav-toggle {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  width: 42px;
+  height: 42px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.mnav-toggle:hover {
+  border-color: var(--header-nav);
+}
+
+.mnav-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.mnav-toggle span {
+  display: block;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.mnav-toggle.is-open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.mnav-toggle.is-open span:nth-child(2) {
+  opacity: 0;
+}
+
+.mnav-toggle.is-open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.mnav-backdrop {
+  position: fixed;
+  inset: 76px 0 0;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.mnav-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 4px;
+  max-height: calc(100vh - 76px);
+  padding: 12px 20px 20px;
+  overflow-y: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.08);
+}
+
+.mnav-group {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mnav-group:last-child {
+  border-bottom: 0;
+}
+
+.mnav-title {
+  display: block;
+  padding: 6px 0;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.mnav-title.active,
+.mnav-title:hover {
+  color: var(--header-nav);
+}
+
+.mnav-group ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mnav-group li a {
+  display: block;
+  padding: 6px 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.mnav-group li a:hover {
+  color: var(--header-nav);
+}
