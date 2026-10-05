@@ -460,6 +460,14 @@ export const seasonApi = {
   byId: (id) => apiFetch(`/api/seasons/${id}`),
 }
 
+// 주간 회고 리포트 (본인 것만). week = 'YYYY-MM-DD' (그 날짜가 속한 주, 없으면 이번 주 — 비어 있으면 가장 최근 리포트)
+// → { weekStart, weekEnd, inProgress, successRate, worstWeekday, coaching, weeks: [월요일들, 최근 것부터],
+//     stats: { done, total, previousRate, weekdays: [{ weekday(1=월~7=일), done, fail }],
+//              challenges: [{ challengeId, title, categoryId, done, fail }] } }
+export const weeklyReportApi = {
+  get: (week) => apiFetch(`/api/weekly-reports${week ? `?week=${week}` : ''}`),
+}
+
 // 내 칭호(티어): 인증 · 완주로 점수가 쌓이면 승급, 실패 · 포기로 깎이면 강등
 // → { tier, score, record: { verified, completed, failed, gaveUp }, next, tiers: [{ id, name, minScore,
 //     dailyBetLimit, monthlyBetLimit, highStakeAllowed }], highStakeMinFee }

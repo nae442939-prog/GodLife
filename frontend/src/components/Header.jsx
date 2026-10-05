@@ -18,10 +18,11 @@ const RANKING_LINKS = [
   { label: '시즌 랭킹', to: '/rankings?tab=season' },
 ]
 
-// 갓생기록 메가 메뉴 항목 (일기장 · 캘린더)
+// 갓생기록 메가 메뉴 항목 (일기장 · 캘린더 · 주간 회고)
 const RECORD_LINKS = [
   { label: '갓생기록', to: '/records' },
   { label: '갓생기록 캘린더', to: '/records/calendar' },
+  { label: '주간 회고', to: '/records/report' },
 ]
 
 // 포인트 상점 메가 메뉴 항목

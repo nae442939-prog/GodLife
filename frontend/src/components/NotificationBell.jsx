@@ -10,6 +10,7 @@ const TYPE_ICON = {
   MESSAGE_REQUEST: '💬',
   INQUIRY_ANSWER: '📮',
   REPORT_ALERT: '🚨',
+  WEEKLY_REPORT: '📊',
 }
 
 /**

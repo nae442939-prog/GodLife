@@ -45,9 +45,9 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RecordService {
 
-    static final String DONE = "DONE";
-    static final String FAIL = "FAIL";
-    static final String PENDING = "PENDING";
+    public static final String DONE = "DONE";
+    public static final String FAIL = "FAIL";
+    public static final String PENDING = "PENDING";
     static final String REST = "REST";
     /** 하루에 쓸 수 있는 일기 수 (도배 방지용 넉넉한 상한) */
     static final int MAX_PER_DAY = 30;
@@ -114,6 +114,31 @@ public class RecordService {
                         tags.getOrDefault(rs.getLong("id"), List.of()), rs.getString("photo_key") != null,
                         rs.getTimestamp("created_at").toLocalDateTime()));
         return new DayResponse(date, items, diaries, week(me, date));
+    }
+
+    /** 날짜 · 챌린지별 결과 한 줄 (주간 회고 리포트가 쓴다) */
+    public record DayResult(LocalDate date, Long challengeId, String title, int categoryId, String result) {
+    }
+
+    /**
+     * from~to 사이의 날짜 · 챌린지별 결과(성공 · 실패 · 오늘 아직). 캘린더와 같은 기준으로 센다.
+     * 인증하지 않아도 되는 날(쉬는 날)과 챌린지 기간 밖 · 앞날은 싣지 않는다.
+     */
+    @Transactional(readOnly = true)
+    public List<DayResult> results(Long me, LocalDate from, LocalDate to) {
+        LocalDate today = LocalDate.now(clock);
+        Map<Long, Map<LocalDate, Long>> verified = verified(me);
+        List<DayResult> results = new ArrayList<>();
+        for (Joined j : joined(me, today)) {
+            Set<LocalDate> mine = verified.getOrDefault(j.participantId(), Map.of()).keySet();
+            for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+                String result = result(j, mine, d, today);
+                if (result != null && !REST.equals(result)) {
+                    results.add(new DayResult(d, j.challengeId(), j.title(), j.categoryId(), result));
+                }
+            }
+        }
+        return results;
     }
 
     /** 일기 새로 쓰기 (지난 날짜도 가능, 앞날은 불가). 하루에 여러 개 쓸 수 있다. 글이나 기분 중 하나는 있어야 한다. */

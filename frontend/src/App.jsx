@@ -19,6 +19,7 @@ import { AdminShopPage } from './pages/AdminShopPage.jsx'
 import { BadgesPage } from './pages/BadgesPage.jsx'
 import { RankingPage } from './pages/RankingPage.jsx'
 import { RecordPage } from './pages/RecordPage.jsx'
+import { WeeklyReportPage } from './pages/WeeklyReportPage.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
 import { MessagesPage } from './pages/MessagesPage.jsx'
 import { MessageRoomPage } from './pages/MessageRoomPage.jsx'
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="/community/:id/edit" element={<CommunityWritePage />} />
           <Route path="/records" element={<DiaryPage />} />
           <Route path="/records/calendar" element={<RecordPage />} />
+          <Route path="/records/report" element={<WeeklyReportPage />} />
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/wallet/charge/success" element={<PaymentReturnPage step="success" />} />
           <Route path="/wallet/charge/fail" element={<PaymentReturnPage step="fail" />} />
