@@ -1,4 +1,4 @@
--- GodLife 스키마 (MySQL 8.0 / InnoDB / utf8mb4) — 1~3차 전체, 테이블 56개
+-- GodLife 스키마 (MySQL 8.0 / InnoDB / utf8mb4) — 1~3차 전체, 테이블 57개
 -- 설계도: docs/erd.md (이 파일에서 자동 생성: python docs/gen-erd.py), docs/erd.html (초기 38개 테이블 시안)
 -- 실행: mysql -u godlife_user -p godlife < db/01-schema.sql   (빈 DB 기준, DROP 문 없음)
 --
@@ -782,6 +782,20 @@ CREATE TABLE push_tokens (
   CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_push_device FOREIGN KEY (device_id) REFERENCES devices (id) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='푸시 토큰';
+
+CREATE TABLE push_subscriptions (
+  id            BIGINT        NOT NULL AUTO_INCREMENT,
+  user_id       BIGINT        NOT NULL,
+  endpoint      VARCHAR(1000) NOT NULL COMMENT '브라우저 푸시 서비스 주소 (알려진 푸시 서비스 주소만 받는다)',
+  endpoint_hash CHAR(64)      NOT NULL COMMENT 'endpoint 의 SHA-256. 주소가 길어서 유일 키는 해시에 건다',
+  p256dh        VARCHAR(200)  NOT NULL COMMENT '브라우저 공개 키 (본문 암호화용)',
+  auth          VARCHAR(100)  NOT NULL COMMENT '브라우저 인증 비밀값 (본문 암호화용)',
+  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_push_sub_endpoint (endpoint_hash),
+  KEY idx_push_sub_user (user_id),
+  CONSTRAINT fk_push_sub_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='웹 푸시 구독 (브라우저 하나에 한 줄)';
 
 CREATE TABLE weekly_reports (
   id            BIGINT       NOT NULL AUTO_INCREMENT,

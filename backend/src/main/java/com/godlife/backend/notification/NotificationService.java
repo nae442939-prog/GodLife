@@ -2,6 +2,7 @@ package com.godlife.backend.notification;
 
 import com.godlife.backend.notification.Notification.Type;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 알림함. 알림은 서버가 만들어 쌓아 두고, 화면(헤더의 종)이 불러와 보여 준다. (휴대폰 푸시는 앱을 만들 때 붙인다)
+ * 알림함. 알림은 서버가 만들어 쌓아 두고, 화면(헤더의 종)이 불러와 보여 준다.
+ * 새 알림이 생기면 NotificationPushEvent 를 내서, 푸시를 켜 둔 브라우저에는 푸시로도 간다 (push 패키지).
  * - 같은 알림은 한 번만: (회원, dedupe_key) 가 같으면 다시 만들지 않는다.
  * - 회원이 설정에서 끈 종류는 만들지 않는다 (인증 알림 / 챌린지 결과 / 팔로우·메시지·댓글). 문의 답변 · 신고 알림은 항상 간다.
  */
@@ -34,6 +36,7 @@ public class NotificationService {
     }
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     /** 알림 하나 만들기. 회원이 그 종류를 꺼 두었거나 같은 알림이 이미 있으면 만들지 않는다. */
@@ -42,12 +45,15 @@ public class NotificationService {
         if (!enabled(userId, type)) {
             return;
         }
-        jdbc.update("""
+        int made = jdbc.update("""
                 INSERT IGNORE INTO notifications (user_id, type, title, body, link, dedupe_key)
                 VALUES (:user, :type, :title, :body, :link, :key)
                 """, new MapSqlParameterSource("user", userId).addValue("type", type.name())
                 .addValue("title", title).addValue("body", cut(body)).addValue("link", link)
                 .addValue("key", dedupeKey));
+        if (made > 0) {
+            events.publishEvent(new NotificationPushEvent(userId, title, cut(body), link));
+        }
     }
 
     /**
@@ -56,7 +62,9 @@ public class NotificationService {
      */
     @Transactional
     public int remindToday(LocalDate today) {
-        return jdbc.update("""
+        Long before = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) FROM notifications",
+                new MapSqlParameterSource(), Long.class);
+        int made = jdbc.update("""
                 INSERT IGNORE INTO notifications (user_id, type, title, body, link, dedupe_key)
                 SELECT p.user_id, 'VERIFY_REMINDER', '오늘 인증하는 날이에요!',
                        CONCAT('''', c.title, ''' 챌린지 인증을 잊지 마세요.'),
@@ -77,6 +85,18 @@ public class NotificationService {
                              AND v.verify_date >= DATE_ADD(c.start_date,
                                      INTERVAL FLOOR(DATEDIFF(:today, c.start_date) / 7) * 7 DAY)) < c.weekly_count)
                 """, new MapSqlParameterSource("today", today.toString()));
+        if (made > 0) {
+            // 방금 만든 인증 알림을 푸시로도 보낸다 (한꺼번에 넣어서, 어떤 줄이 새로 생겼는지는 id 로 가린다)
+            jdbc.query("""
+                    SELECT user_id, title, body, link FROM notifications
+                    WHERE id > :before AND type = 'VERIFY_REMINDER' AND dedupe_key LIKE :key
+                    """, new MapSqlParameterSource("before", before).addValue("key", "verify:%:" + today),
+                    rs -> {
+                        events.publishEvent(new NotificationPushEvent(rs.getLong("user_id"), rs.getString("title"),
+                                rs.getString("body"), rs.getString("link")));
+                    });
+        }
+        return made;
     }
 
     /** 할 일을 끝낸 알림은 읽음으로 바꾼다 (오늘 인증을 올리면 그 챌린지의 인증 알림이 사라지게) */

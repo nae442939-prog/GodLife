@@ -47,6 +47,24 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
+		<!-- 웹 푸시(RFC 8291 암호화 + VAPID 서명) 전송 -->
+		<dependency>
+			<groupId>nl.martijndwars</groupId>
+			<artifactId>web-push</artifactId>
+			<version>5.1.1</version>
+			<exclusions>
+				<!-- 비동기 전송(PushAsyncService)은 쓰지 않는다 -->
+				<exclusion>
+					<groupId>org.asynchttpclient</groupId>
+					<artifactId>async-http-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.78.1</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>

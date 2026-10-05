@@ -167,6 +167,15 @@ export const notificationApi = {
   updateSettings: (settings) => apiFetch('/api/notifications/settings', { method: 'PUT', body: settings }),
 }
 
+// 푸시 알림(웹 푸시) 구독. 켜고 끄는 흐름은 api/push.js 에 있다
+export const pushApi = {
+  // { enabled, publicKey } — enabled 가 false 면 서버에 키가 없어 푸시를 쓸 수 없다
+  config: () => apiFetch('/api/push/config'),
+  // subscription = PushSubscription.toJSON() = { endpoint, keys: { p256dh, auth } }
+  subscribe: (subscription) => apiFetch('/api/push/subscriptions', { method: 'POST', body: subscription }),
+  unsubscribe: (subscription) => apiFetch('/api/push/subscriptions', { method: 'DELETE', body: subscription }),
+}
+
 // 고객센터 1:1 문의 (본인 문의만)
 export const inquiryApi = {
   // { category: ACCOUNT | CHALLENGE | POINT | BUG | ETC, title, content }

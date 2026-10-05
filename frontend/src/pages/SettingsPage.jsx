@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { blockApi, inquiryApi, notificationApi, userApi } from '../api/client.js'
+import { disablePush, enablePush, pushStatus } from '../api/push.js'
 import { PASSWORD_HINT, passwordError } from '../auth/rules.js'
 import { useAuth } from '../auth/useAuth.js'
 import { Field } from '../components/Field.jsx'
@@ -398,7 +399,74 @@ function AlarmSection() {
       <p className="settings-help settings-help-last alarm-note">
         문의 답변처럼 꼭 알아야 하는 알림은 설정과 상관없이 보내 드려요.
       </p>
+      <PushToggle />
     </section>
+  )
+}
+
+const PUSH_NOTE = {
+  unsupported: '이 브라우저는 푸시 알림을 지원하지 않아요.',
+  unavailable: '지금은 푸시 알림을 쓸 수 없어요.',
+  denied: '브라우저에서 이 사이트의 알림이 막혀 있어요. 주소창 옆 사이트 설정에서 알림을 허용해 주세요.',
+}
+
+/**
+ * 이 브라우저에서 푸시 알림 받기. 위에서 켜 둔 종류의 알림이 화면을 닫아 두어도 브라우저 알림으로 온다.
+ * 기기(브라우저)마다 따로 켠다 — 켜면 브라우저가 알림 권한을 묻는다.
+ */
+function PushToggle() {
+  const [status, setStatus] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    pushStatus()
+      .then((s) => !cancelled && setStatus(s))
+      .catch(() => !cancelled && setStatus('unavailable'))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function toggle() {
+    setBusy(true)
+    setError('')
+    try {
+      setStatus(await (status === 'on' ? disablePush() : enablePush()))
+    } catch (err) {
+      setError(err.message || '푸시 알림 설정을 바꾸지 못했어요.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const canToggle = status === 'on' || status === 'off'
+  return (
+    <div className="push-toggle">
+      <ul className="alarm-list">
+        <li>
+          <span className="alarm-text">
+            <strong>이 브라우저에서 푸시 알림 받기</strong>
+            <span>
+              {PUSH_NOTE[status] ?? '갓생살기를 닫아 두어도 위에서 켠 알림을 브라우저 알림으로 받아요. 기기마다 따로 켜요.'}
+            </span>
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={status === 'on'}
+            aria-label="이 브라우저에서 푸시 알림 받기"
+            className={`alarm-switch${status === 'on' ? ' is-on' : ''}`}
+            onClick={toggle}
+            disabled={busy || !canToggle}
+          >
+            <span aria-hidden="true" />
+          </button>
+        </li>
+      </ul>
+      {error && <p className="form-error">{error}</p>}
+    </div>
   )
 }
 

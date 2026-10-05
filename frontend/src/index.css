@@ -13265,3 +13265,10 @@ a.sh-line-name:hover {
 .mnav-group li a:hover {
   color: var(--header-nav);
 }
+
+/* ---------- 설정 · 푸시 알림 ---------- */
+.push-toggle {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}

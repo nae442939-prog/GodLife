@@ -2,7 +2,7 @@
 
 > 이 문서는 `db/01-schema.sql` 에서 자동으로 만든 것입니다. 직접 고치지 말고 스키마를 고친 뒤 `python docs/gen-erd.py` 를 다시 돌리세요.
 
-MySQL 8.0 / InnoDB / utf8mb4 · 테이블 56개 · 외래 키 86개
+MySQL 8.0 / InnoDB / utf8mb4 · 테이블 57개 · 외래 키 87개
 
 설계 원칙
 
@@ -23,7 +23,7 @@ MySQL 8.0 / InnoDB / utf8mb4 · 테이블 56개 · 외래 키 86개
 | 06. 랭킹 · 시즌 | 3 | [`user_stats`](#user_stats), [`seasons`](#seasons), [`season_rankings`](#season_rankings) |
 | 07. 부정행위 방지 | 1 | [`collusion_flags`](#collusion_flags) |
 | 08. 소셜 · 배지 | 15 | [`badges`](#badges), [`user_badges`](#user_badges), [`follows`](#follows), [`direct_messages`](#direct_messages), [`dm_threads`](#dm_threads), [`diary_entries`](#diary_entries), [`diary_tags`](#diary_tags), [`inquiries`](#inquiries), [`comments`](#comments), [`posts`](#posts), [`post_images`](#post_images), [`post_likes`](#post_likes), [`post_comments`](#post_comments), [`post_comment_likes`](#post_comment_likes), [`community_reports`](#community_reports) |
-| 09. 리텐션 | 4 | [`notifications`](#notifications), [`notification_settings`](#notification_settings), [`push_tokens`](#push_tokens), [`weekly_reports`](#weekly_reports) |
+| 09. 리텐션 | 5 | [`notifications`](#notifications), [`notification_settings`](#notification_settings), [`push_tokens`](#push_tokens), [`push_subscriptions`](#push_subscriptions), [`weekly_reports`](#weekly_reports) |
 | 10. 마켓플레이스 | 9 | [`sponsors`](#sponsors), [`product_categories`](#product_categories), [`products`](#products), [`addresses`](#addresses), [`wishlists`](#wishlists), [`cart_items`](#cart_items), [`orders`](#orders), [`order_items`](#order_items), [`order_coupons`](#order_coupons) |
 
 ## 전체 관계
@@ -105,6 +105,7 @@ erDiagram
     users ||--o| notification_settings : "user_id"
     users ||--o{ push_tokens : "user_id"
     devices |o--o{ push_tokens : "device_id"
+    users ||--o{ push_subscriptions : "user_id"
     users ||--o{ weekly_reports : "user_id"
     sponsors ||--o{ products : "sponsor_id"
     product_categories ||--o{ products : "category_id"
@@ -1419,6 +1420,15 @@ erDiagram
         VARCHAR token UK
         ENUM platform
     }
+    push_subscriptions {
+        BIGINT id PK
+        BIGINT user_id FK
+        VARCHAR endpoint
+        CHAR endpoint_hash UK
+        VARCHAR p256dh
+        VARCHAR auth
+        DATETIME created_at
+    }
     weekly_reports {
         BIGINT id PK
         BIGINT user_id FK
@@ -1433,6 +1443,7 @@ erDiagram
     users ||--o| notification_settings : "user_id"
     users ||--o{ push_tokens : "user_id"
     devices |o--o{ push_tokens : "device_id"
+    users ||--o{ push_subscriptions : "user_id"
     users ||--o{ weekly_reports : "user_id"
 ```
 
@@ -1483,6 +1494,22 @@ erDiagram
 
 - `user_id` → [`users`](#users) (부모 삭제 시 함께 삭제)
 - `device_id` → [`devices`](#devices) (부모 삭제 시 NULL)
+
+### push_subscriptions
+
+웹 푸시 구독 (브라우저 하나에 한 줄)
+
+| 컬럼 | 타입 | NULL | 키 | 기본값 | 설명 |
+|---|---|:---:|---|---|---|
+| `id` | `BIGINT` |  | PK |  |  |
+| `user_id` | `BIGINT` |  | FK |  |  |
+| `endpoint` | `VARCHAR(1000)` |  |  |  | 브라우저 푸시 서비스 주소 (알려진 푸시 서비스 주소만 받는다) |
+| `endpoint_hash` | `CHAR(64)` |  | UK |  | endpoint 의 SHA-256. 주소가 길어서 유일 키는 해시에 건다 |
+| `p256dh` | `VARCHAR(200)` |  |  |  | 브라우저 공개 키 (본문 암호화용) |
+| `auth` | `VARCHAR(100)` |  |  |  | 브라우저 인증 비밀값 (본문 암호화용) |
+| `created_at` | `DATETIME` |  |  | CURRENT_TIMESTAMP |  |
+
+- `user_id` → [`users`](#users) (부모 삭제 시 함께 삭제)
 
 ### weekly_reports
 
