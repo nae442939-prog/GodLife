@@ -13117,3 +13117,32 @@ a.sh-line-name:hover {
     height: 90px;
   }
 }
+
+/* ---------- 관리자 · 다중 계정 의심 (/admin/devices) ---------- */
+.adm-device-members {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adm-device-members li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  background: var(--surface-alt);
+  border-radius: 10px;
+}
+
+.adm-device-members a {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.adm-device-members a:hover {
+  color: var(--header-nav);
+}

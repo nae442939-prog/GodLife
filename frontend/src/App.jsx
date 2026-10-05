@@ -12,6 +12,7 @@ import { ChallengeMinePage } from './pages/ChallengeMinePage.jsx'
 import { WalletPage } from './pages/WalletPage.jsx'
 import { DiaryPage } from './pages/DiaryPage.jsx'
 import { AdminCollusionPage } from './pages/AdminCollusionPage.jsx'
+import { AdminDevicesPage } from './pages/AdminDevicesPage.jsx'
 import { AdminCommunityPage } from './pages/AdminCommunityPage.jsx'
 import { AdminInquiriesPage } from './pages/AdminInquiriesPage.jsx'
 import { AdminReviewsPage } from './pages/AdminReviewsPage.jsx'
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
           <Route path="/admin/reviews" element={<AdminReviewsPage />} />
           <Route path="/admin/collusion" element={<AdminCollusionPage />} />
+          <Route path="/admin/devices" element={<AdminDevicesPage />} />
           <Route path="/admin/community" element={<AdminCommunityPage />} />
           <Route path="/admin/shop" element={<AdminShopPage />} />
           <Route path="/verify-phone" element={<VerifyPhonePage />} />

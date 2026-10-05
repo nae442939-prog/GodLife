@@ -1,3 +1,5 @@
+import { deviceFingerprint } from './device.js'
+
 // 액세스 토큰은 메모리에만 둔다. (localStorage 에 두면 XSS 로 탈취될 수 있다)
 // 리프레시 토큰은 서버가 HttpOnly 쿠키로 내려주므로 JS 는 볼 수도 없고 다룰 필요도 없다.
 let accessToken = null
@@ -28,6 +30,11 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`
+  // 가입 · 로그인 · 토큰 재발급에만 기기 지문을 붙인다 (같은 기기의 다중 계정 탐지용)
+  if (path.startsWith('/api/auth/')) {
+    const fingerprint = await deviceFingerprint()
+    if (fingerprint) headers['X-Device-Fingerprint'] = fingerprint
+  }
 
   const res = await fetch(path, {
     method,
@@ -184,6 +191,9 @@ export const adminApi = {
   collusion: (status) => apiFetch(`/api/admin/collusion${status ? `?status=${status}` : ''}`),
   confirmCollusion: (id) => apiFetch(`/api/admin/collusion/${id}/confirm`, { method: 'POST' }),
   dismissCollusion: (id) => apiFetch(`/api/admin/collusion/${id}/dismiss`, { method: 'POST' }),
+  // 여러 계정이 함께 쓴 기기(3개 이상) · IP(5개 이상). 계정이 많은 묶음부터
+  // → [{ kind: DEVICE|IP, key, accounts, lastSeenAt, members: [{ userId, nickname, email(가림), status, joinedAt, lastSeenAt }] }]
+  devices: () => apiFetch('/api/admin/devices'),
   // 커뮤니티 신고 (처리 전인 것만, 같은 글 · 댓글은 한 줄로)
   // → [{ targetType: POST|COMMENT, targetId, postId, title, content, authorNickname, reportCount, reasons, firstReportedAt }]
   communityReports: () => apiFetch('/api/admin/community-reports'),
