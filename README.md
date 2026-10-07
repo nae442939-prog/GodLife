@@ -72,6 +72,10 @@ mysql -u godlife_user -p godlife < db/01-schema.sql
 mysql -u godlife_user -p godlife < db/02-seed.sql
 ```
 
+화면을 채울 더미 데이터(선택)는 `db/dev-dummy.sql` · `db/dev-recruiting.sql` 등으로 넣습니다.
+`backend/.env` 에 `DEMO_KEEP_DATES=true` 를 두면 서버가 더미 데이터의 날짜를 매일 오늘에 맞춰 밀어서,
+날짜가 지나도 모집 중 · 진행 중인 챌린지와 랭킹이 그대로 보입니다. (실제 회원의 기록은 건드리지 않습니다)
+
 ### 2. 백엔드 (http://localhost:8080)
 
 ```bash

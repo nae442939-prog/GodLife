@@ -1,6 +1,7 @@
 package com.godlife.backend.challenge;
 
 import com.godlife.backend.collusion.CollusionService;
+import com.godlife.backend.demo.DemoDataKeeper;
 import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.settlement.SettlementService;
 import com.godlife.backend.tier.TierService;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
  * 4) 시작일이 된 챌린지를 진행 중으로 바꾼다
  * 5) 정산이 끝난 챌린지에서 담합 의심 조합을 찾아 표시한다 (관리자 화면에서 본다)
  * 서버가 자정에 꺼져 있었을 수 있어 켜질 때도 한 번 돈다. 여러 번 돌아도 결과가 같다.
+ * 시연용 더미 데이터를 쓰는 환경에서는 그 전에 더미 날짜를 오늘에 맞춘다 (DemoDataKeeper, 기본은 꺼짐).
  */
 @Slf4j
 @Service
@@ -36,6 +38,7 @@ public class ChallengeLifecycleService {
     private final NotificationService notificationService;
     private final CollusionService collusionService;
     private final TierService tierService;
+    private final DemoDataKeeper demoDataKeeper;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
@@ -45,13 +48,27 @@ public class ChallengeLifecycleService {
 
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void midnight() {
-        run(LocalDate.now(clock));
+        daily(LocalDate.now(clock));
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         if (runOnStartup) {
-            run(LocalDate.now(clock));
+            daily(LocalDate.now(clock));
+        }
+    }
+
+    private void daily(LocalDate today) {
+        try {
+            demoDataKeeper.roll(today);
+        } catch (RuntimeException e) {
+            log.error("더미 데이터 날짜 맞추기 실패", e);
+        }
+        run(today);
+        try {
+            demoDataKeeper.syncStreaks(today);
+        } catch (RuntimeException e) {
+            log.error("더미 회원 연속 기록 맞추기 실패", e);
         }
     }
 
