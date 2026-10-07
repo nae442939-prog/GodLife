@@ -6741,6 +6741,28 @@ a.back-button:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.rn-season-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: var(--header-nav);
+}
+
+.rn-season-dday {
+  font-weight: 800;
+  color: var(--text);
+}
+
+.rn-bonus {
+  margin-left: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--accent-amber);
+  font-variant-numeric: tabular-nums;
+}
+
 .rk-row.is-top1 .rk-rank::after {
   content: ' 🥇';
 }

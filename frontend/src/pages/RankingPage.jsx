@@ -5,12 +5,14 @@ import { useAuth } from '../auth/useAuth.js'
 import { Avatar } from '../components/UserMenu.jsx'
 import { MyChallengeRanking } from '../ranking/MyChallengeRanking.jsx'
 import { Podium } from '../ranking/Podium.jsx'
+import { SeasonRanking } from '../ranking/SeasonRanking.jsx'
 
 // 헤더 [랭킹] 메뉴에서 고른 랭킹 하나만 그 이름을 제목으로 보여 준다 (?tab=)
 const PAGES = {
   users: { title: '전체 랭킹', sub: '누가 가장 꾸준히 갓생 살고 있을까요?' },
   friends: { title: '친구 랭킹', sub: '팔로우한 친구들끼리 비교해요.' },
   challenges: { title: '내 챌린지 랭킹', sub: '내가 하는 챌린지에서 누가 가장 꾸준할까요?' },
+  season: { title: '시즌 랭킹', sub: '이번 주 · 이번 달, 누가 가장 많이 인증했을까요? 끝나면 상위 3명에게 보너스 포인트를 드려요.' },
 }
 
 // 전체 = 지금까지 인증에 성공한 횟수, 이번 달 = 이번 달에 성공한 횟수 (매달 1일에 새로 시작)
@@ -28,6 +30,7 @@ export function RankingPage() {
   const [params, setParams] = useSearchParams()
   const tab = PAGES[params.get('tab')] ? params.get('tab') : 'users'
   const metric = params.get('metric') ?? 'total_success'
+  const period = params.get('period') === 'monthly' ? 'monthly' : 'weekly'
   const page = PAGES[tab]
 
   function update(name, value) {
@@ -52,6 +55,7 @@ export function RankingPage() {
           {tab === 'challenges' && (
             <MyChallengeRanking selectedId={params.get('challenge')} onSelect={(id) => update('challenge', id)} />
           )}
+          {tab === 'season' && <SeasonRanking period={period} onPeriod={(p) => update('period', p)} />}
         </div>
       </div>
     </div>
