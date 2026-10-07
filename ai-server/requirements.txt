@@ -1,0 +1,12 @@
+# 서버
+fastapi==0.141.1
+uvicorn==0.53.0
+python-multipart==0.0.32
+
+# 직접 학습한 모델로 추론 (CPU 로 충분하다)
+#   CPU 전용으로 가볍게 설치하려면:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1
+torchvision==0.29.1
+pillow==12.3.0
+numpy==2.5.3

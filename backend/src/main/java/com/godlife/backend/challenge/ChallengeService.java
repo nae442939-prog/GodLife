@@ -1,0 +1,439 @@
+package com.godlife.backend.challenge;
+
+import com.godlife.backend.challenge.dto.CategoryOptionResponse;
+import com.godlife.backend.challenge.dto.ChallengeCreateRequest;
+import com.godlife.backend.challenge.dto.ChallengeDetailResponse;
+import com.godlife.backend.challenge.dto.ChallengeSummaryResponse;
+import com.godlife.backend.challenge.dto.PageResponse;
+import com.godlife.backend.challenge.dto.ParticipantResponse;
+import com.godlife.backend.chat.ChatMessageRepository;
+import com.godlife.backend.chat.ChatReportRepository;
+import com.godlife.backend.common.error.BusinessException;
+import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.common.ratelimit.RequestThrottle;
+import com.godlife.backend.common.upload.ImageStore;
+import com.godlife.backend.user.User;
+import com.godlife.backend.user.UserRepository;
+import com.godlife.backend.user.UserService;
+import com.godlife.backend.tier.TierService;
+import com.godlife.backend.wallet.WalletService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+
+@Service
+@RequiredArgsConstructor
+public class ChallengeService {
+
+    public static final int PAGE_SIZE = 12;
+    private static final int CODE_ATTEMPTS = 5;
+    private static final Duration INVITE_WINDOW = Duration.ofMinutes(10);
+
+    private final ChallengeRepository challengeRepository;
+    private final ChallengeParticipantRepository participantRepository;
+    private final CategoryRepository categoryRepository;
+    private final CategorySubTypeRepository subTypeRepository;
+    private final UserRepository userRepository;
+    private final UserService userService;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatReportRepository chatReportRepository;
+    private final ImageStore imageStore;
+    private final InviteCodeGenerator inviteCodeGenerator;
+    private final WalletService walletService;
+    private final TierService tierService;
+    private final RequestThrottle throttle;
+    private final Clock clock;
+
+    /** 같은 IP 가 10분 동안 초대 코드로 조회/참여할 수 있는 횟수 (코드 무작위 대입 방지) */
+    @Value("${app.invite.ip-limit:30}")
+    private int inviteIpLimit;
+
+    /** 정렬: popular(참가자 많은 순, 기본) / deadline(시작 임박 순) / latest(최신 개설 순) */
+    public enum SortOption {
+        POPULAR(Sort.by(Sort.Order.desc("participantCount"), Sort.Order.desc("id"))),
+        DEADLINE(Sort.by(Sort.Order.asc("startDate"), Sort.Order.asc("id"))),
+        LATEST(Sort.by(Sort.Order.desc("id")));
+
+        private final Sort sort;
+
+        SortOption(Sort sort) {
+            this.sort = sort;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Category> categories() {
+        return categoryRepository.findByActiveTrueOrderByIdAsc();
+    }
+
+    /** 카테고리와, 개설할 때 고를 수 있는 세부 종류 */
+    @Transactional(readOnly = true)
+    public List<CategoryOptionResponse> categoryOptions() {
+        List<CategorySubType> subTypes = subTypeRepository.findByActiveTrueOrderBySortOrderAscIdAsc();
+        return categories().stream().map(c -> CategoryOptionResponse.of(c, subTypes)).toList();
+    }
+
+    @Transactional
+    public Challenge create(Long userId, ChallengeCreateRequest req) {
+        return create(userId, req, false);
+    }
+
+    /**
+     * 개설. joinHost 면 만든 사람도 바로 참가자가 된다 (대화방의 [같이 챌린지 만들기]).
+     * 포인트 챌린지는 참가 포인트를 바로 내므로, 잔액·한도가 모자라면 챌린지도 만들어지지 않는다.
+     */
+    @Transactional
+    public Challenge create(Long userId, ChallengeCreateRequest req, boolean joinHost) {
+        User host = requirePhoneVerified(userId);
+        if (req.startDate().isBefore(today())) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "시작일은 오늘 이후로 정해 주세요.");
+        }
+        Category category = categoryRepository.findById(req.categoryId())
+                .filter(Category::isActive)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
+
+        ChallengeVisibility visibility = req.visibility() == null ? ChallengeVisibility.PUBLIC : req.visibility();
+        Challenge challenge = Challenge.create(host.getId(), category, req.title().strip(),
+                req.description().strip(), req.mode(), visibility, newInviteCode(), req.startDate(), req.endDate(),
+                req.frequencyType(),
+                req.weeklyCount(), req.entryFee() == null ? 0 : req.entryFee(), req.maxParticipants(),
+                req.verifyFrom(), req.verifyUntil(), Boolean.TRUE.equals(req.partialRefund()));
+        if (req.subTypeId() != null) {
+            // 다른 카테고리의 세부 종류를 붙이면 AI 가 엉뚱한 라벨로 판정하게 된다
+            challenge.assignSubType(subTypeRepository.findById(req.subTypeId())
+                    .filter(s -> s.isActive() && s.getCategoryId().equals(category.getId()))
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_ERROR,
+                            "이 카테고리에서 고를 수 없는 세부 종류예요.")));
+        }
+        Challenge saved = challengeRepository.save(challenge);
+        if (joinHost) {
+            addParticipant(saved, userId);
+        }
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ChallengeSummaryResponse> search(Integer categoryId, ChallengeMode mode, String keyword,
+                                                         SortOption sort, int page) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE, sort.sort);
+        return PageResponse.of(
+                challengeRepository.searchRecruiting(today(), categoryId, mode, likePattern(keyword), pageable),
+                ChallengeSummaryResponse::from);
+    }
+
+    /**
+     * 상세. viewerId 는 비로그인이면 null.
+     * 비공개 챌린지는 개설자·참가자 말고는 없는 것처럼(404) 보여 준다. (순번 id 를 넣어 보는 식으로 찾지 못하게)
+     */
+    @Transactional(readOnly = true)
+    public ChallengeDetailResponse detail(Long challengeId, Long viewerId) {
+        Challenge c = challengeRepository.findWithCategory(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, viewerId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        return toDetail(c, viewerId);
+    }
+
+    /** 초대 링크로 들어온 사람에게 보여 줄 상세. 코드가 곧 열쇠라 비공개여도 보여 준다. */
+    @Transactional(readOnly = true)
+    public ChallengeDetailResponse detailByInvite(String inviteCode, Long viewerId, String clientIp) {
+        throttle.check("invite:" + clientIp, inviteIpLimit, INVITE_WINDOW);
+        Challenge c = challengeRepository.findByInviteCode(normalize(inviteCode))
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVITE_NOT_FOUND));
+        return toDetail(c, viewerId);
+    }
+
+    /** 목록/상세에서 참여. 비공개 챌린지는 이 경로로 참여할 수 없다(초대 링크로만). */
+    @Transactional
+    public void join(Long challengeId, Long userId) {
+        requirePhoneVerified(userId);
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        addParticipant(c, userId);
+    }
+
+    /** 초대 링크로 참여. 참여한 챌린지 id 를 돌려준다. */
+    @Transactional
+    public Long joinByInvite(String inviteCode, Long userId, String clientIp) {
+        throttle.check("invite:" + clientIp, inviteIpLimit, INVITE_WINDOW);
+        requirePhoneVerified(userId);
+        Long challengeId = challengeRepository.findByInviteCode(normalize(inviteCode))
+                .map(Challenge::getId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVITE_NOT_FOUND));
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVITE_NOT_FOUND));
+        addParticipant(c, userId);
+        return challengeId;
+    }
+
+    /** 초대 링크가 새어 나갔을 때 개설자가 코드를 바꾼다. 이전 링크는 더 이상 열리지 않는다. */
+    @Transactional
+    public void regenerateInviteCode(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (!c.isHost(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        c.changeInviteCode(newInviteCode());
+    }
+
+    /** 방장 공지 올리기/바꾸기. 빈 내용이면 내린다. 올렸으면 true. */
+    @Transactional
+    public boolean changeNotice(Long challengeId, Long userId, String notice) {
+        Challenge c = requireHostForUpdate(challengeId, userId);
+        c.changeNotice(notice, LocalDateTime.now(clock));
+        return c.getNotice() != null;
+    }
+
+    /**
+     * 방장이 참가자를 내보낸다. 다시 참여할 수 없고 채팅·상세 접근도 막힌다. 내보낸 사람의 닉네임을 돌려준다.
+     * 포인트 챌린지면 건 포인트를 돌려준다.
+     */
+    @Transactional
+    public String kick(Long challengeId, Long hostId, Long targetUserId) {
+        Challenge c = requireHostForUpdate(challengeId, hostId);
+        if (c.isHost(targetUserId)) {
+            throw new BusinessException(ErrorCode.CANNOT_KICK);
+        }
+        ChallengeParticipant p = participantRepository.findByChallengeIdAndUserId(challengeId, targetUserId)
+                .filter(found -> found.getStatus().isMember())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
+        if (p.isActive()) {
+            c.removeParticipant();
+            // 본인 잘못으로 실패한 게 아니므로 건 포인트를 돌려준다
+            walletService.refundEntryFee(targetUserId, p.getDepositAmount(), p.getId());
+        }
+        p.kick();
+        return userRepository.findById(targetUserId).map(User::getNickname).orElse("알 수 없음");
+    }
+
+    /** 방장만 통과하고 챌린지 행을 잠근다. 멤버가 아니면서 비공개면 404, 멤버인데 방장이 아니면 403. */
+    private Challenge requireHostForUpdate(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (!c.isHost(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        return c;
+    }
+
+    /** 방장인지 (채팅 화면의 방장 메뉴용) */
+    @Transactional(readOnly = true)
+    public boolean isHost(Long challengeId, Long userId) {
+        return challengeRepository.findById(challengeId).map(c -> c.isHost(userId)).orElse(false);
+    }
+
+    /**
+     * 개설자만, 시작일 전날까지 삭제할 수 있다. 참가 기록과 오픈채팅(신고·사진 파일 포함)도 함께 지운다.
+     * (시작한 뒤에는 인증·정산 기록이 생기므로 막는다) 포인트 챌린지면 참가자들이 건 포인트를 돌려준다.
+     */
+    @Transactional
+    public void delete(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (!c.isHost(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        if (!c.canLeave(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_CANNOT_DELETE);
+        }
+        // 포인트 챌린지면 참가자들이 건 포인트를 돌려준다
+        participantRepository.findByChallengeIdAndStatus(challengeId, ParticipantStatus.ACTIVE)
+                .forEach(p -> walletService.refundEntryFee(p.getUserId(), p.getDepositAmount(), p.getId()));
+        chatReportRepository.deleteByChallengeId(challengeId);
+        chatMessageRepository.deleteByChallengeId(challengeId);
+        participantRepository.deleteByChallengeId(challengeId);
+        challengeRepository.delete(c);
+        imageStore.deleteChallenge(challengeId);
+    }
+
+    /**
+     * 개설자·참가자(참여 취소 제외)만 통과. 채팅처럼 멤버 전용 기능이 쓴다.
+     * 아니면 챌린지가 없는 것처럼 404 (비공개 챌린지가 있다는 것도 알리지 않게).
+     */
+    @Transactional(readOnly = true)
+    public void requireMember(Long challengeId, Long userId) {
+        challengeRepository.findById(challengeId)
+                .filter(c -> isMember(c, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+    }
+
+    /**
+     * 1:1 메시지로 초대할 챌린지. 개설자·참가자만 초대할 수 있고(아니면 404), 아직 참여할 수 있는 챌린지여야 한다.
+     */
+    @Transactional(readOnly = true)
+    public Challenge requireInvitable(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findById(challengeId)
+                .filter(found -> isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (!c.isRecruiting(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_NOT_RECRUITING);
+        }
+        return c;
+    }
+
+    /**
+     * 참여 공통. 챌린지 행을 잠근 채로 정원을 확인하고 참가자 수를 올린다. (동시에 여러 명이 눌러도 정원 초과 없음)
+     * 포인트 챌린지는 참가 포인트를 충전 포인트에서 뺀다 (한도·잔액이 모자라면 참여 전체가 취소된다).
+     */
+    private void addParticipant(Challenge c, Long userId) {
+        if (!c.isRecruiting(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_NOT_RECRUITING);
+        }
+        ChallengeParticipant existing = participantRepository.findByChallengeIdAndUserId(c.getId(), userId)
+                .orElse(null);
+        if (existing != null && existing.isActive()) {
+            throw new BusinessException(ErrorCode.ALREADY_JOINED);
+        }
+        if (existing != null && existing.isKicked()) {
+            throw new BusinessException(ErrorCode.KICKED_FROM_CHALLENGE);
+        }
+        if (existing != null && existing.getStatus() == ParticipantStatus.GAVE_UP) {
+            throw new BusinessException(ErrorCode.GAVE_UP_CHALLENGE);
+        }
+        if (c.isFull()) {
+            throw new BusinessException(ErrorCode.CHALLENGE_FULL);
+        }
+
+        long fee = c.getMode() == ChallengeMode.BET ? c.getEntryFee() : 0;
+        // 고액 챌린지는 높은 칭호(플래티넘부터)만 참여할 수 있다
+        if (fee >= TierService.HIGH_STAKE_MIN_FEE && !tierService.tierOf(userId).highStakeAllowed()) {
+            throw new BusinessException(ErrorCode.HIGH_STAKE_TIER_REQUIRED);
+        }
+        if (fee > 0) {
+            walletService.checkCanPay(userId, fee);
+        }
+        ChallengeParticipant participant;
+        if (existing != null) {
+            existing.rejoin(fee);
+            participant = existing;
+        } else {
+            participant = participantRepository.save(ChallengeParticipant.join(c.getId(), userId, fee));
+        }
+        c.addParticipant();
+        try {
+            // 잠금으로 이미 막히지만, (challenge_id, user_id) 유니크 제약이 마지막 안전장치다.
+            participantRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.ALREADY_JOINED);
+        }
+        if (fee > 0) {
+            walletService.payEntryFee(userId, fee, participant.getId());
+        }
+    }
+
+    private ChallengeDetailResponse toDetail(Challenge c, Long viewerId) {
+        String hostNickname = userRepository.findById(c.getHostId()).map(User::getNickname).orElse("알 수 없음");
+        ParticipantStatus myStatus = viewerId == null ? null
+                : participantRepository.findByChallengeIdAndUserId(c.getId(), viewerId)
+                        .map(ChallengeParticipant::getStatus)
+                        .orElse(null);
+        boolean joined = myStatus == ParticipantStatus.ACTIVE;
+        List<ParticipantResponse> participants = participantRepository.findParticipants(c.getId());
+        return ChallengeDetailResponse.of(c, today(), hostNickname, joined, myStatus, c.isHost(viewerId),
+                isMember(c, viewerId), participants);
+    }
+
+    /** 개설자이거나, 참여 취소·강퇴되지 않은 참가자. 초대 링크·비공개 상세·오픈채팅을 볼 수 있는 사람이다. */
+    private boolean isMember(Challenge c, Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        return c.isHost(userId) || participantRepository.findByChallengeIdAndUserId(c.getId(), userId)
+                .filter(p -> p.getStatus().isMember())
+                .isPresent();
+    }
+
+    /** 겹치지 않는 초대 코드. 겹칠 확률은 매우 낮고, 동시에 같은 코드가 나와도 유니크 제약이 막는다. */
+    private String newInviteCode() {
+        for (int i = 0; i < CODE_ATTEMPTS; i++) {
+            String code = inviteCodeGenerator.next();
+            if (!challengeRepository.existsByInviteCode(code)) {
+                return code;
+            }
+        }
+        throw new IllegalStateException("초대 코드를 만들지 못했습니다.");
+    }
+
+    /** 링크를 옮겨 적다 소문자·공백이 섞여도 같은 코드로 본다. */
+    private static String normalize(String inviteCode) {
+        return inviteCode == null ? "" : inviteCode.strip().toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * 진행 중 포기. 실패로 치고 챌린지에서 나간다(채팅·인증 사진·비공개 상세 접근 불가, 인원수에서 빠짐).
+     * 채팅방 안내에 쓸 방장 id 와 포기한 사람의 닉네임을 돌려준다.
+     * (포인트 챌린지는 정산 때 건 포인트를 돌려받지 못한다)
+     */
+    @Transactional
+    public GaveUp giveUp(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .filter(found -> !found.isPrivate() || isMember(found, userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        ChallengeParticipant p = participantRepository.findByChallengeIdAndUserId(challengeId, userId)
+                .filter(ChallengeParticipant::isActive)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
+        if (!c.isInProgress(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_NOT_IN_PROGRESS);
+        }
+        p.giveUp();
+        // 포기하면 점수가 깎여 칭호가 내려갈 수 있다
+        tierService.refresh(userId);
+        c.removeParticipant();
+        return new GaveUp(c.getHostId(), userRepository.findById(userId).map(User::getNickname).orElse("알 수 없음"));
+    }
+
+    public record GaveUp(Long hostId, String nickname) {
+    }
+
+    /** 시작 전 참여 취소. 포인트 챌린지면 건 포인트를 돌려준다. 시작한 뒤에 그만두는 것은 포기(giveUp)다. */
+    @Transactional
+    public void leave(Long challengeId, Long userId) {
+        Challenge c = challengeRepository.findForUpdate(challengeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND));
+        ChallengeParticipant p = participantRepository.findByChallengeIdAndUserId(challengeId, userId)
+                .filter(ChallengeParticipant::isActive)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_JOINED));
+        if (!c.canLeave(today())) {
+            throw new BusinessException(ErrorCode.CHALLENGE_ALREADY_STARTED);
+        }
+        walletService.refundEntryFee(userId, p.getDepositAmount(), p.getId());
+        p.leave();
+        c.removeParticipant();
+    }
+
+    private User requirePhoneVerified(Long userId) {
+        User user = userService.getActive(userId);
+        if (!user.hasPhone()) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_REGISTERED);
+        }
+        return user;
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(clock);
+    }
+
+    /** 검색어를 LIKE 패턴으로. %, _ 는 글자 그대로 찾도록 ! 로 이스케이프한다. 비어 있으면 null(조건 없음). */
+    static String likePattern(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        String escaped = keyword.strip().replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        return "%" + escaped + "%";
+    }
+}

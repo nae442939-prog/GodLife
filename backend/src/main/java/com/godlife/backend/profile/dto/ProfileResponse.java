@@ -1,0 +1,49 @@
+package com.godlife.backend.profile.dto;
+
+import com.godlife.backend.challenge.Challenge;
+import com.godlife.backend.challenge.ChallengeMode;
+import com.godlife.backend.challenge.dto.CategoryResponse;
+
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * 회원 프로필 (누구나 볼 수 있음). 이메일·휴대폰 같은 개인정보는 싣지 않는다.
+ * 챌린지는 공개 챌린지 중 참여 중인 것만 (비공개 챌린지는 보이지 않는다).
+ * @param successRate 누적 성공률 (끝난 챌린지가 없으면 null)
+ * @param mine        내 프로필인지
+ * @param following   내가 이 사람을 팔로우 중인지 (비로그인·내 프로필이면 false)
+ * @param followsMe   이 사람이 나를 팔로우하는지
+ * @param blocked     내가 이 사람을 차단했는지 (비로그인·내 프로필이면 false)
+ * @param tier       칭호(티어) — BRONZE / SILVER / GOLD / PLATINUM / DIAMOND
+ * @param badges      뱃지 전체 목록(15개)과 땄는지 · 얼마나 왔는지 (기록으로 그때그때 계산한다)
+ */
+public record ProfileResponse(Long id, String nickname, String profileImageUrl, String bio, LocalDate joinedAt,
+                              long monthVerify, long maxStreak, Double successRate, long completedCount,
+                              List<ProfileChallenge> challenges, boolean mine,
+                              long followerCount, long followingCount, boolean following, boolean followsMe,
+                              boolean blocked, String tier, List<Badge> badges) {
+
+    /**
+     * 뱃지 하나.
+     * @param group   VERIFY(인증 횟수) / STREAK(연속 인증) / FINISH(완주) / ACTIVITY(활동)
+     * @param current 지금까지 한 만큼 (target 을 넘지 않게 잘라서 준다)
+     * @param target  따려면 채워야 하는 수
+     */
+    public record Badge(String code, String group, String name, String description, boolean earned, long current,
+                        long target) {
+
+        public static Badge of(String code, String group, String name, String description, long value, long target) {
+            return new Badge(code, group, name, description, value >= target, Math.min(value, target), target);
+        }
+    }
+
+    public record ProfileChallenge(Long id, String title, CategoryResponse category, ChallengeMode mode,
+                                   LocalDate startDate, LocalDate endDate, long totalDays, boolean inProgress) {
+
+        public static ProfileChallenge of(Challenge c, LocalDate today) {
+            return new ProfileChallenge(c.getId(), c.getTitle(), CategoryResponse.from(c.getCategory()), c.getMode(),
+                    c.getStartDate(), c.getEndDate(), c.totalDays(), c.isInProgress(today));
+        }
+    }
+}

@@ -1,0 +1,94 @@
+package com.godlife.backend.common.error;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+
+@Getter
+@RequiredArgsConstructor
+public enum ErrorCode {
+
+    VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
+
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
+    CANNOT_WITHDRAW(HttpStatus.CONFLICT, "지금은 탈퇴할 수 없어요."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
+    ACCOUNT_SUSPENDED(HttpStatus.FORBIDDEN, "이용이 정지된 계정입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "세션이 만료되었습니다. 다시 로그인해 주세요."),
+    SOCIAL_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "소셜 로그인에 실패했습니다. 다시 시도해 주세요."),
+
+    TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요."),
+    INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증번호가 올바르지 않거나 만료되었습니다."),
+    VERIFICATION_ATTEMPTS_EXCEEDED(HttpStatus.BAD_REQUEST, "인증번호를 너무 많이 틀렸습니다. 인증번호를 다시 받아 주세요."),
+    PHONE_VERIFICATION_REQUIRED(HttpStatus.BAD_REQUEST, "휴대폰 인증이 필요합니다. 다시 인증해 주세요."),
+    PHONE_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 다른 계정에 등록된 휴대폰 번호입니다."),
+    ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "이 번호로 가입된 계정이 없습니다."),
+    INVALID_RESET_TOKEN(HttpStatus.BAD_REQUEST, "비밀번호 재설정 시간이 지났습니다. 처음부터 다시 진행해 주세요."),
+    PHONE_NOT_REGISTERED(HttpStatus.FORBIDDEN, "휴대폰 인증을 마친 회원만 이용할 수 있습니다."),
+
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없어요."),
+    CANNOT_FOLLOW(HttpStatus.FORBIDDEN, "팔로우할 수 없는 회원이에요."),
+    MESSAGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "메시지는 서로 팔로우한 친구끼리만 보낼 수 있어요."),
+
+    CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 카테고리입니다."),
+    CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "챌린지를 찾을 수 없습니다."),
+    INVITE_NOT_FOUND(HttpStatus.NOT_FOUND, "유효하지 않은 초대 링크입니다. 링크가 바뀌었는지 개설자에게 물어보세요."),
+    CHALLENGE_NOT_RECRUITING(HttpStatus.CONFLICT, "모집이 끝난 챌린지입니다."),
+    CHALLENGE_FULL(HttpStatus.CONFLICT, "참여 인원이 모두 찼습니다."),
+    ALREADY_JOINED(HttpStatus.CONFLICT, "이미 참여 중인 챌린지입니다."),
+    NOT_JOINED(HttpStatus.CONFLICT, "참여 중인 챌린지가 아닙니다."),
+    CHALLENGE_ALREADY_STARTED(HttpStatus.CONFLICT, "이미 시작된 챌린지는 참여를 취소할 수 없습니다."),
+    KICKED_FROM_CHALLENGE(HttpStatus.FORBIDDEN, "방장이 내보낸 챌린지에는 다시 참여할 수 없어요."),
+    GAVE_UP_CHALLENGE(HttpStatus.FORBIDDEN, "포기한 챌린지에는 다시 참여할 수 없어요."),
+    CANNOT_KICK(HttpStatus.BAD_REQUEST, "내보낼 수 없는 참가자예요."),
+    MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "메시지를 찾을 수 없어요."),
+    CANNOT_REPORT(HttpStatus.BAD_REQUEST, "내 메시지나 안내 메시지는 신고할 수 없어요."),
+    ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 신고한 메시지예요."),
+    CANNOT_BLOCK(HttpStatus.BAD_REQUEST, "나 자신은 차단할 수 없어요."),
+    INVALID_IMAGE(HttpStatus.BAD_REQUEST, "JPG·PNG 사진만 보낼 수 있어요."),
+    IMAGE_TOO_BIG(HttpStatus.BAD_REQUEST, "사진이 너무 커요. 가로·세로 8000px 이하, 5MB 이하 사진을 보내 주세요."),
+    CHALLENGE_CANNOT_DELETE(HttpStatus.CONFLICT, "시작된 챌린지는 삭제할 수 없어요. 시작일 전날까지만 삭제할 수 있어요."),
+    CHALLENGE_NOT_IN_PROGRESS(HttpStatus.CONFLICT, "진행 중인 챌린지만 인증할 수 있어요."),
+    VERIFY_TIME_CLOSED(HttpStatus.CONFLICT, "지금은 인증할 수 있는 시간이 아니에요."),
+    ALREADY_VERIFIED_TODAY(HttpStatus.CONFLICT, "오늘은 이미 인증했어요. 인증은 하루에 한 번이고 다시 올릴 수 없어요."),
+    WEEKLY_GOAL_DONE(HttpStatus.CONFLICT, "이번 주 인증 횟수를 이미 다 채웠어요."),
+    DUPLICATE_PHOTO(HttpStatus.CONFLICT, "이미 인증에 쓴 사진이에요. 지금 새로 찍어서 올려 주세요."),
+    VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "인증을 찾을 수 없어요."),
+    VERIFICATION_REJECTED(HttpStatus.BAD_REQUEST, "사진이 챌린지와 맞지 않는 것 같아요. 다시 찍어 주세요."),
+    REVIEW_CLOSED(HttpStatus.CONFLICT, "이미 처리했거나 없는 검토예요."),
+    REVIEW_TOO_LATE(HttpStatus.CONFLICT, "이미 결과가 나온 인증은 거절할 수 없어요."),
+    DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "일기를 찾을 수 없어요."),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "글을 찾을 수 없어요. 지워졌거나 가려진 글이에요."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없어요."),
+    TOO_MANY_IMAGES(HttpStatus.CONFLICT, "사진은 글마다 4장까지 올릴 수 있어요."),
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없어요."),
+    PRODUCT_NOT_ON_SALE(HttpStatus.CONFLICT, "지금은 살 수 없는 상품이에요."),
+    OUT_OF_STOCK(HttpStatus.CONFLICT, "재고가 모자라요."),
+    ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "배송지를 찾을 수 없어요."),
+    ADDRESS_REQUIRED(HttpStatus.BAD_REQUEST, "배송받을 주소를 골라 주세요."),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없어요."),
+    ORDER_CANNOT_CANCEL(HttpStatus.CONFLICT, "취소할 수 없는 주문이에요."),
+    ORDER_STATUS_CONFLICT(HttpStatus.CONFLICT, "주문 상태가 바뀌어 처리할 수 없어요. 새로고침해 주세요."),
+    INSUFFICIENT_POINTS(HttpStatus.CONFLICT, "충전 포인트가 모자라요."),
+    HIGH_STAKE_TIER_REQUIRED(HttpStatus.FORBIDDEN, "참가 포인트 30,000P 이상인 챌린지는 플래티넘 칭호부터 참여할 수 있어요."),
+    BET_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "챌린지에 걸 수 있는 포인트 한도를 넘었어요."),
+    INVALID_CHARGE_AMOUNT(HttpStatus.BAD_REQUEST, "충전할 금액을 골라 주세요."),
+    CHARGE_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "오늘 충전 한도를 넘었어요."),
+    INVALID_REFUND_AMOUNT(HttpStatus.BAD_REQUEST, "환불할 금액을 100P 단위로 입력해 주세요."),
+    REFUND_EXCEEDS_CHARGED(HttpStatus.CONFLICT, "쓰지 않은 충전 포인트까지만 환불할 수 있어요."),
+    PAYMENT_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "이 결제 수단은 아직 쓸 수 없어요."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 정보를 찾을 수 없어요."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 주문과 달라요. 처음부터 다시 결제해 주세요."),
+    PAYMENT_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 끝난 결제예요. 처음부터 다시 결제해 주세요."),
+    PAYMENT_FAILED(HttpStatus.BAD_GATEWAY, "결제가 승인되지 않았어요."),
+    SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "아직 시즌 랭킹이 시작되지 않았어요."),
+    REFUND_FAILED(HttpStatus.BAD_GATEWAY, "결제 취소가 처리되지 않았어요. 잠시 후 다시 시도해 주세요."),
+    DUPLICATE_REQUEST(HttpStatus.CONFLICT, "이미 처리된 요청이에요.");
+
+    private final HttpStatus status;
+    private final String message;
+}
