@@ -13,11 +13,15 @@
 내 컴퓨터(CPU)에서:
 
 ```
-python training/prepare_dataset.py   # 공개 데이터셋(Stanford 40 Actions)에서 다섯 라벨 사진 고르기
+python training/prepare_dataset.py   # 공개 데이터셋(Stanford 40 Actions)에서 라벨별 사진 고르기
+python training/merge_web_photos.py  # (받아 둔 웹 사진이 있으면) 쓸 만한 것만 합치기
 python training/train_local.py       # MobileNetV2 전이학습 → 이 폴더에 저장
 ```
 
 또는 Colab(GPU)에서 `training/godlife_finetune.ipynb` 를 돌리고 받은 파일을 이 폴더에 넣는다.
 
-직접 찍은 인증 사진을 `training/data/dataset/{exercise,study,reading,cooking,other}/` 에 더 넣고 다시 학습하면
+라벨은 카테고리 넷(`exercise · study · reading · cooking`) + '기타'의 세부 종류 다섯(`wake_up · walk · water · clean · plant`)
++ 어느 쪽에도 들지 않는 `other` 로 열 개다. (`categories.ai_label` · `category_sub_types.ai_label` 과 같은 이름)
+
+직접 찍은 인증 사진을 `training/data/dataset/{라벨}/` 에 더 넣고 다시 학습하면
 실제 인증 사진에 더 잘 맞는다.

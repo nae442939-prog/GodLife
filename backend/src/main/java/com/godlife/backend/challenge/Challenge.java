@@ -39,6 +39,14 @@ public class Challenge {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
+    /**
+     * 카테고리 세부 종류 ('기타'만: 일찍 일어나기 · 산책 …). 고르지 않았으면 null.
+     * 값이 있으면 AI 가 카테고리 라벨 대신 이 종류의 라벨로 인증 사진을 판정한다.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sub_type_id", updatable = false)
+    private CategorySubType subType;
+
     @Column(nullable = false)
     private String title;
 
@@ -145,6 +153,21 @@ public class Challenge {
         c.verifyUntil = verifyUntil;
         c.status = ChallengeStatus.RECRUITING;
         return c;
+    }
+
+    /** 개설할 때만 정한다 (인증이 쌓인 뒤에 판정 기준이 바뀌지 않게 수정은 없다) */
+    void assignSubType(CategorySubType subType) {
+        this.subType = subType;
+    }
+
+    /** AI 가 인증 사진에서 기대하는 라벨: 세부 종류가 있으면 그 라벨, 없으면 카테고리 라벨 */
+    public String aiLabel() {
+        return subType != null ? subType.getAiLabel() : category.getAiLabel();
+    }
+
+    /** 사용자에게 보여 줄 종류 이름: 세부 종류가 있으면 그 이름, 없으면 카테고리 이름 */
+    public String kindName() {
+        return subType != null ? subType.getName() : category.getName();
     }
 
     /** 시작일 당일까지 참여할 수 있다. (시작일 0시에 ONGOING 으로 바뀌어도 그날은 참여 가능) */

@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *       하루에 {@value #MAX_AUTO_REJECTS}번까지만 거절하고, 그 뒤에는 사람이 보도록 검토로 넘긴다
  *       (모델이 틀려서 인증을 아예 못 하는 일이 없게)</li>
  *   <li>검토(NEED_REVIEW): 그 사이의 애매한 경우, 또는 예전 사진과 거의 같은 경우 → 일단 인증으로 받고 관리자 검토로 넘긴다</li>
- *   <li>'기타' 카테고리는 사진 모양이 제각각이라(일찍 일어나기 · 산책 등) 라벨로 거르지 않고, 같은 사진 재사용만 본다</li>
+ *   <li>'기타' 카테고리는 사진 모양이 제각각이라, 개설자가 세부 종류(일찍 일어나기 · 산책 등)를 골랐으면 그 라벨로 판정하고,
+ *       고르지 않았으면('그 밖') 라벨로 거르지 않고 같은 사진 재사용만 본다</li>
  *   <li>건너뜀(SKIPPED): AI 서버가 꺼져 있거나 모델이 없을 때 → 예전처럼 바로 승인</li>
  * </ul>
  */
@@ -41,7 +42,7 @@ public class AiVerifier {
     /** 한 참가자가 하루에 AI 에게 바로 거절당할 수 있는 횟수. 넘으면 관리자 검토로 넘긴다 */
     static final int MAX_AUTO_REJECTS = 5;
     private static final int COMPARE_LIMIT = 500;
-    /** '기타' 카테고리의 라벨 (categories.ai_label) */
+    /** '기타' 카테고리의 라벨 (categories.ai_label). 세부 종류 없이 이 라벨이면 사진 종류를 보지 않는다 */
     private static final String ANY_LABEL = "other";
 
     public enum Decision {
@@ -79,14 +80,14 @@ public class AiVerifier {
             return new Judgement(Decision.SKIPPED, null, false, null, null, null);
         }
         AiPrediction p = result.get();
-        String expected = challenge.getCategory().getAiLabel();
+        String expected = challenge.aiLabel();
         boolean free = ANY_LABEL.equals(expected);
         boolean match = free || expected.equals(p.label());
         if (!match && p.confidence() >= REJECT_CONFIDENCE && countReject(participantId, today) <= MAX_AUTO_REJECTS) {
             return new Judgement(Decision.AUTO_REJECT, p, false, null, null, null);
         }
 
-        Similar similar = mostSimilar(p.embedding(), userId, challenge.getId());
+        Similar similar = mostSimilar(p.embedding(), p.modelVersion(), userId, challenge.getId());
         if (similar != null && similar.similarity() >= DUPLICATE_SIMILARITY) {
             return new Judgement(Decision.NEED_REVIEW, p, match, "DUPLICATE_SUSPECT", similar.similarity(),
                     similar.verificationId());
@@ -137,7 +138,7 @@ public class AiVerifier {
 
     /** 거절 안내 문구 */
     public static String rejectMessage(Challenge challenge) {
-        return "사진이 '" + challenge.getCategory().getName() + "' 챌린지와 맞지 않는 것 같아요. 다시 찍어 주세요.";
+        return "사진이 '" + challenge.kindName() + "' 챌린지와 맞지 않는 것 같아요. 다시 찍어 주세요.";
     }
 
     private record Similar(Long verificationId, double similarity) {
@@ -146,8 +147,9 @@ public class AiVerifier {
     /**
      * 내 예전 인증 사진과, 같은 챌린지 참가자들의 인증 사진 중 가장 닮은 것 (최근 500장까지).
      * 임베딩이 L2 정규화되어 있어 내적이 곧 코사인 유사도다.
+     * 모델을 다시 학습하면 같은 사진도 벡터가 달라지므로, 같은 모델 버전이 만든 벡터끼리만 견준다.
      */
-    private Similar mostSimilar(byte[] embedding, Long userId, Long challengeId) {
+    private Similar mostSimilar(byte[] embedding, String modelVersion, Long userId, Long challengeId) {
         float[] mine = floats(embedding);
         Similar[] best = {null};
         jdbc.query("""
@@ -156,9 +158,10 @@ public class AiVerifier {
                   JOIN verifications v ON v.id = e.verification_id
                   JOIN challenge_participants p ON p.id = v.participant_id
                 WHERE (p.user_id = :user OR p.challenge_id = :challenge) AND v.status <> 'REJECTED'
+                  AND e.model_version = :version
                 ORDER BY e.verification_id DESC LIMIT :limit
                 """, new MapSqlParameterSource("user", userId).addValue("challenge", challengeId)
-                .addValue("limit", COMPARE_LIMIT), rs -> {
+                .addValue("version", cut(modelVersion, 30)).addValue("limit", COMPARE_LIMIT), rs -> {
             float[] other = floats(rs.getBytes("embedding"));
             if (other.length != mine.length) {
                 return; // 다른 모델이 만든 벡터는 비교하지 않는다

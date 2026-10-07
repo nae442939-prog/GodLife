@@ -40,7 +40,12 @@ QUERIES = {
                 "kitchen cooking pot", "home cooking", "baking dough kitchen", "salad bowl homemade"],
     "other": ["sunrise morning", "alarm clock", "glass of water", "made bed bedroom", "walking path park",
               "vitamins pills", "meditation", "houseplant watering", "cleaning room", "skincare products",
-              "bullet journal planner"],
+              "bullet journal planner",
+              # '기타'의 세부 라벨(산책 · 물 마시기 · 청소/정리 · 식물 가꾸기)에 보탤 사진
+              "park footpath", "walking trail forest path", "sidewalk street trees", "water bottle",
+              "tumbler cup", "vacuum cleaner", "tidy living room", "potted plant windowsill",
+              "bottled water", "drinking water glass", "water jug glass", "reusable water bottle",
+              "mopping floor", "watering can plants"],
 }
 
 

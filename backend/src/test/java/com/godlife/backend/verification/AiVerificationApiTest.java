@@ -38,6 +38,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -116,6 +118,64 @@ class AiVerificationApiTest {
         submit(id, friend).andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("APPROVED"));
         me(id, friend).andExpect(jsonPath("$.state").value("DONE_TODAY"))
                 .andExpect(jsonPath("$.successDays").value(1));
+    }
+
+    @Test
+    @DisplayName("기타 챌린지에 세부 종류를 고르면 그 라벨로 판정한다: 같은 라벨은 인정, 다른 라벨로 확신하면 돌려보낸다")
+    void subTypeLabelDecides() throws Exception {
+        long id = challenge(5, 2); // 산책 = walk
+        join(id, friend);
+
+        ai("wake_up", 0.95, 1);
+        submit(id, friend).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VERIFICATION_REJECTED"))
+                .andExpect(jsonPath("$.message").value(containsString("산책")));
+
+        ai("walk", 0.9, 2);
+        long verificationId = idOf(submit(id, friend).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("APPROVED")).andReturn().getResponse().getContentAsString());
+        assertThat(jdbc.queryForObject("SELECT category_match FROM ai_inference_results WHERE verification_id = ?",
+                Boolean.class, verificationId)).isTrue();
+    }
+
+    @Test
+    @DisplayName("세부 종류를 골랐는데 AI 가 애매하게 다른 라벨을 내면 인증은 받고 관리자 검토로 넘긴다 (검토 화면에는 세부 종류가 보인다)")
+    void subTypeMismatchGoesToReview() throws Exception {
+        long id = challenge(5, 1); // 일찍 일어나기 = wake_up
+        join(id, friend);
+        ai("other", 0.55, 1);
+
+        long verificationId = idOf(submit(id, friend).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("IN_REVIEW")).andReturn().getResponse().getContentAsString());
+
+        reviews("OPEN").andExpect(jsonPath("$[?(@.verificationId == %d)].expectedLabel".formatted(verificationId))
+                        .value(hasItem("wake_up")))
+                .andExpect(jsonPath("$[?(@.verificationId == %d)].categoryName".formatted(verificationId))
+                        .value(hasItem("일찍 일어나기")));
+    }
+
+    @Test
+    @DisplayName("세부 종류를 고르지 않은 기타 챌린지는 예전처럼 어떤 라벨이든 인정한다")
+    void otherWithoutSubTypeAcceptsAnyLabel() throws Exception {
+        long id = challenge(5);
+        join(id, friend);
+        ai("cooking", 0.97, 1);
+
+        submit(id, friend).andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("APPROVED"));
+    }
+
+    @Test
+    @DisplayName("모델을 다시 학습하면 벡터가 달라지므로, 다른 모델 버전이 남긴 사진과는 재사용 비교를 하지 않는다")
+    void duplicateCheckIgnoresOtherModelVersions() throws Exception {
+        long id = challenge(1);
+        join(id, friend);
+        join(id, friend2);
+        ai("exercise", 0.93, 1);
+        long first = idOf(submit(id, friend).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+        jdbc.update("UPDATE image_embeddings SET model_version = 'old-model' WHERE verification_id = ?", first);
+
+        submit(id, friend2).andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("APPROVED"));
     }
 
     @Test
@@ -252,10 +312,15 @@ class AiVerificationApiTest {
     }
 
     private long challenge(int categoryId) throws Exception {
+        return challenge(categoryId, null);
+    }
+
+    /** subTypeId: '기타'(5)의 세부 종류 — 1 일찍 일어나기(wake_up) · 2 산책(walk). null 이면 고르지 않음 */
+    private long challenge(int categoryId, Integer subTypeId) throws Exception {
         String body = """
-                {"categoryId":%d,"title":"매일 챌린지","description":"하루 30분","mode":"FREE",
+                {"categoryId":%d,"subTypeId":%s,"title":"매일 챌린지","description":"하루 30분","mode":"FREE",
                  "startDate":"%s","endDate":"%s","frequencyType":"DAILY","maxParticipants":10}
-                """.formatted(categoryId, today, today.plusDays(6)).replace("\n", "");
+                """.formatted(categoryId, subTypeId, today, today.plusDays(6)).replace("\n", "");
         return idOf(mvc.perform(post("/api/challenges").header("Authorization", "Bearer " + host)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());

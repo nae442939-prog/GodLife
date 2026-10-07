@@ -1,5 +1,6 @@
 package com.godlife.backend.challenge;
 
+import com.godlife.backend.challenge.dto.CategoryOptionResponse;
 import com.godlife.backend.challenge.dto.ChallengeCreateRequest;
 import com.godlife.backend.challenge.dto.ChallengeDetailResponse;
 import com.godlife.backend.challenge.dto.ChallengeSummaryResponse;
@@ -42,6 +43,7 @@ public class ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository participantRepository;
     private final CategoryRepository categoryRepository;
+    private final CategorySubTypeRepository subTypeRepository;
     private final UserRepository userRepository;
     private final UserService userService;
     private final ChatMessageRepository chatMessageRepository;
@@ -75,6 +77,13 @@ public class ChallengeService {
         return categoryRepository.findByActiveTrueOrderByIdAsc();
     }
 
+    /** 카테고리와, 개설할 때 고를 수 있는 세부 종류 */
+    @Transactional(readOnly = true)
+    public List<CategoryOptionResponse> categoryOptions() {
+        List<CategorySubType> subTypes = subTypeRepository.findByActiveTrueOrderBySortOrderAscIdAsc();
+        return categories().stream().map(c -> CategoryOptionResponse.of(c, subTypes)).toList();
+    }
+
     @Transactional
     public Challenge create(Long userId, ChallengeCreateRequest req) {
         return create(userId, req, false);
@@ -100,6 +109,13 @@ public class ChallengeService {
                 req.frequencyType(),
                 req.weeklyCount(), req.entryFee() == null ? 0 : req.entryFee(), req.maxParticipants(),
                 req.verifyFrom(), req.verifyUntil(), Boolean.TRUE.equals(req.partialRefund()));
+        if (req.subTypeId() != null) {
+            // 다른 카테고리의 세부 종류를 붙이면 AI 가 엉뚱한 라벨로 판정하게 된다
+            challenge.assignSubType(subTypeRepository.findById(req.subTypeId())
+                    .filter(s -> s.isActive() && s.getCategoryId().equals(category.getId()))
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_ERROR,
+                            "이 카테고리에서 고를 수 없는 세부 종류예요.")));
+        }
         Challenge saved = challengeRepository.save(challenge);
         if (joinHost) {
             addParticipant(saved, userId);

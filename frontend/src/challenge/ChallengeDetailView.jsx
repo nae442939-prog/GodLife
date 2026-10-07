@@ -58,6 +58,7 @@ export function ChallengeDetailView({
             <span className="dt-tag">
               <CategoryIcon id={c.category.id} size={13} strokeWidth={1.8} />
               {c.category.name}
+              {c.subType && ` · ${c.subType.name}`}
             </span>
             <span className={`dt-tag ${isBet ? 'is-bet' : 'is-free'}`}>{MODE_LABEL[c.mode]}</span>
             {c.visibility === 'PRIVATE' && (

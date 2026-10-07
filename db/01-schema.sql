@@ -135,10 +135,24 @@ CREATE TABLE categories (
   UNIQUE KEY uk_categories_ai_label (ai_label)
 ) ENGINE=InnoDB COMMENT='챌린지 카테고리';
 
+CREATE TABLE category_sub_types (
+  id          INT         NOT NULL AUTO_INCREMENT,
+  category_id INT         NOT NULL,
+  name        VARCHAR(30) NOT NULL COMMENT '일찍 일어나기 · 산책 …',
+  ai_label    VARCHAR(50) NOT NULL COMMENT 'AI 분류 모델 클래스 라벨과 1:1 매핑',
+  sort_order  INT         NOT NULL DEFAULT 0,
+  is_active   BOOLEAN     NOT NULL DEFAULT TRUE,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_category_sub_types_name (category_id, name),
+  UNIQUE KEY uk_category_sub_types_ai_label (ai_label),
+  CONSTRAINT fk_category_sub_types_category FOREIGN KEY (category_id) REFERENCES categories (id)
+) ENGINE=InnoDB COMMENT='카테고리 세부 종류 (지금은 기타만)';
+
 CREATE TABLE challenges (
   id                BIGINT       NOT NULL AUTO_INCREMENT,
   host_id           BIGINT       NOT NULL COMMENT '개설자',
   category_id       INT          NOT NULL,
+  sub_type_id       INT          NULL COMMENT '카테고리 세부 종류 (기타만, 고르지 않으면 NULL)',
   title             VARCHAR(100) NOT NULL,
   description       TEXT         NOT NULL,
   notice            VARCHAR(300) NULL COMMENT '방장 공지. 채팅방 맨 위 고정',
@@ -168,6 +182,7 @@ CREATE TABLE challenges (
   UNIQUE KEY uk_challenges_invite_code (invite_code),
   CONSTRAINT fk_challenges_host FOREIGN KEY (host_id) REFERENCES users (id),
   CONSTRAINT fk_challenges_category FOREIGN KEY (category_id) REFERENCES categories (id),
+  CONSTRAINT fk_challenges_sub_type FOREIGN KEY (sub_type_id) REFERENCES category_sub_types (id),
   CONSTRAINT ck_challenges_period CHECK (end_date >= start_date),
   CONSTRAINT ck_challenges_capacity CHECK (max_participants >= 1 AND participant_count >= 0),
   CONSTRAINT ck_challenges_frequency CHECK (

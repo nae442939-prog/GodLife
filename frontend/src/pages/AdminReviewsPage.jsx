@@ -16,8 +16,19 @@ const REASON = {
   REPORTED: '신고됨',
 }
 const STATUS = { OPEN: '검토 대기', APPROVED: '승인', REJECTED: '거절' }
-// AI 모델의 라벨 (categories.ai_label)
-const LABEL = { exercise: '운동', study: '공부', reading: '독서', cooking: '요리', other: '기타' }
+// AI 모델의 라벨 (categories.ai_label · category_sub_types.ai_label)
+const LABEL = {
+  exercise: '운동',
+  study: '공부',
+  reading: '독서',
+  cooking: '요리',
+  wake_up: '일찍 일어나기',
+  walk: '산책',
+  water: '물 마시기',
+  clean: '청소 · 정리',
+  plant: '식물 가꾸기',
+  other: '기타',
+}
 
 const percent = (value) => (value == null ? null : `${Math.round(Number(value) * 100)}%`)
 

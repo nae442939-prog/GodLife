@@ -2,7 +2,8 @@
 
     python training/train_local.py
 
-- 사진: training/data/dataset/{exercise,study,reading,cooking,other}/  (prepare_dataset.py · merge_web_photos.py 가 만든다)
+- 사진: training/data/dataset/{exercise,study,reading,cooking,wake_up,walk,water,clean,plant,other}/
+  (prepare_dataset.py · merge_web_photos.py 가 만든다)
 - ImageNet 으로 사전학습된 MobileNetV2 에서 시작해 1단계 분류층만 → 2단계 뒤쪽 블록 4개까지 풀어 미세 조정한다.
   (Colab 노트북 godlife_finetune.ipynb 와 같은 방법)
 - CPU 에서도 빨리 끝나게, 학습하지 않는 앞부분(얼린 블록)의 출력은 사진마다 한 번만 계산해 두고
@@ -27,8 +28,10 @@ DATA_DIR = ROOT / "training" / "data" / "dataset"
 OUT = ROOT / "models" / "godlife-mobilenetv2.pt"
 METRICS = ROOT / "models" / "godlife-mobilenetv2.metrics.json"
 
-LABELS = ["exercise", "study", "reading", "cooking", "other"]  # categories.ai_label 과 같은 폴더 이름
-MODEL_VERSION = "mobilenetv2-v1"
+# categories.ai_label 과 같은 폴더 이름. wake_up ~ plant 는 '기타' 카테고리의 세부 라벨(category_sub_types.ai_label),
+# other 는 어느 쪽에도 들지 않는 사진이다
+LABELS = ["exercise", "study", "reading", "cooking", "wake_up", "walk", "water", "clean", "plant", "other"]
+MODEL_VERSION = "mobilenetv2-v2"
 SEED = 42
 BATCH = 32
 HEAD_EPOCHS, FINETUNE_EPOCHS = 8, 6
@@ -88,7 +91,7 @@ def main() -> None:
     print(f"train {len(train_samples)}장 / val {len(val_samples)}장", flush=True)
 
     model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V2)
-    model.classifier[1] = nn.Linear(model.last_channel, len(classes))  # 1280 → 5
+    model.classifier[1] = nn.Linear(model.last_channel, len(classes))  # 1280 → 라벨 수
     trunk = model.features[:-UNFROZEN_BLOCKS]   # 끝까지 얼려 두는 앞부분
     tail = model.features[-UNFROZEN_BLOCKS:]    # 2단계에서 미세 조정할 뒤쪽 블록
     for p in model.features.parameters():
@@ -179,6 +182,7 @@ def main() -> None:
 
     # 1단계: 분류층만
     fit(HEAD_EPOCHS, torch.optim.Adam(model.classifier.parameters(), lr=1e-3), "head", train_tail=False)
+    save()  # 2단계 도중에 끊겨도 여기까지 학습한 모델은 남게
 
     # 2단계: 뒤쪽 블록을 풀어 작은 학습률로
     for p in tail.parameters():

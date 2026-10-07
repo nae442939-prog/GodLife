@@ -70,6 +70,8 @@ function initialForm() {
   const tomorrow = addDays(toIsoDate(new Date()), 1)
   return {
     categoryId: '',
+    // 카테고리 세부 종류 ('기타'만 있다). '' = 그 밖 (AI 가 사진 종류를 확인하지 않는다)
+    subTypeId: '',
     title: '',
     description: '',
     startDate: tomorrow,
@@ -157,11 +159,15 @@ export function ChallengeCreatePage() {
     }
   }, [withId])
 
+  const subTypes = categories.find((c) => String(c.id) === form.categoryId)?.subTypes ?? []
+
   const setField = (name, value) => {
     setForm((f) => {
       const next = { ...f, [name]: value }
       // 시작일을 종료일 뒤로 옮기면 종료일도 같은 날로 따라온다.
       if (name === 'startDate' && next.endDate && next.endDate < value) next.endDate = value
+      // 세부 종류는 카테고리에 딸린 값이라 카테고리를 바꾸면 비운다.
+      if (name === 'categoryId') next.subTypeId = ''
       return next
     })
     setErrors((errs) => ({ ...errs, [name]: undefined }))
@@ -184,6 +190,7 @@ export function ChallengeCreatePage() {
       const created = await challengeApi.create(
         {
           categoryId: Number(form.categoryId),
+          subTypeId: form.subTypeId ? Number(form.subTypeId) : null,
           title: form.title.trim(),
           description: form.description.trim(),
           mode,
@@ -326,6 +333,32 @@ export function ChallengeCreatePage() {
               </div>
               {errors.categoryId && <p className="field-error">{errors.categoryId}</p>}
             </fieldset>
+
+            {subTypes.length > 0 && (
+              <fieldset className="field">
+                <legend className="field-label">세부 종류</legend>
+                <div className="chips">
+                  {[...subTypes, { id: '', name: '그 밖' }].map((s) => (
+                    <label key={s.id} className={`chip ${form.subTypeId === String(s.id) ? 'is-active' : ''}`}>
+                      <input
+                        type="radio"
+                        name="subTypeId"
+                        value={s.id}
+                        checked={form.subTypeId === String(s.id)}
+                        onChange={onChange}
+                        className="sr-only"
+                      />
+                      {s.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="field-hint">
+                  {form.subTypeId
+                    ? 'AI 가 인증 사진이 이 종류와 맞는지 확인해요.'
+                    : "'그 밖'은 사진 종류를 확인하지 않고, 같은 사진을 다시 쓰는지만 봐요."}
+                </p>
+              </fieldset>
+            )}
 
             <Field
               label="제목"

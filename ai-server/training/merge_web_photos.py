@@ -24,7 +24,22 @@ WIKIMEDIA_KEEP = {
     "cooking": ["cooking-pan-stove", "homemade-meal-plate", "frying-pan-food", "kitchen-cooking-pot",
                 "salad-bowl-homemade", "home-cooking"],
     "other": ["sunrise-morning", "alarm-clock", "glass-of-water", "made-bed-bedroom", "walking-path-park",
-              "vitamins-pills", "houseplant-watering"],
+              "vitamins-pills", "houseplant-watering", "cleaning-room",
+              "park-footpath", "walking-trail-forest-path", "sidewalk-street-trees", "water-bottle",
+              "bottled-water", "drinking-water-glass", "watering-can-plants"],
+}
+# '기타'로 받아 둔 사진(web/other · openimages/other 의 폴더)을 세부 라벨로 나눈다. 여기 없는 폴더는 other 그대로
+SUB_LABELS = {
+    "sunrise-morning": "wake_up", "alarm-clock": "wake_up", "made-bed-bedroom": "wake_up",
+    "sunrise": "wake_up", "bed": "wake_up", "morning": "wake_up", "bedroom": "wake_up", "pillow": "wake_up",
+    "walking-path-park": "walk", "park-footpath": "walk", "walking-trail-forest-path": "walk",
+    "sidewalk-street-trees": "walk", "dog-walking": "walk", "walkway": "walk",
+    "glass-of-water": "water", "drinking-water": "water", "water-bottle": "water", "drinking": "water",
+    "bottled-water": "water", "drinking-water-glass": "water",
+    "cleaning-room": "clean", "sink": "clean", "washing-machine": "clean", "cleanliness": "clean",
+    "closet": "clean", "laundry": "clean", "laundry-room": "clean",
+    "houseplant-watering": "plant", "houseplant": "plant", "flowerpot": "plant", "garden": "plant",
+    "watering-can-plants": "plant",
 }
 # Open Images: 훑어보고 뺀 클래스 (폴더 이름) — 이유는 옆에
 OPENIMAGES_SKIP: dict[str, str] = {
@@ -32,15 +47,28 @@ OPENIMAGES_SKIP: dict[str, str] = {
     "student": "단체 사진이 대부분",
     "learning": "회의 · 발표 장면이 대부분",
     "walking": "등산 사진이 대부분이라 운동과 헷갈린다",
+    "office-supplies": "프린터 · 상자 · 타자기 사진이 대부분",
+    "paper": "종이접기 · 지폐 사진이 대부분",
+    "blackboard": "카페 메뉴판이 대부분",
+    "bookcase": "빈 책장 · 가구 사진이 대부분",
+    "library": "사진이 거의 없다",
+    "trail": "산악자전거 · 등산 사진이 대부분이라 운동과 헷갈린다",
+    "pedestrian": "차가 다니는 도심 사진이 대부분",
+    "street": "차가 다니는 도심 사진이 대부분",
+    "bottle": "탄산음료 · 술 · 샴푸 병이 섞여 있다",
+    "drinkware": "와인잔이 대부분",
+    "mug": "커피 · 차 사진이 대부분",
 }
 
 MAX_PER_FOLDER = 120
+# 사진이 적은 라벨(독서)을 채우려고 더 많이 쓰는 폴더
+MAX_OVERRIDES = {"book": 400}
 
 
 def copy(folder: Path, label: str, prefix: str) -> int:
     target = OUT / label
     target.mkdir(parents=True, exist_ok=True)
-    photos = sorted(folder.glob("*.jpg"))[:MAX_PER_FOLDER]
+    photos = sorted(folder.glob("*.jpg"))[:MAX_OVERRIDES.get(folder.name, MAX_PER_FOLDER)]
     for photo in photos:
         shutil.copyfile(photo, target / f"{prefix}-{photo.name}")
     return len(photos)
@@ -50,13 +78,15 @@ def main() -> None:
     added: dict[str, int] = {}
     for label, queries in WIKIMEDIA_KEEP.items():
         for query in queries:
-            added[label] = added.get(label, 0) + copy(DATA / "web" / label / query, label, "wm")
+            target = SUB_LABELS.get(query, label) if label == "other" else label
+            added[target] = added.get(target, 0) + copy(DATA / "web" / label / query, target, "wm")
     for label_dir in sorted(p for p in (DATA / "openimages").iterdir() if p.is_dir() and not p.name.startswith("_")):
         for class_dir in sorted(p for p in label_dir.iterdir() if p.is_dir()):
             if class_dir.name in OPENIMAGES_SKIP:
                 print(f"  뺌 {label_dir.name}/{class_dir.name}: {OPENIMAGES_SKIP[class_dir.name]}")
                 continue
-            added[label_dir.name] = added.get(label_dir.name, 0) + copy(class_dir, label_dir.name, "oi")
+            target = SUB_LABELS.get(class_dir.name, label_dir.name) if label_dir.name == "other" else label_dir.name
+            added[target] = added.get(target, 0) + copy(class_dir, target, "oi")
     for label, count in sorted(added.items()):
         print(f"{label:10s} +{count}장 → 모두 {len(list((OUT / label).glob('*.jpg')))}장")
 

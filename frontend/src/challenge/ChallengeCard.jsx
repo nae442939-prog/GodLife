@@ -19,7 +19,10 @@ export function ChallengeCard({ challenge: c }) {
           </span>
           <span className={`cl-point ${c.mode === 'BET' ? 'is-bet' : ''}`}>{pointText(c)}</span>
         </div>
-        <p className="cl-category">{c.category.name}</p>
+        <p className="cl-category">
+          {c.category.name}
+          {c.subType && ` · ${c.subType.name}`}
+        </p>
         <h3 className="cl-title">{c.title}</h3>
         <p className="cl-desc">{c.description}</p>
         <div className="cl-stats">

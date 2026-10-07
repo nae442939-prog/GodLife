@@ -2,7 +2,7 @@
 
 > 이 문서는 `db/01-schema.sql` 에서 자동으로 만든 것입니다. 직접 고치지 말고 스키마를 고친 뒤 `python docs/gen-erd.py` 를 다시 돌리세요.
 
-MySQL 8.0 / InnoDB / utf8mb4 · 테이블 57개 · 외래 키 87개
+MySQL 8.0 / InnoDB / utf8mb4 · 테이블 58개 · 외래 키 89개
 
 설계 원칙
 
@@ -16,7 +16,7 @@ MySQL 8.0 / InnoDB / utf8mb4 · 테이블 57개 · 외래 키 87개
 | 영역 | 테이블 수 | 테이블 |
 |---|---:|---|
 | 01. 계정 · 인증 · 티어 | 7 | [`tiers`](#tiers), [`users`](#users), [`social_accounts`](#social_accounts), [`phone_verifications`](#phone_verifications), [`devices`](#devices), [`refresh_tokens`](#refresh_tokens), [`password_reset_tokens`](#password_reset_tokens) |
-| 02. 챌린지 코어 | 6 | [`categories`](#categories), [`challenges`](#challenges), [`challenge_participants`](#challenge_participants), [`chat_messages`](#chat_messages), [`user_blocks`](#user_blocks), [`chat_reports`](#chat_reports) |
+| 02. 챌린지 코어 | 7 | [`categories`](#categories), [`category_sub_types`](#category_sub_types), [`challenges`](#challenges), [`challenge_participants`](#challenge_participants), [`chat_messages`](#chat_messages), [`user_blocks`](#user_blocks), [`chat_reports`](#chat_reports) |
 | 03. 인증 · AI 검증 | 5 | [`verifications`](#verifications), [`ai_inference_results`](#ai_inference_results), [`image_embeddings`](#image_embeddings), [`review_queue`](#review_queue), [`reports`](#reports) |
 | 04. 포인트 · 원장 · 정산 | 5 | [`wallets`](#wallets), [`point_transactions`](#point_transactions), [`settlements`](#settlements), [`settlement_items`](#settlement_items), [`daily_settlements`](#daily_settlements) |
 | 05. 결제 (테스트 모드 전용) | 1 | [`payments`](#payments) |
@@ -39,8 +39,10 @@ erDiagram
     users ||--o{ refresh_tokens : "user_id"
     devices |o--o{ refresh_tokens : "device_id"
     users ||--o{ password_reset_tokens : "user_id"
+    categories ||--o{ category_sub_types : "category_id"
     users ||--o{ challenges : "host_id"
     categories ||--o{ challenges : "category_id"
+    category_sub_types |o--o{ challenges : "sub_type_id"
     challenges ||--o{ challenge_participants : "challenge_id"
     users ||--o{ challenge_participants : "user_id"
     challenges ||--o{ chat_messages : "challenge_id"
@@ -330,10 +332,19 @@ erDiagram
         VARCHAR ai_label UK
         BOOLEAN is_active
     }
+    category_sub_types {
+        INT id PK
+        INT category_id FK
+        VARCHAR name
+        VARCHAR ai_label UK
+        INT sort_order
+        BOOLEAN is_active
+    }
     challenges {
         BIGINT id PK
         BIGINT host_id FK
         INT category_id FK
+        INT sub_type_id FK
         VARCHAR title
         TEXT description
         VARCHAR notice
@@ -393,8 +404,10 @@ erDiagram
         ENUM status
         DATETIME created_at
     }
+    categories ||--o{ category_sub_types : "category_id"
     users ||--o{ challenges : "host_id"
     categories ||--o{ challenges : "category_id"
+    category_sub_types |o--o{ challenges : "sub_type_id"
     challenges ||--o{ challenge_participants : "challenge_id"
     users ||--o{ challenge_participants : "user_id"
     challenges ||--o{ chat_messages : "challenge_id"
@@ -418,6 +431,22 @@ erDiagram
 | `ai_label` | `VARCHAR(50)` |  | UK |  | AI 분류 모델 클래스 라벨과 1:1 매핑 |
 | `is_active` | `BOOLEAN` |  |  | TRUE |  |
 
+### category_sub_types
+
+카테고리 세부 종류 (지금은 기타만)
+
+| 컬럼 | 타입 | NULL | 키 | 기본값 | 설명 |
+|---|---|:---:|---|---|---|
+| `id` | `INT` |  | PK |  |  |
+| `category_id` | `INT` |  | FK |  |  |
+| `name` | `VARCHAR(30)` |  |  |  | 일찍 일어나기 · 산책 … |
+| `ai_label` | `VARCHAR(50)` |  | UK |  | AI 분류 모델 클래스 라벨과 1:1 매핑 |
+| `sort_order` | `INT` |  |  | 0 |  |
+| `is_active` | `BOOLEAN` |  |  | TRUE |  |
+
+- 유일: (`category_id`, `name`)
+- `category_id` → [`categories`](#categories)
+
 ### challenges
 
 챌린지
@@ -427,6 +456,7 @@ erDiagram
 | `id` | `BIGINT` |  | PK |  |  |
 | `host_id` | `BIGINT` |  | FK |  | 개설자 |
 | `category_id` | `INT` |  | FK |  |  |
+| `sub_type_id` | `INT` | O | FK |  | 카테고리 세부 종류 (기타만, 고르지 않으면 NULL) |
 | `title` | `VARCHAR(100)` |  |  |  |  |
 | `description` | `TEXT` |  |  |  |  |
 | `notice` | `VARCHAR(300)` | O |  |  | 방장 공지. 채팅방 맨 위 고정 |
@@ -451,6 +481,7 @@ erDiagram
 
 - `host_id` → [`users`](#users)
 - `category_id` → [`categories`](#categories)
+- `sub_type_id` → [`category_sub_types`](#category_sub_types)
 
 ### challenge_participants
 

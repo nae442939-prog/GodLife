@@ -130,7 +130,7 @@ class WalletConcurrencyTest {
     private Long betChallenge(Long hostId, long fee) {
         LocalDate today = LocalDate.now(clock);
         Challenge c = challengeService.create(hostId, new ChallengeCreateRequest(1, "동시 참여", "테스트", ChallengeMode.BET,
-                null, today.plusDays(1), today.plusDays(7), FrequencyType.DAILY, null, fee, 10, null, null, false));
+                null, today.plusDays(1), today.plusDays(7), FrequencyType.DAILY, null, fee, 10, null, null, false, null));
         challengeIds.add(c.getId());
         return c.getId();
     }

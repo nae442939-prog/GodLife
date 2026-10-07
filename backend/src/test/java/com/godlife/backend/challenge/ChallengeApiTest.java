@@ -109,6 +109,26 @@ class ChallengeApiTest {
                 .andExpect(jsonPath("$.code").value("PHONE_NOT_REGISTERED"));
     }
 
+    @Test
+    @DisplayName("기타 챌린지는 세부 종류를 골라 만들 수 있고 상세에 보인다. 다른 카테고리에는 붙일 수 없다")
+    void createWithSubType() throws Exception {
+        String other = freeBody("아침 산책", today.plusDays(1), today.plusDays(7)).replace("\"categoryId\":1", "\"categoryId\":5");
+
+        long id = idOf(create(host, other.replace("\"mode\"", "\"subTypeId\":2,\"mode\"")));
+        mvc.perform(get("/api/challenges/" + id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.category.name").value("기타"))
+                .andExpect(jsonPath("$.subType.name").value("산책"));
+
+        long plain = idOf(create(host, other));
+        mvc.perform(get("/api/challenges/" + plain)).andExpect(jsonPath("$.subType").isEmpty());
+
+        // 운동(1) 챌린지에 기타의 세부 종류 · 없는 세부 종류
+        create(host, other.replace("\"categoryId\":5", "\"categoryId\":1,\"subTypeId\":2"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        create(host, other.replace("\"mode\"", "\"subTypeId\":9999,\"mode\""))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
     // ---------- 탐색 / 상세 ----------
 
     @Test
@@ -119,7 +139,9 @@ class ChallengeApiTest {
         idOf(create(host, betBody("포인트 " + tag, 1000)));
 
         mvc.perform(get("/api/categories")).andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].name").value(hasItem("공부")));
+                .andExpect(jsonPath("$[*].name").value(hasItem("공부")))
+                .andExpect(jsonPath("$[?(@.name == '공부')].subTypes.length()").value(hasItem(0)))
+                .andExpect(jsonPath("$[?(@.name == '기타')].subTypes[*].name").value(hasItem("산책")));
 
         mvc.perform(get("/api/challenges").param("q", tag)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(2));

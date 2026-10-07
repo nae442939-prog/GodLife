@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
  * @param visibility    없으면 PUBLIC. PRIVATE 는 목록에 안 나오고 초대 링크로만 참여한다.
  * @param entryFee      포인트 챌린지(BET)만. 무료 챌린지는 무시하고 0 으로 저장한다.
  * @param partialRefund 없으면 false (포인트 챌린지만 의미 있음)
+ * @param subTypeId     카테고리 세부 종류 ('기타'만). 없으면 '그 밖' — AI 가 사진 종류는 보지 않는다
  */
 public record ChallengeCreateRequest(
         @NotNull(message = "카테고리를 골라 주세요.")
@@ -61,7 +62,9 @@ public record ChallengeCreateRequest(
 
         LocalTime verifyUntil,
 
-        Boolean partialRefund) {
+        Boolean partialRefund,
+
+        Integer subTypeId) {
 
     public static final int MAX_TITLE = 50;
     public static final int MAX_DESCRIPTION = 1000;

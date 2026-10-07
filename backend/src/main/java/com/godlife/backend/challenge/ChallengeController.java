@@ -2,7 +2,7 @@ package com.godlife.backend.challenge;
 
 import com.godlife.backend.auth.AuthUser;
 import com.godlife.backend.challenge.ChallengeService.SortOption;
-import com.godlife.backend.challenge.dto.CategoryResponse;
+import com.godlife.backend.challenge.dto.CategoryOptionResponse;
 import com.godlife.backend.challenge.dto.ChallengeCreateRequest;
 import com.godlife.backend.challenge.dto.ChallengeDetailResponse;
 import com.godlife.backend.challenge.dto.ChallengeSummaryResponse;
@@ -34,8 +34,8 @@ public class ChallengeController {
     private final ChatService chatService;
 
     @GetMapping("/api/categories")
-    public List<CategoryResponse> categories() {
-        return challengeService.categories().stream().map(CategoryResponse::from).toList();
+    public List<CategoryOptionResponse> categories() {
+        return challengeService.categoryOptions();
     }
 
     @GetMapping("/api/challenges")

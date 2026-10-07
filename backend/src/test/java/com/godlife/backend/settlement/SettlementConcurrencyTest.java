@@ -85,7 +85,7 @@ class SettlementConcurrencyTest {
         testCharger.charge(winner, 10_000);
         testCharger.charge(loser, 10_000);
         Challenge c = challengeService.create(host, new ChallengeCreateRequest(1, "동시 정산", "테스트", ChallengeMode.BET,
-                null, today, today, FrequencyType.DAILY, null, 3_000L, 10, null, null, false));
+                null, today, today, FrequencyType.DAILY, null, 3_000L, 10, null, null, false, null));
         challengeId = c.getId();
         challengeService.join(challengeId, winner);
         challengeService.join(challengeId, loser);

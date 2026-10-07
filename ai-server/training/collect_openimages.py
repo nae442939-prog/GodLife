@@ -37,12 +37,22 @@ PICKS = {
                  ("Jogging", 60), ("Yoga", 72), ("Gym", 110), ("Weight training", 100), ("Running", 100),
                  ("Exercise", 80), ("Physical fitness", 80)],
     "study": [("Homework", 60), ("Student", 72), ("Handwriting", 110), ("Pen", 80), ("Laptop", 110),
-              ("Learning", 110), ("Desk", 60)],
-    "reading": [("Reading", 70), ("Book", 400)],
+              ("Learning", 110), ("Desk", 60),
+              ("Writing", 120), ("Office supplies", 120), ("Paper", 120), ("Document", 120),
+              ("Computer keyboard", 120), ("Classroom", 119), ("Blackboard", 76), ("Whiteboard", 65),
+              ("Pencil", 63), ("Calculator", 56)],
+    "reading": [("Reading", 70), ("Book", 400), ("Bookcase", 120), ("Library", 120)],
     "cooking": [("Frying pan", 60), ("Cutting board", 60), ("Kitchen stove", 60), ("Cookware and bakeware", 91),
                 ("Stir frying", 60), ("Cooking", 300), ("Meal", 90), ("Dish", 90)],
+    # '기타'는 세부 라벨로 나눠 학습한다 (merge_web_photos.py 의 SUB_LABELS 가 폴더 → 세부 라벨을 정한다)
     "other": [("Alarm clock", 60), ("Drinking water", 60), ("Walking", 60), ("Sunrise", 135), ("Bed", 110),
-              ("Houseplant", 110)],
+              ("Houseplant", 110),
+              ("Morning", 120), ("Bedroom", 120), ("Pillow", 120),                                  # 일찍 일어나기
+              ("Dog walking", 97), ("Walkway", 120), ("Trail", 120), ("Pedestrian", 120), ("Street", 120),  # 산책
+              ("Drinking", 58), ("Bottle", 120), ("Drinkware", 120), ("Mug", 120),                 # 물 마시기
+              ("Sink", 120), ("Washing machine", 117), ("Cleanliness", 85), ("Laundry", 79),
+              ("Laundry room", 41), ("Closet", 82),                                                # 청소 · 정리
+              ("Flowerpot", 120), ("Garden", 120)],                                                # 식물 가꾸기
 }
 # 이 클래스가 같이 붙은 사진은 다른 라벨에 쓰지 않는다 (예: 책이 찍힌 사진을 '기타'로 배우지 않게)
 OWNERS = {name: label for label, picks in PICKS.items() for name, _ in picks}
@@ -99,16 +109,22 @@ def main() -> None:
     taken: set[str] = set()
     for label, picks in PICKS.items():
         for name, limit in picks:
+            folder = ROOT / label / slug(name)
+            done = ROOT / "_sheets" / f"{label}__{slug(name)}.jpg"
+            if done.is_file():
+                # 이미 받은 클래스는 다시 고르지 않는다 (클래스를 더 적어 넣어도 예전에 받은 사진이 그대로 쓰이게)
+                taken.update(f.stem.removeprefix("oi-") for f in folder.glob("*.jpg"))
+                print(f"{label}/{slug(name)}: 이미 있음")
+                continue
             # 다른 라벨의 클래스도 같이 붙은 사진은 헷갈리므로 뺀다
             candidates = sorted(c for c in by_class.get(name, []) if c[1] not in taken and labels_of[c[1]] == {label})
             random.shuffle(candidates)
             chosen = candidates[:limit]
             taken.update(image_id for _, image_id in chosen)
-            folder = ROOT / label / slug(name)
             folder.mkdir(parents=True, exist_ok=True)
             with ThreadPoolExecutor(max_workers=8) as pool:
                 saved = sum(pool.map(download, [(s, i, folder / f"oi-{i}.jpg") for s, i in chosen]))
-            sheet(folder, ROOT / "_sheets" / f"{label}__{slug(name)}.jpg")
+            sheet(folder, done)
             print(f"{label}/{slug(name)}: {saved}장", flush=True)
 
 

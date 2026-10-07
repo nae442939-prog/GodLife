@@ -70,13 +70,15 @@ public class ReviewService {
     public List<Review> list(String status) {
         List<Review> reviews = jdbc.query("""
                 SELECT q.id, q.verification_id, q.reason, q.status, q.memo, c.id AS challenge_id, c.title,
-                       cat.name AS category_name, cat.ai_label, u.id AS user_id, u.nickname, v.verify_date,
+                       COALESCE(st.name, cat.name) AS category_name, COALESCE(st.ai_label, cat.ai_label) AS ai_label,
+                       u.id AS user_id, u.nickname, v.verify_date,
                        r.predicted_label, r.confidence, r.max_similarity, r.duplicate_of_id
                 FROM review_queue q
                   JOIN verifications v ON v.id = q.verification_id
                   JOIN challenge_participants p ON p.id = v.participant_id
                   JOIN challenges c ON c.id = p.challenge_id
                   JOIN categories cat ON cat.id = c.category_id
+                  LEFT JOIN category_sub_types st ON st.id = c.sub_type_id
                   JOIN users u ON u.id = p.user_id
                   LEFT JOIN ai_inference_results r ON r.verification_id = v.id
                 WHERE (:status IS NULL OR q.status = :status)
