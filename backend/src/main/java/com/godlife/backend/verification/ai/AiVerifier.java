@@ -21,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 인증 사진의 AI 판정. 직접 학습한 분류 모델(ai-server)이 낸 라벨·확신도와, 예전 사진과의 닮은 정도로 정한다.
  * <ul>
  *   <li>통과(AUTO_PASS): 라벨이 챌린지 카테고리와 같고 확신도가 충분 → 승인</li>
- *   <li>거절(AUTO_REJECT): 다른 카테고리라고 강하게 확신 → 저장하지 않고 다시 찍게 한다.
+ *   <li>거절(AUTO_REJECT): 다른 카테고리라고 강하게 확신하거나, 다른 종류를 골랐는데 챌린지 종류의 점수가 낮을 때
+ *       → 저장하지 않고 다시 찍게 한다.
  *       하루에 {@value #MAX_AUTO_REJECTS}번까지만 거절하고, 그 뒤에는 사람이 보도록 검토로 넘긴다
  *       (모델이 틀려서 인증을 아예 못 하는 일이 없게)</li>
  *   <li>검토(NEED_REVIEW): 그 사이의 애매한 경우, 또는 예전 사진과 거의 같은 경우 → 일단 인증으로 받고 관리자 검토로 넘긴다</li>
@@ -38,8 +39,11 @@ public class AiVerifier {
     static final double PASS_CONFIDENCE = 0.60;
     /** 다른 카테고리로 봤을 때 이 확신도 이상이면 바로 거절 */
     static final double REJECT_CONFIDENCE = 0.85;
-    /** 챌린지 종류의 점수가 이보다 낮으면 '전혀 다른 사진'으로 본다 */
-    static final double EXPECTED_FLOOR = 0.10;
+    /**
+     * 모델이 다른 종류를 골랐을 때, 챌린지 종류의 점수가 이보다 낮으면 '다른 사진'으로 보고 돌려보낸다.
+     * (이보다 높으면 두 종류 사이에서 망설인 것이라 일단 받고 관리자 검토로 넘긴다)
+     */
+    static final double EXPECTED_FLOOR = 0.30;
     /** 예전 사진과의 코사인 유사도가 이 이상이면 같은 사진을 다시 쓴 것으로 의심 */
     static final double DUPLICATE_SIMILARITY = 0.985;
     /** 한 참가자가 하루에 AI 에게 바로 거절당할 수 있는 횟수. 넘으면 관리자 검토로 넘긴다 */
@@ -132,13 +136,14 @@ public class AiVerifier {
     }
 
     /**
-     * 전혀 다른 사진인지: 다른 종류로 꽤 확신하는데(PASS_CONFIDENCE 이상) 챌린지의 종류일 가능성은 거의 없다고 볼 때.
-     * (산책 챌린지에 키보드 사진 → 공부 76% · 산책 3%) 확신도가 REJECT_CONFIDENCE 에 못 미쳐도 돌려보낸다.
+     * 다른 사진인지: 모델이 다른 종류를 골랐고, 챌린지의 종류일 가능성도 낮게 볼 때 (EXPECTED_FLOOR 미만).
+     * 산책 챌린지에 키보드 사진(공부 76% · 산책 3%)뿐 아니라, 카메라를 가리거나 아무 데나 찍어서 모델이 어느 쪽도
+     * 확신하지 못한 사진(공부 47% · 산책 18%)도 여기에 걸린다 — 확신도가 낮다고 받아 주지 않는다.
+     * 모델이 라벨별 점수를 주지 않으면 이 규칙은 쓰지 않는다 (REJECT_CONFIDENCE 규칙만 남는다).
      */
     private static boolean clearlyDifferent(AiPrediction p, String expected) {
         OptionalDouble expectedScore = p.scoreOf(expected);
-        return p.confidence() >= PASS_CONFIDENCE && expectedScore.isPresent()
-                && expectedScore.getAsDouble() < EXPECTED_FLOOR;
+        return expectedScore.isPresent() && expectedScore.getAsDouble() < EXPECTED_FLOOR;
     }
 
     /** 이 참가자가 오늘 거절당한 횟수를 하나 올리고 돌려준다 (날짜가 바뀌면 처음부터) */

@@ -158,7 +158,8 @@ class Verification {
         nickname = j['nickname'] as String,
         receivedAt = DateTime.parse(j['receivedAt'] as String),
         status = j['status'] as String,
-        mine = j['mine'] as bool;
+        mine = j['mine'] as bool,
+        reported = (j['reported'] as bool?) ?? false;
 
   final int id;
   final int userId;
@@ -166,6 +167,9 @@ class Verification {
   final DateTime receivedAt;
   final String status; // APPROVED | IN_REVIEW
   final bool mine;
+
+  /// 내가 이 인증을 이미 신고했는지
+  bool reported;
 }
 
 class PointTransaction {

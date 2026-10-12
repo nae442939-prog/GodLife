@@ -289,3 +289,82 @@ class _Step extends StatelessWidget {
     ]);
   }
 }
+
+/// 홈에 넣는 이번 달 랭킹 미리보기: 시상대(1 · 2 · 3등)와 내 순위. 누르면 랭킹 화면으로 간다
+class RankingPreview extends StatefulWidget {
+  const RankingPreview({super.key});
+
+  @override
+  State<RankingPreview> createState() => _RankingPreviewState();
+}
+
+class _RankingPreviewState extends State<RankingPreview> {
+  late final Future<_RankData> _data = _load();
+
+  Future<_RankData> _load() async {
+    final r = await context.read<AppState>().api.get('/api/rankings/users?metric=month_verify') as Map<String, dynamic>;
+    _Entry entry(Map<String, dynamic> e) => _Entry(
+          rank: (e['rank'] as num).toInt(),
+          nickname: e['nickname'] as String,
+          image: e['profileImageUrl'] as String?,
+          value: (e['value'] as num).round(),
+          mine: e['mine'] == true,
+        );
+    return _RankData(
+      top: ((r['top'] as List?) ?? []).map((e) => entry(e as Map<String, dynamic>)).toList(),
+      me: r['me'] == null ? null : entry(r['me'] as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_RankData>(
+      future: _data,
+      builder: (context, snap) {
+        final data = snap.data;
+        // 불러오는 중이거나 실패하면 자리를 비워 둔다 (홈의 다른 내용은 그대로 보인다)
+        if (data == null || data.top.isEmpty) return const SizedBox.shrink();
+        final podium = data.top.take(3).toList();
+        return GestureDetector(
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RankingScreen())),
+          child: Column(children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFDE7D8), Color(0xFFD9F1EA)],
+                ),
+              ),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Expanded(child: podium.length > 1 ? _Step(podium[1], 1, 52, '회') : const SizedBox()),
+                Expanded(child: _Step(podium[0], 0, 76, '회')),
+                Expanded(child: podium.length > 2 ? _Step(podium[2], 2, 38, '회') : const SizedBox()),
+              ]),
+            ),
+            if (data.me != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 13, 12, 13),
+                decoration: BoxDecoration(color: AppColors.text, borderRadius: BorderRadius.circular(18)),
+                child: Row(children: [
+                  const Text('내 순위',
+                      style: TextStyle(color: Color(0xFFB3ADA0), fontSize: 12, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 10),
+                  Text('${data.me!.rank}위',
+                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                  const Spacer(),
+                  Text('이번 달 ${data.me!.value}회',
+                      style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  const Icon(Icons.chevron_right, color: Color(0xFFB3ADA0), size: 18),
+                ]),
+              ),
+            ],
+          ]),
+        );
+      },
+    );
+  }
+}

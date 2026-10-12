@@ -81,6 +81,21 @@ class _VerifyScreenState extends State<VerifyScreen> {
     }
   }
 
+  /// 인증 사진 크게 보기 + 신고 (남의 인증만, 같은 인증은 한 번만 신고할 수 있다)
+  Future<void> _openPhoto(Verification v, Future<Uint8List> image) async {
+    final message = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+      builder: (_) => _PhotoSheet(api: _api, base: _base, v: v, image: image),
+    );
+    if (message != null && mounted) {
+      setState(() => v.reported = true);
+      showMessage(context, message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -225,7 +240,13 @@ class _VerifyScreenState extends State<VerifyScreen> {
               crossAxisSpacing: 12,
               childAspectRatio: 0.84,
               children: [
-                for (final v in data.today) _VerificationTile(api: _api, path: '$_base/${v.id}/image', v: v),
+                for (final v in data.today)
+                  _VerificationTile(
+                    api: _api,
+                    path: '$_base/${v.id}/image',
+                    v: v,
+                    onOpen: (image) => _openPhoto(v, image),
+                  ),
               ],
             ),
           ]);
@@ -263,11 +284,14 @@ class _VerifyData {
 
 /// 참가자 인증 사진 한 칸. 참가자만 볼 수 있는 사진이라 토큰을 붙여 받는다
 class _VerificationTile extends StatefulWidget {
-  const _VerificationTile({required this.api, required this.path, required this.v});
+  const _VerificationTile({required this.api, required this.path, required this.v, required this.onOpen});
 
   final ApiClient api;
   final String path;
   final Verification v;
+
+  /// 사진을 눌렀을 때 (받아 둔 사진과 함께)
+  final void Function(Future<Uint8List> image) onOpen;
 
   @override
   State<_VerificationTile> createState() => _VerificationTileState();
@@ -283,6 +307,7 @@ class _VerificationTileState extends State<_VerificationTile> {
       bordered: false,
       radius: 18,
       padding: EdgeInsets.zero,
+      onTap: () => widget.onOpen(_image),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Expanded(
           child: FutureBuilder<Uint8List>(
@@ -315,6 +340,135 @@ class _VerificationTileState extends State<_VerificationTile> {
           ]),
         ),
       ]),
+    );
+  }
+}
+
+/// 인증 사진 크게 보기. 남의 인증이면 아래에서 이유를 골라 관리자에게 신고할 수 있다
+class _PhotoSheet extends StatefulWidget {
+  const _PhotoSheet({required this.api, required this.base, required this.v, required this.image});
+
+  final ApiClient api;
+  final String base;
+  final Verification v;
+  final Future<Uint8List> image;
+
+  @override
+  State<_PhotoSheet> createState() => _PhotoSheetState();
+}
+
+class _PhotoSheetState extends State<_PhotoSheet> {
+  // 웹의 신고 이유와 같다
+  static const _reasons = ['챌린지와 관계없는 사진이에요', '예전에 찍은 사진 같아요', '다른 사람의 사진 같아요'];
+
+  bool _reporting = false; // 신고 이유 고르는 중
+  String _reason = _reasons.first;
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _report() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.api.post('${widget.base}/${widget.v.id}/reports', body: {'reason': _reason});
+      if (mounted) Navigator.of(context).pop('신고를 접수했어요. 관리자가 확인해요.');
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = widget.v;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(
+              child: Text(v.mine ? '내 인증' : '${v.nickname}님의 인증',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+            ),
+            Text('${two(v.receivedAt.hour)}:${two(v.receivedAt.minute)}',
+                style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w700)),
+          ]),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: FutureBuilder<Uint8List>(
+                future: widget.image,
+                builder: (context, snap) => snap.hasData
+                    ? Image.memory(snap.data!, fit: BoxFit.cover)
+                    : const ColoredBox(color: AppColors.surfaceAlt),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (v.status == 'IN_REVIEW')
+            const Padding(
+              padding: EdgeInsets.only(bottom: 10),
+              child: Text('관리자가 확인하고 있는 인증이에요.',
+                  style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600)),
+            ),
+          if (v.mine)
+            const SizedBox.shrink()
+          else if (v.reported)
+            const Text('이미 신고한 인증이에요. 관리자가 확인해요.',
+                style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w700))
+          else if (!_reporting)
+            OutlinedButton.icon(
+              onPressed: () => setState(() => _reporting = true),
+              icon: const Icon(Icons.flag_outlined, size: 18, color: Color(0xFFC2574A)),
+              label: const Text('이 인증 신고하기',
+                  style: TextStyle(color: Color(0xFFC2574A), fontWeight: FontWeight.w800)),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                backgroundColor: AppColors.surface,
+                side: const BorderSide(color: Color(0xFFF6E2DC)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+              ),
+            )
+          else ...[
+            const Text('신고 이유', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            for (final r in _reasons)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() => _reason = r),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _reason == r ? AppColors.text : AppColors.surfaceAlt,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(r,
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: _reason == r ? Colors.white : AppColors.chipText)),
+                  ),
+                ),
+              ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(_error!, style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
+              ),
+            FilledButton(onPressed: _busy ? null : _report, child: Text(_busy ? '보내는 중…' : '관리자에게 신고하기')),
+            const SizedBox(height: 6),
+            const Text('신고하면 관리자가 사진을 직접 보고 인정하거나 취소해요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.navIdle, fontSize: 11, fontWeight: FontWeight.w600)),
+          ],
+        ]),
+      ),
     );
   }
 }
