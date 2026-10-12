@@ -33,6 +33,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 프로필 · 설정을 바꾼 뒤 내 정보를 다시 읽는다
+  Future<void> reloadUser() async {
+    user = User.fromJson(await api.get('/api/users/me') as Map<String, dynamic>);
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     await api.logout();
     user = null;
