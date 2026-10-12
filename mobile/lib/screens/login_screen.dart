@@ -130,9 +130,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ]),
                 const SizedBox(height: 14),
                 Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                  TextButton(onPressed: () => _openWeb('/signup?web=1'), child: const Text('회원가입')),
-                  TextButton(onPressed: () => _openWeb('/find-id?web=1'), child: const Text('아이디 찾기')),
-                  TextButton(onPressed: () => _openWeb('/find-password?web=1'), child: const Text('비밀번호 찾기')),
+                  TextButton(onPressed: () => _openWeb('/signup'), child: const Text('회원가입')),
+                  TextButton(onPressed: () => _openWeb('/find-id'), child: const Text('아이디 찾기')),
+                  TextButton(onPressed: () => _openWeb('/find-password'), child: const Text('비밀번호 찾기')),
                 ]),
               ]),
             ),
