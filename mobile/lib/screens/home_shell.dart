@@ -69,46 +69,114 @@ class _HomeShellState extends State<HomeShell> {
       appBar: AppBar(
         titleSpacing: 20,
         // 종 위의 숫자 표시가 화면 위쪽 · 오른쪽 끝에서 잘리지 않게 여유를 둔다
-        toolbarHeight: 64,
+        toolbarHeight: 58,
         title: Row(children: [
           Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(5)),
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 7),
           const Text('갓생살기'),
         ]),
         actions: [
+          // 종 + 오른쪽 위의 작은 코랄 동그라미(안 읽은 수)
           IconButton(
             tooltip: '알림',
             onPressed: _openNotifications,
             padding: const EdgeInsets.all(12),
-            icon: Badge(
-              isLabelVisible: _unread > 0,
-              label: Text(_unread > 99 ? '99+' : '$_unread'),
-              offset: const Offset(2, -2),
-              child: const Icon(Icons.notifications_none, size: 26),
-            ),
+            icon: Stack(clipBehavior: Clip.none, children: [
+              const Icon(Icons.notifications_none, size: 24, color: AppColors.brown),
+              if (_unread > 0)
+                Positioned(
+                  top: -4,
+                  right: -5,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(99)),
+                    child: Text(_unread > 99 ? '99+' : '$_unread',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, height: 1)),
+                  ),
+                ),
+            ]),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
         ],
       ),
       body: body,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) {
+      bottomNavigationBar: _BottomTabs(
+        selected: _tab,
+        onSelect: (i) {
           setState(() => _tab = i);
           _loadUnread();
         },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: '챌린지'),
-          NavigationDestination(icon: Icon(Icons.forum_outlined), selectedIcon: Icon(Icons.forum), label: '커뮤니티'),
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: '홈'),
-          NavigationDestination(
-              icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: '갓생기록'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '마이페이지'),
-        ],
+      ),
+    );
+  }
+}
+
+/// 시안의 아래 탭: 고른 탭만 먹색 알약 안에 흰 아이콘, 나머지는 옅은 회색 선 아이콘
+class _BottomTabs extends StatelessWidget {
+  const _BottomTabs({required this.selected, required this.onSelect});
+
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  static const _tabs = [
+    (Icons.flag_outlined, Icons.flag, '챌린지'),
+    (Icons.chat_bubble_outline, Icons.chat_bubble, '커뮤니티'),
+    (Icons.home_outlined, Icons.home, '홈'),
+    (Icons.calendar_today_outlined, Icons.calendar_today, '갓생기록'),
+    (Icons.person_outline, Icons.person, '마이페이지'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 10),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+          child: Row(children: [
+            for (final (i, (icon, activeIcon, label)) in _tabs.indexed)
+              Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => onSelect(i),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 42,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: i == selected ? AppColors.text : Colors.transparent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Icon(i == selected ? activeIcon : icon,
+                            size: 18, color: i == selected ? Colors.white : AppColors.navIdle),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: i == selected ? FontWeight.w800 : FontWeight.w700,
+                            color: i == selected ? AppColors.text : AppColors.navIdle,
+                          )),
+                    ]),
+                  ),
+                ),
+              ),
+          ]),
+        ),
       ),
     );
   }

@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
 
-/// 웹(frontend/src/index.css)과 같은 색을 쓴다.
-/// 코랄은 주요 버튼에만, 강조 · 선택 표시는 진한 갈색으로 (웹과 같은 규칙).
+/// 앱 시안의 색. 코랄은 주요 버튼에만, 선택 표시는 먹색(#201d17)으로 한다.
 class AppColors {
-  static const bg = Color(0xFFFFF8F0);
+  static const bg = Color(0xFFFDFBF6);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceAlt = Color(0xFFFBF1E6);
-  static const text = Color(0xFF2A2925);
-  static const muted = Color(0xFF8C847A);
-  static const border = Color(0xFFECE4D8);
-  static const primary = Color(0xFFFF6B4A);
-  static const mint = Color(0xFF14B8A6);
-  static const brown = Color(0xFF6B4A35);
+  static const surfaceAlt = Color(0xFFF1EDE2); // 꺼진 칩 · 옅은 바탕
+  static const text = Color(0xFF201D17);
+  static const muted = Color(0xFFA39C8C);
+  static const chipText = Color(0xFF948E7C);
+  static const navIdle = Color(0xFFB3ADA0);
+  static const border = Color(0xFFF1EDE2);
+  static const cardBorder = Color(0xFFF3EFE4);
+  static const primary = Color(0xFFEE6A4D);
+  static const mint = Color(0xFF0F9C86);
+  static const mintBg = Color(0xFFE3F5F1);
+  static const point = Color(0xFFC2742F);
+  static const pointBg = Color(0xFFFDEEE1);
+  static const brown = Color(0xFF4A4638); // 아이콘 · 강조 글자
   static const danger = Color(0xFFD6336C);
 }
 
+/// 시안의 카드 그림자 (아래로 살짝, 넓게 퍼지지 않게)
+const cardShadow = [
+  BoxShadow(color: Color(0x243C2814), blurRadius: 14, offset: Offset(0, 6), spreadRadius: -10),
+];
+
 ThemeData buildTheme() {
-  final scheme = ColorScheme.fromSeed(seedColor: AppColors.brown, brightness: Brightness.light).copyWith(
-    primary: AppColors.brown,
+  final scheme = ColorScheme.fromSeed(seedColor: AppColors.text, brightness: Brightness.light).copyWith(
+    primary: AppColors.text,
     onPrimary: Colors.white,
     surface: AppColors.surface,
     onSurface: AppColors.text,
@@ -33,46 +43,45 @@ ThemeData buildTheme() {
       foregroundColor: AppColors.text,
       elevation: 0,
       scrolledUnderElevation: 0,
-      titleTextStyle: TextStyle(fontFamily: 'NotoSansKR', color: AppColors.text, fontSize: 20, fontWeight: FontWeight.w800),
+      titleTextStyle: TextStyle(
+          fontFamily: 'NotoSansKR', color: AppColors.text, fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3),
     ),
     cardTheme: CardThemeData(
       color: AppColors.surface,
-      elevation: 3,
-      shadowColor: const Color(0x226B4A35),
+      elevation: 2,
+      shadowColor: const Color(0x1F3C2814),
       surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.cardBorder),
+      ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(50),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontFamily: 'NotoSansKR', fontSize: 16, fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        textStyle: const TextStyle(fontFamily: 'NotoSansKR', fontSize: 15, fontWeight: FontWeight.w800),
       ),
+    ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      side: BorderSide.none,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,
+      hintStyle: const TextStyle(color: AppColors.muted),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.cardBorder),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.cardBorder),
       ),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.surfaceAlt,
-      labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
-            fontFamily: 'NotoSansKR',
-            fontSize: 12,
-            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w500,
-            color: states.contains(WidgetState.selected) ? AppColors.brown : AppColors.muted,
-          )),
     ),
   );
 }
