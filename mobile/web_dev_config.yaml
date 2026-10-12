@@ -1,0 +1,7 @@
+# 내 PC 에서 앱을 띄워 보며 고칠 때(flutter run -d chrome)의 설정.
+# 화면은 내 PC 에서 뜨고, /api 요청만 배포 서버로 넘긴다 → 로그인 · 실제 데이터를 그대로 쓴다.
+server:
+  port: 5174
+  proxy:
+    - target: "https://52-79-61-201.sslip.io/"
+      prefix: "/api/"
