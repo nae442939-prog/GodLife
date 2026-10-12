@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -51,7 +52,22 @@ class _LoginScreenState extends State<LoginScreen> {
     await launchUrl(Uri.parse('$serverBase$path'), webOnlyWindowName: kIsWeb ? '_self' : null);
   }
 
+  // 소셜 로그인 버튼의 로고 (웹의 SocialLoginButtons.jsx 와 같은 그림).
+  // 각 회사가 로그인 버튼에 쓰라고 정해 둔 모양 · 색이다: 카카오 말풍선(#FEE500 바탕), 네이버 N(#03C75A 바탕), 구글 G(흰 바탕)
+  static const _logos = {
+    'kakao': '<svg viewBox="0 0 24 24"><path fill="#191919" d="M12 4C7.03 4 3 7.13 3 11c0 2.49 1.66 4.67 4.16 5.9l-.9 3.3c-.08.3.25.54.51.37l3.94-2.6c.42.04.85.06 1.29.06 4.97 0 9-3.13 9-7s-4.03-7-9-7z"/></svg>',
+    'naver': '<svg viewBox="0 0 24 24"><path fill="#ffffff" d="M15.2 12.6 8.5 3H3v18h5.8v-9.6L15.5 21H21V3h-5.8z"/></svg>',
+    'google': '<svg viewBox="0 0 18 18">'
+        '<path fill="#EA4335" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/>'
+        '<path fill="#4285F4" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/>'
+        '<path fill="#FBBC05" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9.008 9.008 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/>'
+        '<path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.97 13.04C2.45 15.98 5.48 18 9 18z"/>'
+        '</svg>',
+  };
+
   Widget _social(String label, Color background, Color foreground, String provider) {
+    // 로고 크기는 웹과 같은 비율 (카카오 26 · 네이버 20 · 구글 22)
+    final size = switch (provider) { 'kakao' => 26.0, 'naver' => 20.0, _ => 22.0 };
     return Tooltip(
       message: '$label 로그인',
       child: InkWell(
@@ -64,10 +80,10 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: BoxDecoration(
             color: background,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.cardBorder),
+            boxShadow: cardShadow,
           ),
-          child: Text(label.substring(0, 1),
-              style: TextStyle(color: foreground, fontWeight: FontWeight.w900, fontSize: 18)),
+          child: SvgPicture.string(_logos[provider]!, width: size, height: size),
         ),
       ),
     );
