@@ -8,6 +8,7 @@ import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
 import 'challenge_detail_screen.dart';
+import 'ranking_screen.dart';
 import 'verify_screen.dart';
 
 /// 홈 (시안): 소개 띠 → 오늘 인증할 챌린지 → 모집 중인 챌린지
@@ -78,7 +79,35 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                 child: _TodayItem(c, reload: reload),
               ),
-            const SizedBox(height: 12),
+            // 랭킹으로 가는 띠
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
+              child: AppCard(
+                bordered: false,
+                radius: 18,
+                onTap: () =>
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RankingScreen())),
+                child: Row(children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(color: ColorTag.gold.$1, shape: BoxShape.circle),
+                    child: Icon(Icons.emoji_events, color: ColorTag.gold.$2, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('랭킹', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
+                      SizedBox(height: 3),
+                      Text('이번 달 인증왕과 내 순위 보기',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.muted)),
+                    ]),
+                  ),
+                  const Icon(Icons.chevron_right, color: Color(0xFFC7C0B0), size: 20),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 22),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(children: [
