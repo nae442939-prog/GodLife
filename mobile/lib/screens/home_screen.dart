@@ -5,9 +5,10 @@ import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import '../widgets/category_icon.dart';
 import 'challenge_detail_screen.dart';
-import 'my_challenges_screen.dart';
 import 'post_detail_screen.dart';
+import 'verify_screen.dart';
 
 /// 홈: 오늘 인증할 챌린지 → 모집 중인 챌린지 → 커뮤니티 인기글
 class HomeScreen extends StatelessWidget {
@@ -78,14 +79,23 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-          for (final c in data.mine)
+          // 오늘 할 일: 챌린지마다 한 줄 (아이콘 · 제목 · 진행 · [인증] 또는 완료 표시)
+          if (data.mine.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: MyChallengeCard(c, reload: reload),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: Column(children: [
+                  for (final (i, c) in data.mine.indexed) ...[
+                    if (i > 0) const Divider(height: 1, indent: 76, color: AppColors.border),
+                    _TodayRow(c, reload: reload),
+                  ],
+                ]),
+              ),
             ),
           _SectionHead('모집 중인 챌린지', onMore: onBrowse),
           SizedBox(
-            height: 148,
+            height: 166,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -176,11 +186,11 @@ class _RecruitingCard extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Tag(c.category.name),
-                const SizedBox(width: 6),
+                CategoryIcon(c.category.name, size: 40),
+                const Spacer(),
                 c.isFree ? const Tag('무료', color: AppColors.mint) : Tag('${points(c.entryFee)}P', color: AppColors.primary),
               ]),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(c.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -231,6 +241,76 @@ class _Hero extends StatelessWidget {
           child: const Text('챌린지 둘러보기'),
         ),
       ]),
+    );
+  }
+}
+
+/// 오늘 할 일 한 줄. 인증할 수 있으면 [인증] 버튼, 끝났으면 완료 표시
+class _TodayRow extends StatelessWidget {
+  const _TodayRow(this.c, {required this.reload});
+
+  final MyChallenge c;
+  final Future<void> Function() reload;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = c.verifyState == 'DONE_TODAY' || c.verifyState == 'WEEK_DONE';
+    return InkWell(
+      onTap: () async {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChallengeDetailScreen(id: c.id)));
+        reload();
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+        child: Row(children: [
+          CategoryIcon(c.category.name),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(c.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              Row(children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      value: c.progress,
+                      minHeight: 6,
+                      backgroundColor: AppColors.border,
+                      color: AppColors.mint,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text('${c.successDays}/${c.targetCount}',
+                    style: const TextStyle(fontSize: 12.5, color: AppColors.muted, fontWeight: FontWeight.w600)),
+              ]),
+            ]),
+          ),
+          const SizedBox(width: 12),
+          if (c.canVerify)
+            FilledButton(
+              onPressed: () async {
+                await Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (_) => VerifyScreen(challengeId: c.id, title: c.title)));
+                reload();
+              },
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(64, 40),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+              ),
+              child: const Text('인증'),
+            )
+          else if (done)
+            const Icon(Icons.check_circle, color: AppColors.mint, size: 28)
+          else
+            const Icon(Icons.schedule, color: AppColors.muted, size: 24),
+        ]),
+      ),
     );
   }
 }

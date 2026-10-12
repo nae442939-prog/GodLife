@@ -37,12 +37,11 @@ ThemeData buildTheme() {
     ),
     cardTheme: CardThemeData(
       color: AppColors.surface,
-      elevation: 0,
+      elevation: 3,
+      shadowColor: const Color(0x226B4A35),
+      surfaceTintColor: Colors.transparent,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.border),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

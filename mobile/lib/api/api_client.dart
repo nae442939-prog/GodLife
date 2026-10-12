@@ -149,7 +149,11 @@ class ApiClient {
     }
     final data = res.data;
     if (data is Map) {
-      throw ApiException(status, data['code'] as String?, (data['message'] as String?) ?? '요청을 처리하지 못했어요.');
+      // 입력값 검증 오류면 칸마다의 안내문 중 첫 번째를 보여 준다
+      final fields = data['fieldErrors'];
+      final first = fields is Map && fields.isNotEmpty ? fields.values.first as String? : null;
+      throw ApiException(
+          status, data['code'] as String?, first ?? (data['message'] as String?) ?? '요청을 처리하지 못했어요.');
     }
     throw ApiException(status, null, '요청을 처리하지 못했어요.');
   }
