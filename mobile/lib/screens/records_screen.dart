@@ -5,6 +5,8 @@ import '../api/api_client.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import '../widgets/category_icon.dart';
+import '../widgets/design.dart';
 
 // 기분은 이모지 대신 아이콘으로 그린다 (이모지 글꼴은 따로 내려받아야 해서 처음에 네모로 보인다)
 const _moods = {
@@ -14,6 +16,14 @@ const _moods = {
   'SAD': Icons.sentiment_dissatisfied,
   'HARD': Icons.sentiment_very_dissatisfied,
 };
+
+// 달력 점 · 결과 꼬리표의 색 (앱 시안의 색 묶음)
+const _failColors = (Color(0xFFF6E2DC), Color(0xFFC2574A));
+const _restColors = (AppColors.surfaceAlt, AppColors.chipText);
+const _idle = Color(0xFFC7C0B0);
+
+// 그날 결과에는 카테고리 번호만 온다 (categories 기준 데이터)
+const _categoryNames = {1: '운동', 2: '공부', 3: '독서', 4: '요리', 5: '기타'};
 
 String _iso(DateTime d) => '${d.year}-${two(d.month)}-${two(d.day)}';
 
@@ -53,6 +63,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
       builder: (_) => _DiarySheet(api: _api, date: date),
     );
     if (saved == true && mounted) setState(() => _version++);
@@ -79,55 +90,60 @@ class _RecordsScreenState extends State<RecordsScreen> {
           for (final d in data.month['days'] as List) (d as Map<String, dynamic>)['date'] as String: d,
         };
         final rate = summary['monthRate'];
-        return ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 28), children: [
+        return ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 28), children: [
           Row(children: [
-            Expanded(child: _stat('연속 달성', '${summary['streak']}일')),
+            Expanded(child: _stat('연속 달성', '${summary['streak']}일', ColorTag.coral.$2)),
             const SizedBox(width: 10),
-            Expanded(child: _stat('이번 달 성공률', rate == null ? '-' : '$rate%')),
+            Expanded(child: _stat('이번 달 성공률', rate == null ? '-' : '$rate%', AppColors.mint)),
             const SizedBox(width: 10),
-            Expanded(child: _stat('이번 달 인증', '${summary['monthDone']}회')),
+            Expanded(child: _stat('이번 달 인증', '${summary['monthDone']}회', ColorTag.lav.$2)),
           ]),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
-              child: Column(children: [
-                Row(children: [
-                  IconButton(onPressed: () => _move(-1), icon: const Icon(Icons.chevron_left)),
-                  Expanded(
-                    child: Text('${_month.year}년 ${_month.month}월',
-                        textAlign: TextAlign.center, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                  ),
-                  IconButton(onPressed: () => _move(1), icon: const Icon(Icons.chevron_right)),
-                ]),
-                Row(children: [
-                  for (final w in const ['일', '월', '화', '수', '목', '금', '토'])
-                    Expanded(
-                      child: Center(
-                        child: Text(w, style: const TextStyle(fontSize: 12, color: AppColors.muted, fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                ]),
-                const SizedBox(height: 4),
-                _calendar(days, today, data.selected),
-                const SizedBox(height: 8),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  _legend(AppColors.mint, '성공'),
-                  const SizedBox(width: 14),
-                  _legend(AppColors.danger, '실패'),
-                  const SizedBox(width: 14),
-                  _legend(AppColors.primary, '오늘 아직'),
-                  const SizedBox(width: 14),
-                  _legend(AppColors.brown, '일기', small: true),
-                ]),
+          const SizedBox(height: 16),
+          AppCard(
+            bordered: false,
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 14),
+            child: Column(children: [
+              Row(children: [
+                IconButton(onPressed: () => _move(-1), icon: const Icon(Icons.chevron_left, color: _idle)),
+                Expanded(
+                  child: Text('${_month.year}년 ${_month.month}월',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
+                ),
+                IconButton(onPressed: () => _move(1), icon: const Icon(Icons.chevron_right, color: _idle)),
               ]),
-            ),
+              const SizedBox(height: 2),
+              Row(children: [
+                for (final w in const ['일', '월', '화', '수', '목', '금', '토'])
+                  Expanded(
+                    child: Center(
+                      child: Text(w,
+                          style: const TextStyle(fontSize: 11, color: AppColors.navIdle, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+              ]),
+              const SizedBox(height: 6),
+              _calendar(days, today, data.selected),
+              const SizedBox(height: 10),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                _legend(AppColors.mint, '성공'),
+                const SizedBox(width: 14),
+                _legend(_failColors.$2, '실패'),
+                const SizedBox(width: 14),
+                _legend(ColorTag.gold.$2, '오늘 아직'),
+                const SizedBox(width: 14),
+                _legend(ColorTag.lav.$2, '일기', small: true),
+              ]),
+            ]),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           if (data.selected == null)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: Text('날짜를 누르면 그날의 기록을 볼 수 있어요.', style: TextStyle(color: AppColors.muted))),
+              child: Center(
+                child: Text('날짜를 누르면 그날의 기록을 볼 수 있어요.',
+                    style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+              ),
             )
           else
             ..._dayDetail(data.selected!, data.day!, today),
@@ -147,54 +163,58 @@ class _RecordsScreenState extends State<RecordsScreen> {
       crossAxisCount: 7,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 0.95,
+      childAspectRatio: 0.92,
       children: cells,
     );
   }
 
+  /// 달력 한 칸: 고른 날은 먹색 동그라미, 아래 점은 그날 결과(성공 · 실패 · 오늘 아직)와 일기
   Widget _cell(DateTime date, Map<String, dynamic> days, String today, String? selected) {
     final iso = _iso(date);
     final d = days[iso] as Map<String, dynamic>?;
     final total = (d?['total'] as num?)?.toInt() ?? 0;
     final done = (d?['done'] as num?)?.toInt() ?? 0;
     final pending = (d?['pending'] as num?)?.toInt() ?? 0;
-    // 해야 할 인증이 있던 날만 색을 칠한다: 다 했으면 성공, 오늘 남았으면 '오늘 아직', 못 했으면 실패
+    // 해야 할 인증이 있던 날만 점을 찍는다: 다 했으면 성공, 오늘 남았으면 '오늘 아직', 못 했으면 실패
     Color? mark;
     if (total > 0) {
-      mark = done >= total ? AppColors.mint : (pending > 0 ? AppColors.primary : AppColors.danger);
+      mark = done >= total ? AppColors.mint : (pending > 0 ? ColorTag.gold.$2 : _failColors.$2);
     }
     final isSelected = iso == selected;
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
+    final isToday = iso == today;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => setState(() => _selected = iso),
-      child: Container(
-        margin: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.surfaceAlt : null,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isSelected ? AppColors.brown : Colors.transparent, width: 1.5),
-        ),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text('${date.day}',
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.text : (isToday ? AppColors.surfaceAlt : Colors.transparent),
+            shape: BoxShape.circle,
+          ),
+          child: Text('${date.day}',
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: iso == today ? FontWeight.w900 : FontWeight.w600,
-                color: iso == today ? AppColors.brown : AppColors.text,
+                fontSize: 12.5,
+                fontWeight: isSelected || isToday ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.text,
               )),
-          const SizedBox(height: 3),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(color: mark ?? Colors.transparent, shape: BoxShape.circle),
-            ),
-            if (d?['diary'] == true) ...[
-              const SizedBox(width: 3),
-              Container(width: 4, height: 4, decoration: const BoxDecoration(color: AppColors.brown, shape: BoxShape.circle)),
-            ],
-          ]),
+        ),
+        const SizedBox(height: 3),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(color: mark ?? Colors.transparent, shape: BoxShape.circle),
+          ),
+          if (d?['diary'] == true) ...[
+            const SizedBox(width: 3),
+            Container(width: 4, height: 4, decoration: BoxDecoration(color: ColorTag.lav.$2, shape: BoxShape.circle)),
+          ],
         ]),
-      ),
+      ]),
     );
   }
 
@@ -205,102 +225,128 @@ class _RecordsScreenState extends State<RecordsScreen> {
     // 일기는 오늘과 지난 날짜에만 쓴다
     final canWrite = date.compareTo(today) <= 0;
     return [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Text('${int.parse(parts[1])}월 ${int.parse(parts[2])}일${date == today ? ' (오늘)' : ''}',
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-      ),
-      const SizedBox(height: 8),
-      Card(
-        child: Column(children: [
-          if (items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(18),
-              child: Text('이날은 인증할 챌린지가 없었어요.', style: TextStyle(color: AppColors.muted)),
-            ),
-          for (final (i, item) in items.indexed) ...[
-            if (i > 0) const Divider(height: 1, color: AppColors.border),
-            ListTile(
-              title: Text(item['title'] as String, style: const TextStyle(fontWeight: FontWeight.w700)),
-              trailing: switch (item['result'] as String) {
-                'DONE' => const Tag('성공', color: AppColors.mint),
-                'FAIL' => const Tag('실패', color: AppColors.danger),
-                'PENDING' => const Tag('오늘 아직', color: AppColors.primary),
-                _ => const Tag('쉬는 날', color: AppColors.muted),
+      Text('${int.parse(parts[1])}월 ${int.parse(parts[2])}일${date == today ? ' · 오늘' : ''}',
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+      const SizedBox(height: 12),
+      if (items.isEmpty)
+        AppCard(
+          bordered: false,
+          radius: 18,
+          padding: const EdgeInsets.all(16),
+          child: const Row(children: [
+            Text('이날은 인증할 챌린지가 없었어요.',
+                style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      for (final item in items)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: AppCard(
+            bordered: false,
+            radius: 18,
+            child: Row(children: [
+              CategoryIcon(_categoryNames[(item['categoryId'] as num).toInt()] ?? '기타',
+                  title: item['title'] as String, size: 42),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(item['title'] as String,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
+              ),
+              const SizedBox(width: 10),
+              switch (item['result'] as String) {
+                'DONE' => ColorTag.of('성공', ColorTag.mint),
+                'FAIL' => ColorTag.of('실패', _failColors),
+                'PENDING' => ColorTag.of('오늘 아직', ColorTag.gold),
+                _ => ColorTag.of('쉬는 날', _restColors),
               },
+            ]),
+          ),
+        ),
+      const SizedBox(height: 12),
+      Row(children: [
+        const Expanded(
+          child: Text('일기', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+        ),
+        if (canWrite)
+          GestureDetector(
+            onTap: () => _write(date),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(999)),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.edit_outlined, size: 13, color: Colors.white),
+                SizedBox(width: 5),
+                Text('일기 쓰기', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
+              ]),
             ),
-          ],
-        ]),
-      ),
-      const SizedBox(height: 18),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(children: [
-          const Expanded(child: Text('일기', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
-          if (canWrite)
-            TextButton.icon(
-              onPressed: () => _write(date),
-              icon: const Icon(Icons.edit, size: 18),
-              label: const Text('일기 쓰기'),
-            ),
-        ]),
-      ),
+          ),
+      ]),
+      const SizedBox(height: 12),
       if (diaries.isEmpty)
         const Padding(
-          padding: EdgeInsets.fromLTRB(4, 8, 4, 0),
-          child: Text('아직 쓴 일기가 없어요. 일기는 나만 볼 수 있어요.', style: TextStyle(color: AppColors.muted)),
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text('아직 쓴 일기가 없어요. 일기는 나만 볼 수 있어요.',
+              style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
         ),
-      for (final diary in diaries) ...[
-        const SizedBox(height: 8),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 6, 12),
+      for (final diary in diaries)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: AppCard(
+            bordered: false,
+            radius: 18,
+            padding: const EdgeInsets.fromLTRB(14, 13, 6, 13),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (diary['mood'] != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 10, top: 2),
-                  child: Icon(_moods[diary['mood']], size: 24, color: AppColors.brown),
-                ),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: ColorTag.gold.$1, shape: BoxShape.circle),
+                child: Icon(_moods[diary['mood']] ?? Icons.edit_note, size: 20, color: ColorTag.gold.$2),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  ((diary['content'] as String?) ?? '').isEmpty ? '(사진 일기)' : diary['content'] as String,
-                  style: const TextStyle(height: 1.5),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 7),
+                  child: Text(
+                    ((diary['content'] as String?) ?? '').isEmpty ? '(사진 일기)' : diary['content'] as String,
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, height: 1.55),
+                  ),
                 ),
               ),
               IconButton(
                 tooltip: '일기 지우기',
                 onPressed: () => _deleteDiary((diary['id'] as num).toInt()),
-                icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.muted),
+                icon: const Icon(Icons.delete_outline, size: 18, color: _idle),
               ),
             ]),
           ),
         ),
-      ],
     ];
   }
 
-  Widget _stat(String label, String value) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        child: Column(children: [
-          Text(value, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: AppColors.brown)),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: AppColors.muted, fontWeight: FontWeight.w600)),
-        ]),
-      ),
+  Widget _stat(String label, String value, Color color) {
+    return AppCard(
+      bordered: false,
+      radius: 18,
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 8),
+      child: Column(children: [
+        Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: color, letterSpacing: -0.1)),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(fontSize: 10.5, color: AppColors.muted, fontWeight: FontWeight.w700)),
+      ]),
     );
   }
 
   Widget _legend(Color color, String label, {bool small = false}) {
     return Row(children: [
       Container(
-        width: small ? 5 : 8,
-        height: small ? 5 : 8,
+        width: small ? 5 : 7,
+        height: small ? 5 : 7,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
       const SizedBox(width: 4),
-      Text(label, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+      Text(label, style: const TextStyle(fontSize: 10.5, color: AppColors.muted, fontWeight: FontWeight.w700)),
     ]);
   }
 }
@@ -358,37 +404,43 @@ class _DiarySheetState extends State<_DiarySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final parts = widget.date.split('-');
     return Padding(
       // 키보드가 올라오면 그만큼 위로 민다
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.fromLTRB(20, 22, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('${widget.date} 일기', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        Text('${int.parse(parts[1])}월 ${int.parse(parts[2])}일 일기',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+        const SizedBox(height: 4),
+        const Text('오늘 기분은 어땠나요?',
+            style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
         const SizedBox(height: 14),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           for (final e in _moods.entries)
-            InkWell(
-              borderRadius: BorderRadius.circular(99),
+            GestureDetector(
               onTap: () => setState(() => _mood = _mood == e.key ? null : e.key),
-              child: Container(
-                padding: const EdgeInsets.all(10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  color: _mood == e.key ? AppColors.surfaceAlt : null,
+                  color: _mood == e.key ? AppColors.text : AppColors.surfaceAlt,
                   shape: BoxShape.circle,
-                  border: Border.all(color: _mood == e.key ? AppColors.brown : AppColors.border, width: 1.5),
                 ),
-                child: Icon(e.value, size: 28, color: _mood == e.key ? AppColors.brown : AppColors.muted),
+                child: Icon(e.value, size: 26, color: _mood == e.key ? Colors.white : AppColors.chipText),
               ),
             ),
         ]),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         TextField(
           controller: _content,
           minLines: 4,
           maxLines: 8,
           maxLength: 500,
-          decoration: const InputDecoration(hintText: '오늘 하루는 어땠나요?'),
+          decoration: const InputDecoration(hintText: '오늘 하루를 짧게 남겨 보세요'),
         ),
-        if (_error != null) Text(_error!, style: const TextStyle(color: AppColors.danger)),
+        if (_error != null)
+          Text(_error!, style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         FilledButton(onPressed: _busy ? null : _save, child: Text(_busy ? '저장하는 중…' : '기록 저장하기')),
       ]),
