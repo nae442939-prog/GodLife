@@ -55,6 +55,8 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
+        // 종 위의 숫자 표시가 화면 위쪽 · 오른쪽 끝에서 잘리지 않게 여유를 둔다
+        toolbarHeight: 64,
         title: Row(children: [
           Container(
             width: 14,
@@ -68,13 +70,15 @@ class _HomeShellState extends State<HomeShell> {
           IconButton(
             tooltip: '알림',
             onPressed: _openNotifications,
+            padding: const EdgeInsets.all(12),
             icon: Badge(
               isLabelVisible: _unread > 0,
               label: Text(_unread > 99 ? '99+' : '$_unread'),
+              offset: const Offset(2, -2),
               child: const Icon(Icons.notifications_none, size: 26),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 14),
         ],
       ),
       body: body,
