@@ -25,6 +25,7 @@ ThemeData buildTheme() {
   );
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'NotoSansKR',
     colorScheme: scheme,
     scaffoldBackgroundColor: AppColors.bg,
     appBarTheme: const AppBarTheme(
@@ -32,7 +33,7 @@ ThemeData buildTheme() {
       foregroundColor: AppColors.text,
       elevation: 0,
       scrolledUnderElevation: 0,
-      titleTextStyle: TextStyle(color: AppColors.text, fontSize: 20, fontWeight: FontWeight.w800),
+      titleTextStyle: TextStyle(fontFamily: 'NotoSansKR', color: AppColors.text, fontSize: 20, fontWeight: FontWeight.w800),
     ),
     cardTheme: CardThemeData(
       color: AppColors.surface,
@@ -49,7 +50,7 @@ ThemeData buildTheme() {
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(50),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        textStyle: const TextStyle(fontFamily: 'NotoSansKR', fontSize: 16, fontWeight: FontWeight.w700),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -68,6 +69,7 @@ ThemeData buildTheme() {
       backgroundColor: AppColors.surface,
       indicatorColor: AppColors.surfaceAlt,
       labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+            fontFamily: 'NotoSansKR',
             fontSize: 12,
             fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w500,
             color: states.contains(WidgetState.selected) ? AppColors.brown : AppColors.muted,
