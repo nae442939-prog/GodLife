@@ -6,6 +6,7 @@ import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import '../widgets/design.dart';
 import 'post_detail_screen.dart';
 import 'post_write_screen.dart';
 
@@ -41,29 +42,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Row(children: [
             for (final (value, label) in [(null, '전체'), ...topicLabels.entries.map((e) => (e.key, e.value))])
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
-                  label: Text(label),
-                  selected: _topic == value,
-                  onSelected: (_) => setState(() => _topic = value),
-                  showCheckmark: false,
-                  selectedColor: AppColors.text,
-                  backgroundColor: AppColors.surface,
-                  side: const BorderSide(color: AppColors.border),
-                  labelStyle: TextStyle(
-                    color: _topic == value ? Colors.white : AppColors.text,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: PillChip(label, selected: _topic == value, onTap: () => setState(() => _topic = value)),
               ),
-            Container(width: 1, height: 20, color: AppColors.border, margin: const EdgeInsets.symmetric(horizontal: 6)),
-            TextButton(
-              onPressed: () => setState(() => _sort = _sort == 'latest' ? 'popular' : 'latest'),
-              child: Text(_sort == 'latest' ? '최신순' : '인기순'),
+            // 맨 끝: 인기순으로 보기 (켜면 좋아요 많은 글부터)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: PillChip('인기순',
+                  selected: _sort == 'popular',
+                  onTap: () => setState(() => _sort = _sort == 'latest' ? 'popular' : 'latest')),
             ),
           ]),
         ),
@@ -80,9 +71,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ]);
               }
               return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
                 itemCount: posts.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                separatorBuilder: (_, _) => const SizedBox(height: 11),
                 itemBuilder: (context, i) => _PostCard(posts[i], onBack: reload),
               );
             },
@@ -90,86 +81,94 @@ class _CommunityScreenState extends State<CommunityScreen> {
         ),
       ]),
       Positioned(
-        right: 16,
-        bottom: 16,
-        child: FloatingActionButton.extended(
-          onPressed: _write,
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.edit),
-          label: const Text('글쓰기', style: TextStyle(fontWeight: FontWeight.w700)),
-        ),
+        right: 20,
+        bottom: 18,
+        child: PillFab(label: '글쓰기', icon: Icons.edit_outlined, onTap: _write),
       ),
     ]);
   }
 }
 
+/// 글 한 장 (시안): 말머리 꼬리표 → 제목 → 본문 두 줄 → 글쓴이 · 날짜 | 좋아요 · 댓글 수
 class _PostCard extends StatelessWidget {
   const _PostCard(this.p, {required this.onBack});
 
   final Post p;
   final Future<void> Function() onBack;
 
+  /// 말머리마다 다른 색
+  static (Color, Color) _topicColors(String topic) => switch (topic) {
+        'FREE' => ColorTag.gold,
+        'REVIEW' => ColorTag.lav,
+        'TIP' => ColorTag.mint,
+        _ => ColorTag.coral,
+      };
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () async {
-          await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PostDetailScreen(id: p.id)));
-          onBack();
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Tag(p.topicLabel),
-                  if (p.verify != null) ...[
-                    const SizedBox(width: 6),
-                    Tag(p.verify!.success ? '인증 완료' : '인증 전', color: p.verify!.success ? AppColors.mint : AppColors.muted),
-                  ],
-                ]),
-                const SizedBox(height: 8),
-                Text(p.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, height: 1.3)),
-                if (p.excerpt.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(p.excerpt.replaceAll('\n', ' '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.muted, height: 1.4)),
-                ],
-                const SizedBox(height: 10),
-                Row(children: [
-                  Flexible(
-                    child: Text('${p.author.nickname} · ${shortDateTime(p.createdAt)}',
-                        overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, color: AppColors.muted)),
-                  ),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.favorite_border, size: 15, color: AppColors.muted),
-                  Text(' ${p.likeCount}', style: const TextStyle(fontSize: 12.5, color: AppColors.muted)),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.chat_bubble_outline, size: 14, color: AppColors.muted),
-                  Text(' ${p.commentCount}', style: const TextStyle(fontSize: 12.5, color: AppColors.muted)),
-                ]),
-              ]),
-            ),
-            if (p.thumbnailId != null) ...[
-              const SizedBox(width: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                // 글 사진은 공개 주소라 토큰 없이 받는다
-                child: Image.network('$serverBase/api/post-images/${p.thumbnailId}',
-                    width: 72, height: 72, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox.shrink()),
-              ),
+    const idle = Color(0xFFC7C0B0);
+    return AppCard(
+      bordered: false,
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
+      onTap: () async {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PostDetailScreen(id: p.id)));
+        onBack();
+      },
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              ColorTag.of(p.topicLabel, _topicColors(p.topic)),
+              if (p.verify != null && p.verify!.success) ...[
+                const SizedBox(width: 6),
+                ColorTag.of('인증 완료', ColorTag.mint),
+              ],
+            ]),
+            const SizedBox(height: 9),
+            Text(p.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
+            if (p.excerpt.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              Text(p.excerpt.replaceAll('\n', ' '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF8A8071), height: 1.55)),
             ],
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(
+                child: Text('${p.author.nickname} · ${shortDateTime(p.createdAt)}',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.muted)),
+              ),
+              // 좋아요가 있으면 코랄로 채운 하트
+              Icon(p.likeCount > 0 ? Icons.favorite : Icons.favorite_border,
+                  size: 13, color: p.likeCount > 0 ? AppColors.primary : idle),
+              const SizedBox(width: 4),
+              Text('${p.likeCount}',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.muted)),
+              const SizedBox(width: 12),
+              const Icon(Icons.chat_bubble_outline, size: 13, color: idle),
+              const SizedBox(width: 4),
+              Text('${p.commentCount}',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.muted)),
+            ]),
           ]),
         ),
-      ),
+        if (p.thumbnailId != null) ...[
+          const SizedBox(width: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            // 글 사진은 공개 주소라 토큰 없이 받는다
+            child: Image.network('$serverBase/api/post-images/${p.thumbnailId}',
+                width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox.shrink()),
+          ),
+        ],
+      ]),
     );
   }
 }

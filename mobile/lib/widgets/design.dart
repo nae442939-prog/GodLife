@@ -60,24 +60,35 @@ class PriceBadge extends StatelessWidget {
 
 /// 시안의 흰 카드 (옅은 테두리 + 아래로 살짝 지는 그림자)
 class AppCard extends StatelessWidget {
-  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.fromLTRB(14, 13, 14, 13)});
+  const AppCard({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.fromLTRB(14, 13, 14, 13),
+    this.radius = 20,
+    this.bordered = true,
+  });
 
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsets padding;
+  final double radius;
+
+  /// 옅은 테두리. 홈 · 커뮤니티 · 마이페이지 시안의 카드는 테두리 없이 그림자만 쓴다
+  final bool bordered;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(radius),
+        border: bordered ? Border.all(color: AppColors.cardBorder) : null,
         boxShadow: cardShadow,
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(radius),
         clipBehavior: Clip.antiAlias,
         child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
       ),
@@ -120,6 +131,34 @@ class PillFab extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 작은 색 꼬리표 (커뮤니티 말머리 · 관리자 표시)
+class ColorTag extends StatelessWidget {
+  const ColorTag(this.label, {super.key, required this.background, required this.foreground});
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  static const gold = (Color(0xFFFAECD1), Color(0xFFC2932A));
+  static const lav = (Color(0xFFE2E3F5), Color(0xFF5A5F9E));
+  static const mint = (Color(0xFFD7F1EA), Color(0xFF0F9C86));
+  static const coral = (Color(0xFFFDE2D7), Color(0xFFD9693F));
+
+  /// 색 묶음 (바탕, 글자) 으로 만들기
+  ColorTag.of(this.label, (Color, Color) colors, {super.key})
+      : background = colors.$1,
+        foreground = colors.$2;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
+      child: Text(label, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: foreground)),
     );
   }
 }
