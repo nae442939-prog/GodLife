@@ -8,8 +8,9 @@ import 'community_screen.dart';
 import 'home_screen.dart';
 import 'my_page_screen.dart';
 import 'notifications_screen.dart';
+import 'records_screen.dart';
 
-/// 로그인 뒤의 뼈대: 위에는 로고와 알림 종, 아래에는 탭 4개 (홈 · 챌린지 · 커뮤니티 · 마이)
+/// 로그인 뒤의 뼈대: 위에는 로고와 알림 종, 아래에는 탭 5개 (홈 · 챌린지 · 커뮤니티 · 갓생기록 · 마이페이지)
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -48,6 +49,7 @@ class _HomeShellState extends State<HomeShell> {
       0 => HomeScreen(onBrowse: () => setState(() => _tab = 1), onCommunity: () => setState(() => _tab = 2)),
       1 => const ChallengeListScreen(),
       2 => const CommunityScreen(),
+      3 => const RecordsScreen(),
       _ => const MyPageScreen(),
     };
     return Scaffold(
@@ -86,7 +88,9 @@ class _HomeShellState extends State<HomeShell> {
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: '홈'),
           NavigationDestination(icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: '챌린지'),
           NavigationDestination(icon: Icon(Icons.forum_outlined), selectedIcon: Icon(Icons.forum), label: '커뮤니티'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '마이'),
+          NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: '갓생기록'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '마이페이지'),
         ],
       ),
     );
