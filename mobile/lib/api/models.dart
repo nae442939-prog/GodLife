@@ -1,0 +1,221 @@
+// 서버 응답을 화면에서 쓰기 좋게 옮긴 모델. 필드 이름은 백엔드 DTO 와 같다.
+
+class User {
+  User.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        email = j['email'] as String?,
+        nickname = j['nickname'] as String,
+        profileImageUrl = j['profileImageUrl'] as String?,
+        bio = j['bio'] as String?,
+        role = j['role'] as String,
+        phoneVerified = j['phoneVerified'] as bool;
+
+  final int id;
+  final String? email;
+  final String nickname;
+  final String? profileImageUrl;
+  final String? bio;
+  final String role;
+  final bool phoneVerified;
+}
+
+class Category {
+  Category.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        name = j['name'] as String;
+
+  final int id;
+  final String name;
+}
+
+/// 챌린지 목록 한 줄
+class Challenge {
+  Challenge.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        title = j['title'] as String,
+        description = (j['description'] as String?) ?? '',
+        category = Category.fromJson(j['category'] as Map<String, dynamic>),
+        mode = j['mode'] as String,
+        entryFee = (j['entryFee'] as num).toInt(),
+        startDate = j['startDate'] as String,
+        endDate = j['endDate'] as String,
+        totalDays = (j['totalDays'] as num).toInt(),
+        frequencyType = j['frequencyType'] as String,
+        weeklyCount = (j['weeklyCount'] as num?)?.toInt(),
+        participantCount = (j['participantCount'] as num).toInt(),
+        maxParticipants = (j['maxParticipants'] as num?)?.toInt();
+
+  final int id;
+  final String title;
+  final String description;
+  final Category category;
+  final String mode; // FREE | BET
+  final int entryFee;
+  final String startDate;
+  final String endDate;
+  final int totalDays;
+  final String frequencyType; // DAILY | WEEKLY
+  final int? weeklyCount;
+  final int participantCount;
+  final int? maxParticipants;
+
+  bool get isFree => mode == 'FREE';
+
+  String get frequencyLabel => frequencyType == 'DAILY' ? '매일' : '주 $weeklyCount회';
+}
+
+class Participant {
+  Participant.fromJson(Map<String, dynamic> j)
+      : userId = j['userId'] as int,
+        nickname = j['nickname'] as String,
+        profileImageUrl = j['profileImageUrl'] as String?;
+
+  final int userId;
+  final String nickname;
+  final String? profileImageUrl;
+}
+
+/// 챌린지 상세 (목록의 값 + 내 참여 상태 · 참가자)
+class ChallengeDetail extends Challenge {
+  ChallengeDetail.fromJson(super.j)
+      : status = j['status'] as String,
+        hostNickname = j['hostNickname'] as String?,
+        recruiting = j['recruiting'] as bool,
+        canLeave = j['canLeave'] as bool,
+        joined = j['joined'] as bool,
+        host = j['host'] as bool,
+        notice = j['notice'] as String?,
+        participants = ((j['participants'] as List?) ?? [])
+            .map((p) => Participant.fromJson(p as Map<String, dynamic>))
+            .toList(),
+        super.fromJson();
+
+  final String status; // RECRUITING | ONGOING | ENDED | SETTLED
+  final String? hostNickname;
+  final bool recruiting;
+  final bool canLeave;
+  final bool joined;
+  final bool host;
+  final String? notice;
+  final List<Participant> participants;
+}
+
+/// 내 챌린지 한 줄 + 오늘 인증 상태
+class MyChallenge {
+  MyChallenge.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        title = j['title'] as String,
+        category = Category.fromJson(j['category'] as Map<String, dynamic>),
+        mode = j['mode'] as String,
+        startDate = j['startDate'] as String,
+        endDate = j['endDate'] as String,
+        totalDays = (j['totalDays'] as num).toInt(),
+        inProgress = j['inProgress'] as bool,
+        joined = j['joined'] as bool,
+        host = j['host'] as bool,
+        successDays = (j['successDays'] as num).toInt(),
+        targetCount = (j['targetCount'] as num).toInt(),
+        verifyState = j['verifyState'] as String?;
+
+  final int id;
+  final String title;
+  final Category category;
+  final String mode;
+  final String startDate;
+  final String endDate;
+  final int totalDays;
+  final bool inProgress;
+  final bool joined;
+  final bool host;
+  final int successDays;
+  final int targetCount;
+
+  /// OPEN | DONE_TODAY | WEEK_DONE | TIME_CLOSED | NOT_STARTED | ENDED (참여하지 않았으면 null)
+  final String? verifyState;
+
+  bool get canVerify => verifyState == 'OPEN';
+
+  double get progress => targetCount == 0 ? 0 : (successDays / targetCount).clamp(0, 1).toDouble();
+}
+
+/// 그날 참가자들의 인증 한 줄 (사진은 따로 받는다)
+class Verification {
+  Verification.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        userId = j['userId'] as int,
+        nickname = j['nickname'] as String,
+        receivedAt = DateTime.parse(j['receivedAt'] as String),
+        status = j['status'] as String,
+        mine = j['mine'] as bool;
+
+  final int id;
+  final int userId;
+  final String nickname;
+  final DateTime receivedAt;
+  final String status; // APPROVED | IN_REVIEW
+  final bool mine;
+}
+
+class PointTransaction {
+  PointTransaction.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        type = j['type'] as String,
+        source = j['source'] as String,
+        amount = (j['amount'] as num).toInt(),
+        balanceAfter = (j['balanceAfter'] as num).toInt(),
+        challengeTitle = j['challengeTitle'] as String?,
+        orderTitle = j['orderTitle'] as String?,
+        createdAt = DateTime.parse(j['createdAt'] as String);
+
+  final int id;
+  final String type;
+  final String source; // CHARGED | REWARD | SHOP
+  final int amount;
+  final int balanceAfter;
+  final String? challengeTitle;
+  final String? orderTitle;
+  final DateTime createdAt;
+}
+
+/// 내 지갑: 충전 포인트(참가비 · 환불 대상)와 보상 포인트(상점 전용)를 따로 둔다
+class Wallet {
+  Wallet.fromJson(Map<String, dynamic> j)
+      : chargedBalance = (j['chargedBalance'] as num).toInt(),
+        rewardBalance = (j['rewardBalance'] as num).toInt(),
+        refundable = (j['refundable'] as num).toInt(),
+        betDailyLimit = (j['betDailyLimit'] as num).toInt(),
+        betToday = (j['betToday'] as num).toInt(),
+        betMonthlyLimit = (j['betMonthlyLimit'] as num).toInt(),
+        betThisMonth = (j['betThisMonth'] as num).toInt(),
+        transactions = ((j['transactions'] as List?) ?? [])
+            .map((t) => PointTransaction.fromJson(t as Map<String, dynamic>))
+            .toList();
+
+  final int chargedBalance;
+  final int rewardBalance;
+  final int refundable;
+  final int betDailyLimit;
+  final int betToday;
+  final int betMonthlyLimit;
+  final int betThisMonth;
+  final List<PointTransaction> transactions;
+}
+
+class AppNotification {
+  AppNotification.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        type = j['type'] as String,
+        title = j['title'] as String,
+        body = j['body'] as String?,
+        link = j['link'] as String?,
+        read = j['read'] as bool,
+        sentAt = DateTime.parse(j['sentAt'] as String);
+
+  final int id;
+  final String type;
+  final String title;
+  final String? body;
+  final String? link;
+  bool read;
+  final DateTime sentAt;
+}
