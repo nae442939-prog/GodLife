@@ -219,3 +219,109 @@ class AppNotification {
   bool read;
   final DateTime sentAt;
 }
+
+class Author {
+  Author.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        nickname = j['nickname'] as String,
+        profileImageUrl = j['profileImageUrl'] as String?;
+
+  final int id;
+  final String nickname;
+  final String? profileImageUrl;
+}
+
+/// 글에 붙은 인증 결과 (쓴 시점의 값으로 굳어 있다)
+class PostVerify {
+  PostVerify.fromJson(Map<String, dynamic> j)
+      : challengeTitle = j['challengeTitle'] as String,
+        success = j['success'] as bool;
+
+  final String challengeTitle;
+  final bool success;
+}
+
+const topicLabels = {'FREE': '자유', 'REVIEW': '인증 후기', 'TIP': '팁', 'QUESTION': '질문'};
+
+/// 커뮤니티 글 목록 한 줄
+class Post {
+  Post.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        topic = j['topic'] as String,
+        title = j['title'] as String,
+        excerpt = (j['excerpt'] as String?) ?? '',
+        author = Author.fromJson(j['author'] as Map<String, dynamic>),
+        verify = j['verify'] == null ? null : PostVerify.fromJson(j['verify'] as Map<String, dynamic>),
+        thumbnailId = (j['thumbnailId'] as num?)?.toInt(),
+        likeCount = (j['likeCount'] as num).toInt(),
+        commentCount = (j['commentCount'] as num).toInt(),
+        createdAt = DateTime.parse(j['createdAt'] as String);
+
+  final int id;
+  final String topic;
+  final String title;
+  final String excerpt;
+  final Author author;
+  final PostVerify? verify;
+  final int? thumbnailId;
+  final int likeCount;
+  final int commentCount;
+  final DateTime createdAt;
+
+  String get topicLabel => topicLabels[topic] ?? topic;
+}
+
+class PostComment {
+  PostComment.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        parentId = (j['parentId'] as num?)?.toInt(),
+        author = j['author'] == null ? null : Author.fromJson(j['author'] as Map<String, dynamic>),
+        content = (j['content'] as String?) ?? '',
+        createdAt = DateTime.parse(j['createdAt'] as String),
+        mine = (j['mine'] as bool?) ?? false,
+        removed = (j['removed'] as bool?) ?? false;
+
+  final int id;
+  final int? parentId;
+
+  /// 지워진 댓글의 자리(removed)에는 쓴 사람이 없다
+  final Author? author;
+  final String content;
+  final DateTime createdAt;
+  final bool mine;
+  final bool removed;
+}
+
+/// 커뮤니티 글 상세 (본문 · 사진 · 좋아요 · 댓글)
+class PostDetail {
+  PostDetail.fromJson(Map<String, dynamic> j)
+      : id = j['id'] as int,
+        topic = j['topic'] as String,
+        title = j['title'] as String,
+        content = (j['content'] as String?) ?? '',
+        author = Author.fromJson(j['author'] as Map<String, dynamic>),
+        verify = j['verify'] == null ? null : PostVerify.fromJson(j['verify'] as Map<String, dynamic>),
+        imageIds = ((j['imageIds'] as List?) ?? []).map((e) => (e as num).toInt()).toList(),
+        likeCount = (j['likeCount'] as num).toInt(),
+        liked = (j['liked'] as bool?) ?? false,
+        mine = (j['mine'] as bool?) ?? false,
+        createdAt = DateTime.parse(j['createdAt'] as String),
+        comments = ((j['comments'] as List?) ?? [])
+            .map((c) => PostComment.fromJson(c as Map<String, dynamic>))
+            .toList();
+
+  final int id;
+  final String topic;
+  final String title;
+  final String content;
+  final Author author;
+  final PostVerify? verify;
+  final List<int> imageIds;
+  int likeCount;
+  bool liked;
+  final bool mine;
+  final DateTime createdAt;
+  final List<PostComment> comments;
+
+  String get topicLabel => topicLabels[topic] ?? topic;
+}

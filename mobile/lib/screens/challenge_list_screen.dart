@@ -49,13 +49,9 @@ class _ChallengeListScreenState extends State<ChallengeListScreen> {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, 4),
-        child: Text('챌린지', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-      ),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
         child: Row(children: [
           for (final (value, label) in [(null, '전체'), ('FREE', '무료'), ('BET', '포인트')])
             _chip(label, _mode == value, () => setState(() => _mode = value)),
