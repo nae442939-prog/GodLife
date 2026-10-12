@@ -56,9 +56,9 @@ flutter run --dart-define=API_BASE=http://10.0.2.2:5173   # 에뮬레이터에�
 flutter build web --release --base-href /app/
 ```
 
-
 ## 화면을 보면서 고치기
 
-`preview.bat` 을 실행하면 크롬에 앱이 뜹니다 (`/api` 요청은 `web_dev_config.yaml` 설정대로 배포 서버로 넘어가서 로그인 · 실제 데이터를 그대로 씁니다).
-크롬에서 F12 → Ctrl+Shift+M 으로 폰 모양을 고르고, 코드를 고친 뒤 실행 창에서 `r` 을 누르면 바로 반영됩니다.
+- 메모리가 넉넉한 PC: `flutter run -d chrome` 로 띄우면 고친 내용이 `r` 키로 바로 반영됩니다. `/api` 요청은 `web_dev_config.yaml` 설정대로 배포 서버로 넘어가 로그인 · 실제 데이터를 그대로 씁니다.
+- 메모리가 적은 PC(8GB): 개발 모드가 무거워 멈춥니다. `preview.bat` 으로 배포 서버의 앱을 크롬에 열고, 고친 뒤에는 웹으로 빌드해 서버에 올려 확인합니다.
 
+어느 쪽이든 크롬에서 F12 → Ctrl+Shift+M 을 누르면 폰 모양으로 볼 수 있습니다.
