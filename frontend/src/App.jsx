@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout.jsx'
 import { RequireAuth } from './components/RequireAuth.jsx'
 import { FindIdPage } from './pages/FindIdPage.jsx'
@@ -44,7 +45,28 @@ import { TierPage } from './pages/TierPage.jsx'
 import { SignupPage } from './pages/SignupPage.jsx'
 import { VerifyPhonePage } from './pages/VerifyPhonePage.jsx'
 
+// 폰에서도 웹 화면 그대로 보여 주는 곳 (앱에 없는 화면). 서버(deploy/nginx-godlife.conf)의 규칙과 같아야 한다
+const WEB_ONLY = /^\/(wallet|shop|signup|find-id|find-password|settings)(\/|$)/
+
+/**
+ * 폰에서는 앱 화면(/app/)을 쓴다. 처음 들어올 때는 서버가 보내 주지만, 웹 화면 안에서 옮겨 다닐 때는
+ * 서버를 거치지 않아서 여기서도 같은 규칙으로 보낸다. (충전을 마치고 홈으로 가면 앱 화면으로 돌아간다)
+ * 개발 서버에는 /app/ 이 없으므로 배포 빌드에서만 동작한다.
+ */
+function useAppScreenOnPhone() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    if (!import.meta.env.PROD) return
+    const phone = /iphone|ipod|android.*mobile|windows phone/i.test(navigator.userAgent)
+    const stayOnWeb = document.cookie.split('; ').includes('gl_view=web')
+    if (phone && !stayOnWeb && !WEB_ONLY.test(pathname)) {
+      window.location.replace('/app/')
+    }
+  }, [pathname])
+}
+
 export default function App() {
+  useAppScreenOnPhone()
   return (
     <Routes>
       <Route element={<Layout />}>

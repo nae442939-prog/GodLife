@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../api/api_client.dart';
 
 import '../theme.dart';
 
@@ -94,4 +98,9 @@ class Tag extends StatelessWidget {
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: filled ? Colors.white : color)),
     );
   }
+}
+
+/// 앱에 없는 화면(충전 · 상점 · 가입)을 웹에서 연다. 웹 빌드에서는 같은 창에서 연다
+Future<void> openWeb(String path) async {
+  await launchUrl(Uri.parse('$serverBase$path'), webOnlyWindowName: kIsWeb ? '_self' : null);
 }
