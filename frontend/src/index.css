@@ -287,12 +287,13 @@ h3 {
   box-shadow: 0 0 0 3px var(--focus);
 }
 
+/* 종의 오른쪽 위 모서리 밖으로 걸친다 (안쪽에 두면 두 자리 숫자가 종 그림을 덮는다) */
 .noti-count {
   position: absolute;
-  top: 2px;
-  right: 0;
+  top: -4px;
+  right: -8px;
   min-width: 18px;
-  padding: 1px 5px;
+  padding: 1px 4px;
   font-size: 0.66rem;
   font-weight: 800;
   line-height: 1.4;
@@ -13271,4 +13272,43 @@ a.sh-line-name:hover {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+/* 폰에서 보는 웹 화면: 위 메뉴 대신 앱(/app/)과 같은 아래 탭 */
+.is-phone .menu,
+.is-phone .mnav {
+  display: none;
+}
+
+.is-phone .site-main {
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+.phone-tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.phone-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.phone-tab:active {
+  color: var(--header-nav);
 }

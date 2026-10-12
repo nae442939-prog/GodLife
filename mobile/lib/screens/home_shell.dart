@@ -21,7 +21,18 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   /// 아래 탭 순서: 챌린지 · 커뮤니티 · 홈 · 갓생기록 · 마이페이지 (홈이 한가운데)
   static const _home = 2;
-  int _tab = _home;
+  int _tab = _initialTab();
+
+  /// 웹 화면(충전 · 상점)의 아래 탭에서 넘어오면 주소의 ?tab= 으로 처음 탭을 고른다
+  static int _initialTab() {
+    return switch (Uri.base.queryParameters['tab']) {
+      'challenges' => 0,
+      'community' => 1,
+      'records' => 3,
+      'my' => 4,
+      _ => _home,
+    };
+  }
   int _unread = 0;
 
   @override
