@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../api/api_client.dart';
 import '../app_state.dart';
 import '../theme.dart';
 
-/// 이메일 로그인. 가입 · 소셜 로그인 · 비밀번호 찾기는 웹에서 한다 (앱은 핵심 흐름만 담는다).
+/// 이메일 로그인 + 소셜 로그인(카카오 · 네이버 · 구글). 회원가입 · 비밀번호 찾기는 웹 화면으로 보낸다.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -41,6 +44,33 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// 웹에만 있는 화면(가입 · 소셜 로그인)을 같은 창에서 연다
+  Future<void> _openWeb(String path) async {
+    await launchUrl(Uri.parse('$serverBase$path'), webOnlyWindowName: kIsWeb ? '_self' : null);
+  }
+
+  Widget _social(String label, Color background, Color foreground, String provider) {
+    return Tooltip(
+      message: '$label 로그인',
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => _openWeb('/oauth2/authorization/$provider'),
+        child: Container(
+          width: 52,
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: background,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Text(label.substring(0, 1),
+              style: TextStyle(color: foreground, fontWeight: FontWeight.w900, fontSize: 18)),
+        ),
+      ),
+    );
   }
 
   @override
@@ -90,8 +120,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Text(_busy ? '로그인하는 중…' : '로그인'),
                 ),
                 const SizedBox(height: 16),
-                const Text('회원가입 · 소셜 로그인 계정은 웹에서 만들 수 있어요.',
-                    textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted, fontSize: 13)),
+                // 소셜 로그인: 서버가 로그인 뒤 리프레시 쿠키를 심고 돌려보내면 앱이 켜지면서 자동으로 로그인된다
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  _social('카카오', const Color(0xFFFEE500), Colors.black87, 'kakao'),
+                  const SizedBox(width: 14),
+                  _social('네이버', const Color(0xFF03C75A), Colors.white, 'naver'),
+                  const SizedBox(width: 14),
+                  _social('구글', Colors.white, Colors.black87, 'google'),
+                ]),
+                const SizedBox(height: 14),
+                Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  TextButton(onPressed: () => _openWeb('/signup?web=1'), child: const Text('회원가입')),
+                  TextButton(onPressed: () => _openWeb('/find-id?web=1'), child: const Text('아이디 찾기')),
+                  TextButton(onPressed: () => _openWeb('/find-password?web=1'), child: const Text('비밀번호 찾기')),
+                ]),
               ]),
             ),
           ),
