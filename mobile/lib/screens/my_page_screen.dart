@@ -9,6 +9,7 @@ import '../widgets/async_view.dart';
 import '../widgets/design.dart';
 import 'my_challenges_screen.dart';
 import 'notifications_screen.dart';
+import 'ranking_screen.dart';
 import 'settings_screen.dart';
 import 'wallet_screen.dart';
 
@@ -116,6 +117,7 @@ class MyPageScreen extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: Column(children: [
             _menu(Icons.flag, ColorTag.coral, '내 챌린지', () => open(const MyChallengesScreen())),
+            _menu(Icons.emoji_events, ColorTag.gold, '랭킹', () => open(const RankingScreen())),
             _menu(Icons.account_balance_wallet, ColorTag.gold, '포인트 지갑 · 거래 내역', () => open(const WalletScreen())),
             _menu(Icons.shopping_bag, ColorTag.mint, '포인트 상점', () => openWeb('/shop')),
             _menu(Icons.notifications, ColorTag.lav, '알림', () => open(const NotificationsScreen())),
