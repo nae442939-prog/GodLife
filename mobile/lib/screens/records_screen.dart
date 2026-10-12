@@ -7,6 +7,8 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
+import 'challenge_detail_screen.dart';
+import 'verify_screen.dart';
 
 // 기분은 이모지 대신 아이콘으로 그린다 (이모지 글꼴은 따로 내려받아야 해서 처음에 네모로 보인다)
 const _moods = {
@@ -67,6 +69,17 @@ class _RecordsScreenState extends State<RecordsScreen> {
       builder: (_) => _DiarySheet(api: _api, date: date),
     );
     if (saved == true && mounted) setState(() => _version++);
+  }
+
+  /// 그날 결과 한 줄을 눌렀을 때: 오늘 아직 인증 전이면 인증 화면, 아니면 챌린지 상세. 돌아오면 다시 불러온다
+  Future<void> _openItem(Map<String, dynamic> item) async {
+    final id = (item['challengeId'] as num).toInt();
+    final title = item['title'] as String;
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) =>
+          item['result'] == 'PENDING' ? VerifyScreen(challengeId: id, title: title) : ChallengeDetailScreen(id: id),
+    ));
+    if (mounted) setState(() => _version++);
   }
 
   Future<void> _deleteDiary(int id) async {
@@ -244,6 +257,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
           child: AppCard(
             bordered: false,
             radius: 18,
+            // '오늘 아직'이면 바로 인증하러 가고, 그 밖에는 챌린지 상세를 연다
+            onTap: () => _openItem(item),
             child: Row(children: [
               CategoryIcon(_categoryNames[(item['categoryId'] as num).toInt()] ?? '기타',
                   title: item['title'] as String, size: 42),
@@ -258,7 +273,16 @@ class _RecordsScreenState extends State<RecordsScreen> {
               switch (item['result'] as String) {
                 'DONE' => ColorTag.of('성공', ColorTag.mint),
                 'FAIL' => ColorTag.of('실패', _failColors),
-                'PENDING' => ColorTag.of('오늘 아직', ColorTag.gold),
+                // 오늘 아직 인증 전: 눌러서 바로 인증하러 가는 버튼 모양
+                'PENDING' => Container(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(999)),
+                    child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text('오늘 아직 · 인증하기',
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                      Icon(Icons.chevron_right, size: 15, color: Colors.white),
+                    ]),
+                  ),
                 _ => ColorTag.of('쉬는 날', _restColors),
               },
             ]),
