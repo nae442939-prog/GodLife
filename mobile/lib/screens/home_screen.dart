@@ -6,6 +6,7 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/design.dart';
 import 'challenge_detail_screen.dart';
 import 'post_detail_screen.dart';
 import 'verify_screen.dart';
@@ -186,9 +187,9 @@ class _RecruitingCard extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                CategoryIcon(c.category.name, size: 40),
+                CategoryIcon(c.category.name, title: c.title, subType: c.subTypeName, size: 40),
                 const Spacer(),
-                c.isFree ? const Tag('무료', color: AppColors.mint) : Tag('${points(c.entryFee)}P', color: AppColors.primary),
+                PriceBadge(free: c.isFree, fee: c.entryFee),
               ]),
               const SizedBox(height: 12),
               Text(c.title,
@@ -263,7 +264,7 @@ class _TodayRow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
         child: Row(children: [
-          CategoryIcon(c.category.name),
+          CategoryIcon(c.category.name, title: c.title),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

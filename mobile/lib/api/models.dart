@@ -39,6 +39,7 @@ class Challenge {
         title = j['title'] as String,
         description = (j['description'] as String?) ?? '',
         category = Category.fromJson(j['category'] as Map<String, dynamic>),
+        subTypeName = (j['subType'] as Map<String, dynamic>?)?['name'] as String?,
         mode = j['mode'] as String,
         entryFee = (j['entryFee'] as num).toInt(),
         startDate = j['startDate'] as String,
@@ -53,6 +54,9 @@ class Challenge {
   final String title;
   final String description;
   final Category category;
+
+  /// '기타'의 세부 종류 이름 (산책 · 물 마시기 …). 없으면 null
+  final String? subTypeName;
   final String mode; // FREE | BET
   final int entryFee;
   final String startDate;
