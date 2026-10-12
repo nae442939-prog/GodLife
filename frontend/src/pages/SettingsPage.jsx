@@ -433,7 +433,14 @@ function PushToggle() {
     setBusy(true)
     setError('')
     try {
-      setStatus(await (status === 'on' ? disablePush() : enablePush()))
+      const next = await (status === 'on' ? disablePush() : enablePush())
+      if (next === 'dismissed') {
+        // 허용 창을 고르지 않고 닫음 → 꺼진 채로 두고 다시 누를 수 있게 한다
+        setStatus('off')
+        setError('알림을 허용해야 켤 수 있어요. 다시 켜고 브라우저가 묻는 창에서 [허용]을 눌러 주세요.')
+      } else {
+        setStatus(next)
+      }
     } catch (err) {
       setError(err.message || '푸시 알림 설정을 바꾸지 못했어요.')
     } finally {
@@ -465,6 +472,12 @@ function PushToggle() {
           </button>
         </li>
       </ul>
+      {busy && status === 'off' && (
+        <p className="settings-help">
+          브라우저가 알림을 허용할지 묻고 있어요. 창이 안 보이면 주소창 끝의 종 모양이나 주소창 왼쪽의 사이트 정보에서
+          알림을 [허용]으로 바꿔 주세요.
+        </p>
+      )}
       {error && <p className="form-error">{error}</p>}
     </div>
   )

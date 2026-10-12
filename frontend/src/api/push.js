@@ -29,11 +29,18 @@ export async function pushStatus() {
   return (await currentSubscription()) ? 'on' : 'off'
 }
 
-/** 푸시 켜기. 권한을 허용하지 않으면 'denied' 를 돌려준다 */
+/**
+ * 푸시 켜기. 권한을 막으면 'denied', 허용 창을 고르지 않고 닫으면 'dismissed' 를 돌려준다
+ * (닫기만 한 것은 막은 게 아니라서 다시 물어볼 수 있다)
+ */
 export async function enablePush() {
+  if (!supported()) return 'unavailable'
+  // 권한은 누른 직후에 바로 묻는다 — 서버 응답을 기다린 뒤에 물으면 브라우저가 허용 창을 띄우지 않을 수 있다
+  const permission = await Notification.requestPermission()
+  if (permission === 'denied') return 'denied'
+  if (permission !== 'granted') return 'dismissed'
   const config = await pushApi.config()
-  if (!supported() || !config.enabled) return 'unavailable'
-  if ((await Notification.requestPermission()) !== 'granted') return 'denied'
+  if (!config.enabled) return 'unavailable'
   const registration = await navigator.serviceWorker.register('/sw.js')
   await navigator.serviceWorker.ready
   const subscription =
