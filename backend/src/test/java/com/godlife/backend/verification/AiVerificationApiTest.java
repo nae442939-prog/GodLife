@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -136,6 +137,21 @@ class AiVerificationApiTest {
                 .andExpect(jsonPath("$.status").value("APPROVED")).andReturn().getResponse().getContentAsString());
         assertThat(jdbc.queryForObject("SELECT category_match FROM ai_inference_results WHERE verification_id = ?",
                 Boolean.class, verificationId)).isTrue();
+    }
+
+    @Test
+    @DisplayName("다른 종류로 꽤 확신하는데 챌린지 종류일 가능성이 거의 없으면(산책 챌린지에 키보드 사진) 확신도가 85% 가 안 돼도 돌려보낸다")
+    void clearlyDifferentPhotoIsRejected() throws Exception {
+        long id = challenge(5, 2); // 산책 = walk
+        join(id, friend);
+
+        ai("study", 0.76, 1, Map.of("study", 0.76, "walk", 0.03, "plant", 0.06));
+        submit(id, friend).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VERIFICATION_REJECTED"));
+
+        // 산책일 가능성이 어느 정도 남아 있으면 돌려보내지 않고 검토로 넘긴다
+        ai("study", 0.62, 2, Map.of("study", 0.62, "walk", 0.3));
+        submit(id, friend).andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("IN_REVIEW"));
     }
 
     @Test
@@ -305,10 +321,15 @@ class AiVerificationApiTest {
 
     /** 가짜 분류 결과. 임베딩은 axis 번째만 1인 단위 벡터 (같은 axis = 같은 사진, 다른 axis = 전혀 다른 사진) */
     private void ai(String label, double confidence, int axis) {
+        ai(label, confidence, axis, Map.of());
+    }
+
+    /** scores = 라벨마다의 점수 (모델이 주는 값) */
+    private void ai(String label, double confidence, int axis, Map<String, Double> scores) {
         ByteBuffer buffer = ByteBuffer.allocate(1280 * Float.BYTES).order(ByteOrder.LITTLE_ENDIAN);
         buffer.putFloat(axis * Float.BYTES, 1f);
         when(classifier.classify(any()))
-                .thenReturn(Optional.of(new AiPrediction(label, confidence, buffer.array(), "test-1")));
+                .thenReturn(Optional.of(new AiPrediction(label, confidence, buffer.array(), "test-1", scores)));
     }
 
     private long challenge(int categoryId) throws Exception {
