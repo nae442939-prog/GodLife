@@ -22,10 +22,14 @@ class User {
 class Category {
   Category.fromJson(Map<String, dynamic> j)
       : id = j['id'] as int,
-        name = j['name'] as String;
+        name = j['name'] as String,
+        subTypes = ((j['subTypes'] as List?) ?? []).map((s) => Category.fromJson(s as Map<String, dynamic>)).toList();
 
   final int id;
   final String name;
+
+  /// 세부 종류 ('기타'만: 일찍 일어나기 · 산책 …). 고르면 AI 가 그 종류로 인증 사진을 판정한다
+  final List<Category> subTypes;
 }
 
 /// 챌린지 목록 한 줄
