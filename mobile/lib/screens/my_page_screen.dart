@@ -8,6 +8,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import 'my_challenges_screen.dart';
 import 'notifications_screen.dart';
+import 'settings_screen.dart';
 import 'wallet_screen.dart';
 
 /// 마이페이지: 내 프로필 · 포인트 · 칭호(티어) · 메뉴(내 챌린지 · 지갑 · 알림 · 로그아웃)
@@ -109,6 +110,8 @@ class MyPageScreen extends StatelessWidget {
             _menu(Icons.storefront_outlined, '포인트 상점', () => openWeb('/shop')),
             const Divider(height: 1, color: AppColors.border),
             _menu(Icons.notifications_none, '알림', () => open(const NotificationsScreen())),
+            const Divider(height: 1, color: AppColors.border),
+            _menu(Icons.settings_outlined, '설정', () => open(const SettingsScreen())),
             const Divider(height: 1, color: AppColors.border),
             _menu(Icons.logout, '로그아웃', () => state.logout(), chevron: false),
           ]),

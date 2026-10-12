@@ -8,7 +8,8 @@ class User {
         profileImageUrl = j['profileImageUrl'] as String?,
         bio = j['bio'] as String?,
         role = j['role'] as String,
-        phoneVerified = j['phoneVerified'] as bool;
+        phoneVerified = j['phoneVerified'] as bool,
+        autoLogin = (j['autoLogin'] as bool?) ?? true;
 
   final int id;
   final String? email;
@@ -17,6 +18,9 @@ class User {
   final String? bio;
   final String role;
   final bool phoneVerified;
+
+  /// 자동 로그인 설정 (앱을 닫아도 로그인 유지)
+  final bool autoLogin;
 }
 
 class Category {
