@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClientException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -59,8 +60,16 @@ public class HttpAiClassifier implements AiClassifier {
                 log.warn("AI 서버 응답을 읽을 수 없습니다: {}", body == null ? null : body.keySet());
                 return Optional.empty();
             }
+            Map<String, Double> scores = new HashMap<>();
+            if (body.get("scores") instanceof Map<?, ?> raw) {
+                raw.forEach((name, score) -> {
+                    if (name instanceof String n && score instanceof Number s) {
+                        scores.put(n, s.doubleValue());
+                    }
+                });
+            }
             return Optional.of(new AiPrediction(label, confidence.doubleValue(), Base64.getDecoder().decode(embedding),
-                    String.valueOf(body.get("model_version"))));
+                    String.valueOf(body.get("model_version")), Map.copyOf(scores)));
         } catch (RestClientException | IllegalArgumentException e) {
             // 서버가 꺼져 있거나(연결 거부), 모델이 아직 없거나(503), 시간이 넘은 경우
             log.warn("AI 판정을 건너뜁니다: {}", e.getMessage());

@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -37,6 +38,8 @@ public class AiVerifier {
     static final double PASS_CONFIDENCE = 0.60;
     /** 다른 카테고리로 봤을 때 이 확신도 이상이면 바로 거절 */
     static final double REJECT_CONFIDENCE = 0.85;
+    /** 챌린지 종류의 점수가 이보다 낮으면 '전혀 다른 사진'으로 본다 */
+    static final double EXPECTED_FLOOR = 0.10;
     /** 예전 사진과의 코사인 유사도가 이 이상이면 같은 사진을 다시 쓴 것으로 의심 */
     static final double DUPLICATE_SIMILARITY = 0.985;
     /** 한 참가자가 하루에 AI 에게 바로 거절당할 수 있는 횟수. 넘으면 관리자 검토로 넘긴다 */
@@ -83,7 +86,8 @@ public class AiVerifier {
         String expected = challenge.aiLabel();
         boolean free = ANY_LABEL.equals(expected);
         boolean match = free || expected.equals(p.label());
-        if (!match && p.confidence() >= REJECT_CONFIDENCE && countReject(participantId, today) <= MAX_AUTO_REJECTS) {
+        if (!match && (p.confidence() >= REJECT_CONFIDENCE || clearlyDifferent(p, expected))
+                && countReject(participantId, today) <= MAX_AUTO_REJECTS) {
             return new Judgement(Decision.AUTO_REJECT, p, false, null, null, null);
         }
 
@@ -125,6 +129,16 @@ public class AiVerifier {
             jdbc.update("INSERT INTO review_queue (verification_id, reason) VALUES (:id, :reason)",
                     new MapSqlParameterSource("id", verificationId).addValue("reason", j.reviewReason()));
         }
+    }
+
+    /**
+     * 전혀 다른 사진인지: 다른 종류로 꽤 확신하는데(PASS_CONFIDENCE 이상) 챌린지의 종류일 가능성은 거의 없다고 볼 때.
+     * (산책 챌린지에 키보드 사진 → 공부 76% · 산책 3%) 확신도가 REJECT_CONFIDENCE 에 못 미쳐도 돌려보낸다.
+     */
+    private static boolean clearlyDifferent(AiPrediction p, String expected) {
+        OptionalDouble expectedScore = p.scoreOf(expected);
+        return p.confidence() >= PASS_CONFIDENCE && expectedScore.isPresent()
+                && expectedScore.getAsDouble() < EXPECTED_FLOOR;
     }
 
     /** 이 참가자가 오늘 거절당한 횟수를 하나 올리고 돌려준다 (날짜가 바뀌면 처음부터) */

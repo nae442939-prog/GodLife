@@ -1,7 +1,9 @@
 package com.godlife.backend.verification.ai;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 
 /**
  * 인증 사진 분류기. 구현은 직접 학습한 모델을 서빙하는 ai-server(FastAPI)를 부른다 ({@link HttpAiClassifier}).
@@ -19,7 +21,19 @@ public interface AiClassifier {
      * @param confidence   그 라벨의 확신도 0~1
      * @param embedding    사진의 특징 벡터 (float32 little-endian × 1280, L2 정규화). 비슷한 사진 찾기에 쓴다
      * @param modelVersion 판정한 모델 버전
+     * @param scores       라벨마다의 점수 0~1 (합이 1). 모델이 주지 않았으면 비어 있다
      */
-    record AiPrediction(String label, double confidence, byte[] embedding, String modelVersion) {
+    record AiPrediction(String label, double confidence, byte[] embedding, String modelVersion,
+                        Map<String, Double> scores) {
+
+        public AiPrediction(String label, double confidence, byte[] embedding, String modelVersion) {
+            this(label, confidence, embedding, modelVersion, Map.of());
+        }
+
+        /** 그 라벨의 점수. 모델이 라벨별 점수를 주지 않았으면 빈 값 */
+        public OptionalDouble scoreOf(String wanted) {
+            Double score = scores.get(wanted);
+            return score == null ? OptionalDouble.empty() : OptionalDouble.of(score);
+        }
     }
 }
