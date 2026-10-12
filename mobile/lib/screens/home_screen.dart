@@ -45,8 +45,9 @@ class HomeScreen extends StatelessWidget {
       builder: (context, data, reload) {
         final todo = data.mine.where((c) => c.canVerify).length;
         return ListView(padding: const EdgeInsets.only(bottom: 28), children: [
+          _Hero(onBrowse: onBrowse),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${state.user?.nickname ?? ''}님,',
                   style: const TextStyle(fontSize: 15, color: AppColors.muted, fontWeight: FontWeight.w600)),
@@ -56,7 +57,7 @@ class HomeScreen extends StatelessWidget {
                     ? '첫 챌린지에 도전해 볼까요?'
                     : todo > 0
                         ? '오늘 인증할 챌린지가 $todo개 있어요'
-                        : '오늘 인증은 다 했어요 🔥',
+                        : '오늘 인증은 다 했어요!',
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
             ]),
@@ -108,7 +109,7 @@ class HomeScreen extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text('${p.topicLabel} · ${p.author.nickname} · ♥ ${p.likeCount} · 댓글 ${p.commentCount}',
+                    subtitle: Text('${p.topicLabel} · ${p.author.nickname} · 좋아요 ${p.likeCount} · 댓글 ${p.commentCount}',
                         style: const TextStyle(fontSize: 12.5)),
                     trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
                   ),
@@ -191,6 +192,45 @@ class _RecruitingCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 맨 위 소개 띠 (웹 첫 화면과 같은 문구)
+class _Hero extends StatelessWidget {
+  const _Hero({required this.onBrowse});
+
+  final VoidCallback onBrowse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE9DC), Color(0xFFFFF4E4), Color(0xFFE3F6F1)],
+        ),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Tag('습관 챌린지 서비스', color: AppColors.primary),
+        const SizedBox(height: 12),
+        const Text('오늘의 습관에 도전하고,\n성공하면 돌려받으세요',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, height: 1.3)),
+        const SizedBox(height: 8),
+        const Text('함께 도전하고 사진으로 인증하는 갓생 챌린지',
+            style: TextStyle(color: AppColors.muted, fontSize: 14, height: 1.4)),
+        const SizedBox(height: 16),
+        FilledButton(
+          onPressed: onBrowse,
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 46), padding: const EdgeInsets.symmetric(horizontal: 22)),
+          child: const Text('챌린지 둘러보기'),
+        ),
+      ]),
     );
   }
 }

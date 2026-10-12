@@ -6,7 +6,14 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 
-const _moods = {'GREAT': '😆', 'GOOD': '🙂', 'OKAY': '😐', 'SAD': '😢', 'HARD': '😵'};
+// 기분은 이모지 대신 아이콘으로 그린다 (이모지 글꼴은 따로 내려받아야 해서 처음에 네모로 보인다)
+const _moods = {
+  'GREAT': Icons.sentiment_very_satisfied,
+  'GOOD': Icons.sentiment_satisfied,
+  'OKAY': Icons.sentiment_neutral,
+  'SAD': Icons.sentiment_dissatisfied,
+  'HARD': Icons.sentiment_very_dissatisfied,
+};
 
 String _iso(DateTime d) => '${d.year}-${two(d.month)}-${two(d.day)}';
 
@@ -252,7 +259,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
               if (diary['mood'] != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 10, top: 2),
-                  child: Text(_moods[diary['mood']] ?? '', style: const TextStyle(fontSize: 22)),
+                  child: Icon(_moods[diary['mood']], size: 24, color: AppColors.brown),
                 ),
               Expanded(
                 child: Text(
@@ -369,7 +376,7 @@ class _DiarySheetState extends State<_DiarySheet> {
                   shape: BoxShape.circle,
                   border: Border.all(color: _mood == e.key ? AppColors.brown : AppColors.border, width: 1.5),
                 ),
-                child: Text(e.value, style: const TextStyle(fontSize: 24)),
+                child: Icon(e.value, size: 28, color: _mood == e.key ? AppColors.brown : AppColors.muted),
               ),
             ),
         ]),

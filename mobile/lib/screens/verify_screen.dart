@@ -148,8 +148,8 @@ class _VerifyScreenState extends State<VerifyScreen> {
   }
 
   String _closedLabel(String state) => switch (state) {
-        'DONE_TODAY' => '오늘 인증을 마쳤어요 🎉',
-        'WEEK_DONE' => '이번 주 인증 횟수를 다 채웠어요 🎉',
+        'DONE_TODAY' => '오늘 인증을 마쳤어요!',
+        'WEEK_DONE' => '이번 주 인증 횟수를 다 채웠어요!',
         'TIME_CLOSED' => '지금은 인증할 수 있는 시간이 아니에요.',
         'NOT_STARTED' => '아직 시작 전인 챌린지예요.',
         'ENDED' => '끝난 챌린지예요.',

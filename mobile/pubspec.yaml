@@ -64,6 +64,12 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # 한글 글꼴 (Noto Sans KR, OFL). 자주 쓰는 한글 2,350자만 추린 것 — 웹에서 처음 열 때 글자가 네모로 깨져 보이지 않게 한다
+  fonts:
+    - family: NotoSansKR
+      fonts:
+        - asset: assets/fonts/NotoSansKR.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
