@@ -30,7 +30,7 @@ class MyPageScreen extends StatelessWidget {
               radius: 34,
               backgroundColor: AppColors.surfaceAlt,
               // 프로필 사진은 공개 주소라 토큰 없이 받는다
-              backgroundImage: image != null ? NetworkImage('$apiBase$image') : null,
+              backgroundImage: image != null ? NetworkImage('$serverBase$image') : null,
               child: image == null ? const Icon(Icons.person, size: 36, color: AppColors.muted) : null,
             ),
             const SizedBox(width: 16),

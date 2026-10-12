@@ -19,8 +19,9 @@ class MyChallengesScreen extends StatelessWidget {
       load: () async {
         final data = await state.api.get('/api/me/challenges') as List;
         final items = data.map((c) => MyChallenge.fromJson(c as Map<String, dynamic>)).toList();
-        // 오늘 인증할 수 있는 것 먼저
-        items.sort((a, b) => (b.canVerify ? 1 : 0) - (a.canVerify ? 1 : 0));
+        // 오늘 인증할 수 있는 것 → 참여 중인 것 → 개설만 한 것 순서
+        int order(MyChallenge c) => c.canVerify ? 0 : (c.joined ? 1 : 2);
+        items.sort((a, b) => order(a) - order(b));
         return items;
       },
       builder: (context, items, reload) {

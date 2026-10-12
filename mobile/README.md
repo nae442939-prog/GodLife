@@ -49,3 +49,10 @@ flutter build apk --release       # build/app/outputs/flutter-apk/app-release.ap
 ```bash
 flutter run --dart-define=API_BASE=http://10.0.2.2:5173   # 에뮬레이터에서 내 PC 의 개발 서버
 ```
+
+아이폰처럼 APK 를 깔 수 없는 기기에서는 같은 코드를 웹으로 빌드해 브라우저로 엽니다 (배포 서버의 `/app/`).
+
+```bash
+flutter build web --release --base-href /app/
+```
+

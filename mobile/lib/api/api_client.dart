@@ -4,10 +4,14 @@ import 'dart:typed_data';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 /// 서버 주소. 빌드할 때 --dart-define=API_BASE=... 로 바꿀 수 있다.
 const apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://52-79-61-201.sslip.io');
+
+/// 실제로 붙는 서버 주소. 웹으로 빌드하면 앱을 내려준 그 서버(같은 출처)를 쓴다.
+final String serverBase = kIsWeb ? Uri.base.origin : apiBase;
 
 /// 서버가 돌려준 오류 ({ code, message, fieldErrors })
 class ApiException implements Exception {
@@ -37,14 +41,17 @@ class ApiClient {
 
   static Future<ApiClient> create() async {
     final dio = Dio(BaseOptions(
-      baseUrl: apiBase,
+      baseUrl: serverBase,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 30),
       // 상태 코드는 직접 본다 (4xx 도 응답 본문의 code · message 를 읽어야 한다)
       validateStatus: (_) => true,
     ));
-    final dir = await getApplicationSupportDirectory();
-    dio.interceptors.add(CookieManager(PersistCookieJar(storage: FileStorage('${dir.path}/cookies'))));
+    // 웹에서는 브라우저가 쿠키를 알아서 보관하고 실어 보낸다 (같은 출처). 앱에서는 쿠키 저장소를 직접 둔다
+    if (!kIsWeb) {
+      final dir = await getApplicationSupportDirectory();
+      dio.interceptors.add(CookieManager(PersistCookieJar(storage: FileStorage('${dir.path}/cookies'))));
+    }
     return ApiClient._(dio);
   }
 
