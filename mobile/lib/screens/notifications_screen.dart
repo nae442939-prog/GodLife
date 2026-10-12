@@ -6,13 +6,11 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import 'challenge_detail_screen.dart';
+import 'post_detail_screen.dart';
 
-/// 알림함 (웹의 종 모양과 같은 알림). 누르면 읽음 처리하고, 챌린지 알림이면 그 챌린지로 간다
+/// 알림함 (홈 위쪽의 종을 누르면 열린다). 누르면 읽음 처리하고, 챌린지 · 글 알림이면 그 화면으로 간다
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key, required this.onChanged});
-
-  /// 읽음 상태가 바뀌면 아래 탭의 숫자를 다시 센다
-  final VoidCallback onChanged;
+  const NotificationsScreen({super.key});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -27,23 +25,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       setState(() => n.read = true);
       try {
         await api.post('/api/notifications/${n.id}/read');
-        widget.onChanged();
       } catch (_) {
         // 읽음 표시는 다음에 다시 시도된다
       }
     }
-    // 링크가 /challenges/{id}... 이면 그 챌린지 상세로
-    final match = RegExp(r'^/challenges/(\d+)').firstMatch(n.link ?? '');
-    if (match != null && mounted) {
+    if (!mounted) return;
+    final link = n.link ?? '';
+    final challenge = RegExp(r'^/challenges/(\d+)').firstMatch(link);
+    final post = RegExp(r'^/community/(\d+)').firstMatch(link);
+    if (challenge != null) {
       Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => ChallengeDetailScreen(id: int.parse(match.group(1)!))));
+          .push(MaterialPageRoute(builder: (_) => ChallengeDetailScreen(id: int.parse(challenge.group(1)!))));
+    } else if (post != null) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => PostDetailScreen(id: int.parse(post.group(1)!))));
     }
   }
 
   Future<void> _readAll() async {
     try {
       await context.read<AppState>().api.post('/api/notifications/read-all');
-      widget.onChanged();
       await _view.currentState?.reload();
     } catch (e) {
       if (mounted) showMessage(context, '$e');
@@ -53,15 +53,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final api = context.read<AppState>().api;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 8, 4),
-        child: Row(children: [
-          const Expanded(child: Text('알림', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900))),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('알림'),
+        actions: [
           TextButton(onPressed: _readAll, child: const Text('모두 읽음')),
-        ]),
+          const SizedBox(width: 8),
+        ],
       ),
-      Expanded(
+      body: SafeArea(
         child: AsyncView<List<AppNotification>>(
           key: _view,
           load: () async {
@@ -76,7 +76,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ]);
             }
             return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               itemCount: items.length,
               separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, i) {
@@ -84,17 +84,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 return Card(
                   color: n.read ? AppColors.surface : AppColors.surfaceAlt,
                   clipBehavior: Clip.antiAlias,
-                  child: ListTile(
+                  child: InkWell(
                     onTap: () => _open(n),
-                    leading: Icon(
-                      n.read ? Icons.notifications_none : Icons.notifications_active,
-                      color: n.read ? AppColors.muted : AppColors.brown,
-                    ),
-                    title: Text(n.title,
-                        style: TextStyle(fontWeight: n.read ? FontWeight.w600 : FontWeight.w800, fontSize: 15)),
-                    subtitle: Text(
-                      [if (n.body != null && n.body!.isNotEmpty) n.body!, shortDateTime(n.sentAt)].join('\n'),
-                      style: const TextStyle(fontSize: 12.5),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Icon(
+                            n.read ? Icons.notifications_none : Icons.notifications_active,
+                            color: n.read ? AppColors.muted : AppColors.brown,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 긴 문구도 잘리지 않고 줄을 바꿔 다 보이게 한다
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(n.title,
+                                style: TextStyle(
+                                    fontWeight: n.read ? FontWeight.w600 : FontWeight.w800, fontSize: 15, height: 1.3)),
+                            if (n.body != null && n.body!.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(n.body!, style: const TextStyle(fontSize: 13.5, height: 1.4)),
+                            ],
+                            const SizedBox(height: 5),
+                            Text(shortDateTime(n.sentAt), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                          ]),
+                        ),
+                      ]),
                     ),
                   ),
                 );
@@ -103,6 +121,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           },
         ),
       ),
-    ]);
+    );
   }
 }

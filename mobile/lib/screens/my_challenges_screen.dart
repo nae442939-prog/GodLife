@@ -15,7 +15,9 @@ class MyChallengesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.read<AppState>();
-    return AsyncView<List<MyChallenge>>(
+    return Scaffold(
+      appBar: AppBar(title: const Text('내 챌린지')),
+      body: AsyncView<List<MyChallenge>>(
       load: () async {
         final data = await state.api.get('/api/me/challenges') as List;
         final items = data.map((c) => MyChallenge.fromJson(c as Map<String, dynamic>)).toList();
@@ -25,20 +27,7 @@ class MyChallengesScreen extends StatelessWidget {
         return items;
       },
       builder: (context, items, reload) {
-        final todo = items.where((c) => c.canVerify).length;
-        return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 24), children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text('${state.user?.nickname ?? ''}님,',
-                style: const TextStyle(fontSize: 16, color: AppColors.muted, fontWeight: FontWeight.w600)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 2, 4, 16),
-            child: Text(
-              todo > 0 ? '오늘 인증할 챌린지가 $todo개 있어요' : '오늘 인증은 다 했어요 🔥',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-            ),
-          ),
+        return ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
           if (items.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: 80),
@@ -48,17 +37,17 @@ class MyChallengesScreen extends StatelessWidget {
               ),
             ),
           for (final c in items) ...[
-            _MyChallengeCard(c, reload: reload),
+            MyChallengeCard(c, reload: reload),
             const SizedBox(height: 12),
           ],
         ]);
       },
-    );
+    ));
   }
 }
 
-class _MyChallengeCard extends StatelessWidget {
-  const _MyChallengeCard(this.c, {required this.reload});
+class MyChallengeCard extends StatelessWidget {
+  const MyChallengeCard(this.c, {super.key, required this.reload});
 
   final MyChallenge c;
   final Future<void> Function() reload;

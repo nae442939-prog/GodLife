@@ -14,13 +14,11 @@ class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final api = context.read<AppState>().api;
-    return AsyncView<Wallet>(
+    return Scaffold(
+      appBar: AppBar(title: const Text('포인트 지갑')),
+      body: AsyncView<Wallet>(
       load: () async => Wallet.fromJson(await api.get('/api/wallet') as Map<String, dynamic>),
-      builder: (context, w, reload) => ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 24), children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(4, 0, 4, 14),
-          child: Text('포인트 지갑', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-        ),
+      builder: (context, w, reload) => ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
         Row(children: [
           Expanded(child: _balance('충전 포인트', w.chargedBalance, '챌린지 참가에 써요', AppColors.brown)),
           const SizedBox(width: 12),
@@ -82,7 +80,7 @@ class WalletScreen extends StatelessWidget {
           ]),
         ),
       ]),
-    );
+    ));
   }
 
   Widget _balance(String label, int value, String hint, Color color) {
