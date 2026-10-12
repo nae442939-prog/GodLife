@@ -12,6 +12,8 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from PIL import Image
+
 DATA = Path(__file__).parent / "data"
 OUT = DATA / "dataset"
 
@@ -60,6 +62,10 @@ OPENIMAGES_SKIP: dict[str, str] = {
     "mug": "커피 · 차 사진이 대부분",
 }
 
+# Open Images 추가분 (collect_images.py 가 openimages/{라벨}/001.jpg … 로 바로 받아 둔 것): 훑어보고 쓸 라벨만 적는다.
+# 뺀 라벨 — study: 사무실 · 회의실 사진이 대부분 / walk: 개 얼굴 사진이 대부분 / water: 술병이 대부분 / plant: 건물 · 거리 사진이 절반
+OPENIMAGES_EXTRA_KEEP = ["exercise", "reading", "cooking", "wake_up", "clean"]
+
 MAX_PER_FOLDER = 120
 # 사진이 적은 라벨(독서)을 채우려고 더 많이 쓰는 폴더
 MAX_OVERRIDES = {"book": 400}
@@ -72,6 +78,28 @@ def copy(folder: Path, label: str, prefix: str) -> int:
     for photo in photos:
         shutil.copyfile(photo, target / f"{prefix}-{photo.name}")
     return len(photos)
+
+
+def fingerprint(photo: Path) -> int:
+    """거의 같은 사진을 알아보는 64비트 지문 (8x8 로 줄여 평균보다 밝은 칸을 1 로)"""
+    pixels = list(Image.open(photo).convert("L").resize((8, 8)).getdata())
+    mean = sum(pixels) / 64
+    return sum(1 << i for i, v in enumerate(pixels) if v > mean)
+
+
+def copy_extra(label: str) -> int:
+    """추가분은 이미 있는 Open Images 사진과 겹칠 수 있어서, 거의 같은 사진은 빼고 넣는다"""
+    target = OUT / label
+    seen = [fingerprint(f) for f in target.glob("*.jpg") if not f.name.startswith("oi2-")]
+    count = 0
+    for photo in sorted((DATA / "openimages" / label).glob("*.jpg")):
+        mark = fingerprint(photo)
+        if any(bin(mark ^ other).count("1") <= 4 for other in seen):
+            continue
+        seen.append(mark)
+        shutil.copyfile(photo, target / f"oi2-{photo.name}")
+        count += 1
+    return count
 
 
 def main() -> None:
@@ -87,6 +115,8 @@ def main() -> None:
                 continue
             target = SUB_LABELS.get(class_dir.name, label_dir.name) if label_dir.name == "other" else label_dir.name
             added[target] = added.get(target, 0) + copy(class_dir, target, "oi")
+    for label in OPENIMAGES_EXTRA_KEEP:
+        added[label] = added.get(label, 0) + copy_extra(label)
     for label, count in sorted(added.items()):
         print(f"{label:10s} +{count}장 → 모두 {len(list((OUT / label).glob('*.jpg')))}장")
 

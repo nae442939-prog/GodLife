@@ -1,6 +1,7 @@
 package com.godlife.backend.challenge;
 
 import com.godlife.backend.collusion.CollusionService;
+import com.godlife.backend.demo.DemoDataKeeper;
 import com.godlife.backend.notification.NotificationService;
 import com.godlife.backend.settlement.SettlementService;
 import com.godlife.backend.tier.TierService;
@@ -9,12 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.function.Supplier;
 
 /**
  * 챌린지 진행 관리 (매일 밤 12시, 서울 시간).
@@ -24,6 +27,7 @@ import java.time.LocalDate;
  * 4) 시작일이 된 챌린지를 진행 중으로 바꾼다
  * 5) 정산이 끝난 챌린지에서 담합 의심 조합을 찾아 표시한다 (관리자 화면에서 본다)
  * 서버가 자정에 꺼져 있었을 수 있어 켜질 때도 한 번 돈다. 여러 번 돌아도 결과가 같다.
+ * 시연용 더미 데이터를 쓰는 환경에서는 그 전에 더미 날짜를 오늘에 맞춘다 (DemoDataKeeper, 기본은 꺼짐).
  */
 @Slf4j
 @Service
@@ -36,8 +40,11 @@ public class ChallengeLifecycleService {
     private final NotificationService notificationService;
     private final CollusionService collusionService;
     private final TierService tierService;
+    private final DemoDataKeeper demoDataKeeper;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
+
+    private static final int DEADLOCK_RETRIES = 3;
 
     /** 테스트는 켜질 때 돌지 않게 끈다 (테스트가 직접 run 을 부른다) */
     @Value("${app.lifecycle.run-on-startup:true}")
@@ -45,13 +52,27 @@ public class ChallengeLifecycleService {
 
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void midnight() {
-        run(LocalDate.now(clock));
+        daily(LocalDate.now(clock));
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         if (runOnStartup) {
-            run(LocalDate.now(clock));
+            daily(LocalDate.now(clock));
+        }
+    }
+
+    private void daily(LocalDate today) {
+        try {
+            demoDataKeeper.roll(today);
+        } catch (RuntimeException e) {
+            log.error("더미 데이터 날짜 맞추기 실패", e);
+        }
+        run(today);
+        try {
+            demoDataKeeper.syncStreaks(today);
+        } catch (RuntimeException e) {
+            log.error("더미 회원 연속 기록 맞추기 실패", e);
         }
     }
 
@@ -74,9 +95,10 @@ public class ChallengeLifecycleService {
         } catch (RuntimeException e) {
             log.error("칭호 맞추기 실패", e);
         }
-        Integer reset = transactionTemplate.execute(
-                status -> participantRepository.resetMissedStreaks(today.minusDays(1)));
-        Integer started = transactionTemplate.execute(status -> challengeRepository.startDue(today));
+        Integer reset = retryOnDeadlock(() -> transactionTemplate.execute(
+                status -> participantRepository.resetMissedStreaks(today.minusDays(1))));
+        Integer started = retryOnDeadlock(
+                () -> transactionTemplate.execute(status -> challengeRepository.startDue(today)));
         int flagged = 0;
         try {
             flagged = collusionService.scan();
@@ -92,6 +114,23 @@ public class ChallengeLifecycleService {
         }
         log.info("챌린지 진행 관리 {}: 종료 {}개, 정산 {}건, 연속 기록 초기화 {}명, 시작 {}개, 인증 알림 {}건, 담합 의심 표시 {}건, 칭호 변경 {}명",
                 today, ended, settled, reset, started, reminded, flagged, tierChanged);
+    }
+
+    /**
+     * 여러 행을 한 번에 고치는 UPDATE 는 배치가 겹쳐 돌면(서버 여러 대 · 재시작 겹침) 교착으로 한쪽이 밀려날 수 있다.
+     * 여러 번 돌아도 결과가 같은 작업이라 밀려난 쪽만 다시 한다.
+     */
+    private <T> T retryOnDeadlock(Supplier<T> work) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return work.get();
+            } catch (PessimisticLockingFailureException e) {
+                if (attempt >= DEADLOCK_RETRIES) {
+                    throw e;
+                }
+                log.warn("교착으로 밀려나 다시 시도 ({}번째)", attempt);
+            }
+        }
     }
 
     /** 챌린지 행을 잠근 채로 종료하고, 아직 판정 전(ACTIVE)인 참가자를 성공/실패로 판정한다. */
