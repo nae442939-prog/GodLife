@@ -7,7 +7,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 
 /// 포인트 지갑. 충전 포인트(참가비 · 환불 대상)와 보상 포인트(상점 전용)를 따로 보여 준다.
-/// 충전(테스트 결제) · 환불 · 상점은 웹에서 한다 — 앱에는 현금화 기능이 없다.
+/// 충전(테스트 결제) · 환불은 웹 지갑 화면으로 보낸다 — 앱에는 현금화 기능이 없다.
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
 
@@ -24,6 +24,34 @@ class WalletScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(child: _balance('보상 포인트', w.rewardBalance, '포인트 상점에서만 써요', AppColors.mint)),
         ]),
+        const SizedBox(height: 12),
+        // 충전 · 환불은 결제창(토스페이먼츠 테스트 결제)이 있는 웹 지갑 화면에서 한다
+        Row(children: [
+          Expanded(
+            flex: 3,
+            child: FilledButton.icon(
+              onPressed: () => openWeb('/wallet'),
+              icon: const Icon(Icons.add_card),
+              label: const Text('포인트 충전'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 2,
+            child: OutlinedButton(
+              onPressed: () => openWeb('/wallet'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                side: const BorderSide(color: AppColors.border),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('환불', style: TextStyle(color: AppColors.text, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        const Text('테스트 결제라 실제 돈은 빠지지 않아요. 결제를 마치고 왼쪽 위 로고를 누르면 앱 화면으로 돌아와요.',
+            style: TextStyle(color: AppColors.muted, fontSize: 12.5, height: 1.4)),
         const SizedBox(height: 12),
         Card(
           child: Padding(

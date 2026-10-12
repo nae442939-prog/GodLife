@@ -106,6 +106,8 @@ class MyPageScreen extends StatelessWidget {
             const Divider(height: 1, color: AppColors.border),
             _menu(Icons.account_balance_wallet_outlined, '포인트 지갑 · 거래 내역', () => open(const WalletScreen())),
             const Divider(height: 1, color: AppColors.border),
+            _menu(Icons.storefront_outlined, '포인트 상점', () => openWeb('/shop')),
+            const Divider(height: 1, color: AppColors.border),
             _menu(Icons.notifications_none, '알림', () => open(const NotificationsScreen())),
             const Divider(height: 1, color: AppColors.border),
             _menu(Icons.logout, '로그아웃', () => state.logout(), chevron: false),
@@ -113,7 +115,7 @@ class MyPageScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         const Text(
-          '갓생살기의 포인트는 챌린지 참여와 포인트 상점에서만 쓸 수 있어요.\n충전 · 환불 · 포인트 상점은 웹에서 이용해 주세요.',
+          '갓생살기의 포인트는 챌린지 참여와 포인트 상점에서만 쓸 수 있어요.\n충전 · 환불은 포인트 지갑에서, 상점은 위 메뉴에서 열 수 있어요.',
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.muted, fontSize: 12.5, height: 1.5),
         ),
