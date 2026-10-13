@@ -24,7 +24,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -195,6 +198,29 @@ public class ChallengeService {
         Challenge c = requireHostForUpdate(challengeId, userId);
         c.changeNotice(notice, LocalDateTime.now(clock));
         return c.getNotice() != null;
+    }
+
+    /** 개설자가 대표 사진을 올리거나 바꾼다. 예전 사진 파일은 지운다. (더미가 같이 쓰는 seed 사진은 남긴다) */
+    @Transactional
+    public void changeCover(Long challengeId, Long userId, MultipartFile file) {
+        Challenge c = requireHostForUpdate(challengeId, userId);
+        String old = c.getCoverKey();
+        c.changeCover(imageStore.storeChallengeCover(challengeId, file));
+        if (old != null && old.startsWith(ChallengeCover.KEY_PREFIX + challengeId + "/")) {
+            imageStore.delete(old);
+        }
+    }
+
+    /** 대표 사진 파일. 주소의 폴더는 챌린지 id 이거나 더미용 seed. */
+    public Path coverFile(String folder, String name) {
+        if (!ChallengeCover.isValid(folder, name)) {
+            throw new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND, "사진을 찾을 수 없어요.");
+        }
+        Path path = imageStore.resolve(ChallengeCover.KEY_PREFIX + folder + "/" + name);
+        if (!Files.isRegularFile(path)) {
+            throw new BusinessException(ErrorCode.CHALLENGE_NOT_FOUND, "사진을 찾을 수 없어요.");
+        }
+        return path;
     }
 
     /**

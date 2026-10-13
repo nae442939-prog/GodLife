@@ -53,6 +53,10 @@ public class Challenge {
     @Column(nullable = false)
     private String description;
 
+    /** 대표 사진 파일 키 (ImageStore). 올리지 않았으면 null → 화면이 종류 아이콘을 보여 준다. */
+    @Column(name = "cover_key")
+    private String coverKey;
+
     /** 방장 공지 (없으면 null). 채팅방 맨 위에 고정된다. */
     private String notice;
 
@@ -233,6 +237,10 @@ public class Challenge {
     /** 정산이 모두 끝남 (포인트 챌린지: 마지막 기간까지 정산 / 무료 챌린지: 종료와 함께) */
     public void markSettled() {
         status = ChallengeStatus.SETTLED;
+    }
+
+    public void changeCover(String coverKey) {
+        this.coverKey = coverKey;
     }
 
     public boolean isPrivate() {

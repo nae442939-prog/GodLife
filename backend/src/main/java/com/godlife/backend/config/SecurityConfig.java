@@ -67,7 +67,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/profile-images/**").permitAll()
                         // 챌린지 둘러보기는 비로그인도 가능. 개설/참여는 아래 authenticated 에 걸린다.
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/challenges", "/api/challenges/*",
-                                "/api/challenges/invite/*")
+                                "/api/challenges/invite/*", "/api/challenge-covers/*/*")
                         .permitAll()
                         // 커뮤니티 글 읽기도 비로그인이 가능. 쓰기 · 좋아요 · 댓글 · 신고는 로그인해야 한다.
                         .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/*", "/api/post-images/*")

@@ -12,7 +12,9 @@ export function ChallengeCard({ challenge: c }) {
 
   return (
     <li className={`cl-card cat-${c.category.id}`}>
-      <Link to={`/challenges/${c.id}`} className="cl-card-link">
+      <Link to={`/challenges/${c.id}`} className={`cl-card-link${c.coverUrl ? ' has-cover' : ''}`}>
+        {/* 개설자가 올린 대표 사진 (없으면 지금처럼 종류 아이콘만) */}
+        {c.coverUrl && <img className="cl-cover" src={c.coverUrl} alt="" loading="lazy" />}
         <div className="cl-card-top">
           <span className="cl-icon-tile">
             <CategoryIcon id={c.category.id} size={21} strokeWidth={1.8} />

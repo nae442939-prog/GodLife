@@ -1,6 +1,7 @@
 package com.godlife.backend.challenge.dto;
 
 import com.godlife.backend.challenge.Challenge;
+import com.godlife.backend.challenge.ChallengeCover;
 import com.godlife.backend.challenge.ChallengeMode;
 import com.godlife.backend.challenge.ChallengeStatus;
 import com.godlife.backend.challenge.ChallengeVisibility;
@@ -21,6 +22,7 @@ import java.util.List;
  * @param inviteCode 개설자·참가자에게만 준다(초대 링크 복사용). 그 외에는 null
  * @param member     개설자이거나 참여 중인 사람 (오픈채팅을 볼 수 있음)
  * @param subType    카테고리 세부 종류 ('기타'에서 고른 경우만, 없으면 null)
+ * @param coverUrl   대표 사진 주소 (올리지 않았으면 null)
  */
 public record ChallengeDetailResponse(Long id, String title, String description, String notice,
                                       LocalDateTime noticeUpdatedAt, CategoryResponse category,
@@ -32,7 +34,7 @@ public record ChallengeDetailResponse(Long id, String title, String description,
                                       int participantCount, int maxParticipants, ChallengeStatus status,
                                       String hostNickname, boolean recruiting, boolean canLeave,
                                       boolean joined, ParticipantStatus myStatus, boolean host, boolean member,
-                                      List<ParticipantResponse> participants) {
+                                      List<ParticipantResponse> participants, String coverUrl) {
 
     public static ChallengeDetailResponse of(Challenge c, LocalDate today, String hostNickname, boolean joined,
                                              ParticipantStatus myStatus, boolean host, boolean member,
@@ -45,6 +47,6 @@ public record ChallengeDetailResponse(Long id, String title, String description,
                 c.getStartDate(), c.getEndDate(), c.totalDays(), c.getFrequencyType(), c.getWeeklyCount(),
                 c.getVerifyFrom(), c.getVerifyUntil(), c.getParticipantCount(), c.getMaxParticipants(),
                 c.getStatus(), hostNickname, c.isRecruiting(today), c.canLeave(today), joined, myStatus, host, member,
-                participants);
+                participants, ChallengeCover.urlOf(c.getCoverKey()));
     }
 }

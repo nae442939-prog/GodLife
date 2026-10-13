@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { challengeApi, messageApi } from '../api/client.js'
 import { MODE_LABEL, addDays, daysBetween, toIsoDate } from '../challenge/format.js'
@@ -178,6 +178,11 @@ export function ChallengeCreatePage() {
     setField(name, type === 'checkbox' ? checked : value)
   }
 
+  // 대표 사진 (선택). 챌린지를 만든 뒤 따로 올린다
+  const [cover, setCover] = useState(null)
+  const coverInput = useRef(null)
+  const coverPreview = useObjectUrl(cover)
+
   async function onSubmit(e) {
     e.preventDefault()
     setFormError('')
@@ -207,6 +212,13 @@ export function ChallengeCreatePage() {
         // 같이 만드는 챌린지는 만든 사람도 바로 참여한다
         { join: Boolean(partner) },
       )
+      if (cover) {
+        try {
+          await challengeApi.changeCover(created.id, cover)
+        } catch {
+          // 챌린지는 만들어졌으니 넘어간다 (사진이 없으면 종류 아이콘이 나온다)
+        }
+      }
       if (partner) {
         try {
           await messageApi.invite(partner.id, created.id)
@@ -384,6 +396,34 @@ export function ChallengeCreatePage() {
               />
               {errors.description && <p className="field-error">{errors.description}</p>}
             </div>
+
+            <div className="field">
+              <label htmlFor="ch-cover">대표 사진 (선택)</label>
+              <div className="cf-cover">
+                {coverPreview && <img src={coverPreview} alt="고른 대표 사진" />}
+                <button type="button" className="btn btn-ghost" onClick={() => coverInput.current?.click()}>
+                  {cover ? '다른 사진 고르기' : '사진 고르기'}
+                </button>
+                {cover && (
+                  <button type="button" className="btn btn-ghost" onClick={() => setCover(null)}>
+                    빼기
+                  </button>
+                )}
+              </div>
+              <input
+                id="ch-cover"
+                ref={coverInput}
+                type="file"
+                accept="image/jpeg,image/png"
+                className="sr-only"
+                tabIndex={-1}
+                onChange={(e) => {
+                  setCover(e.target.files?.[0] ?? null)
+                  e.target.value = ''
+                }}
+              />
+              <p className="field-hint">목록 카드 맨 위에 보여요. JPG·PNG, 5MB 이하.</p>
+            </div>
           </div>
 
           <div className="form-col">
@@ -537,4 +577,11 @@ export function ChallengeCreatePage() {
       </form>
     </div>
   )
+}
+
+/** 고른 파일을 미리 보기 주소로 바꾼다 (파일이 바뀌거나 화면을 떠나면 주소를 돌려준다) */
+function useObjectUrl(file) {
+  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+  useEffect(() => () => url && URL.revokeObjectURL(url), [url])
+  return url
 }

@@ -155,6 +155,7 @@ CREATE TABLE challenges (
   sub_type_id       INT          NULL COMMENT '카테고리 세부 종류 (기타만, 고르지 않으면 NULL)',
   title             VARCHAR(100) NOT NULL,
   description       TEXT         NOT NULL,
+  cover_key         VARCHAR(255) NULL COMMENT '대표 사진 파일 키 (없으면 NULL)',
   notice            VARCHAR(300) NULL COMMENT '방장 공지. 채팅방 맨 위 고정',
   notice_updated_at DATETIME     NULL,
   mode              ENUM('FREE','BET') NOT NULL COMMENT 'FREE(무료) · BET(베팅)',

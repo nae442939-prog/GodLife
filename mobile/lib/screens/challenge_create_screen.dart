@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
+import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 
 String _iso(DateTime d) => '${d.year}-${two(d.month)}-${two(d.day)}';
@@ -20,6 +24,9 @@ class ChallengeCreateScreen extends StatefulWidget {
 class _ChallengeCreateScreenState extends State<ChallengeCreateScreen> {
   final _title = TextEditingController();
   final _description = TextEditingController();
+
+  /// 대표 사진 (고르지 않으면 종류 아이콘이 대신 나온다)
+  Uint8List? _cover;
 
   List<Category> _categories = [];
   String _mode = 'FREE';
@@ -69,6 +76,19 @@ class _ChallengeCreateScreenState extends State<ChallengeCreateScreen> {
     if (picked != null) setState(() => _start = picked);
   }
 
+  Future<void> _pickCover() async {
+    final XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+    } catch (_) {
+      if (mounted) setState(() => _error = '사진을 불러오지 못했어요.');
+      return;
+    }
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    if (mounted) setState(() => _cover = bytes);
+  }
+
   Future<void> _submit() async {
     final String? problem = _category == null
         ? '카테고리를 골라 주세요.'
@@ -86,7 +106,8 @@ class _ChallengeCreateScreenState extends State<ChallengeCreateScreen> {
       _error = null;
     });
     try {
-      final data = await context.read<AppState>().api.post('/api/challenges', body: {
+      final api = context.read<AppState>().api;
+      final data = await api.post('/api/challenges', body: {
         'categoryId': _category!.id,
         'subTypeId': _subTypeId,
         'title': _title.text.trim(),
@@ -99,7 +120,16 @@ class _ChallengeCreateScreenState extends State<ChallengeCreateScreen> {
         'entryFee': _mode == 'BET' ? _fee : null,
         'maxParticipants': _max,
       });
-      if (mounted) Navigator.of(context).pop(((data as Map)['id'] as num).toInt());
+      final id = ((data as Map)['id'] as num).toInt();
+      if (_cover != null) {
+        // 챌린지는 이미 만들어졌다: 사진만 실패하면 알려 주고 넘어간다
+        try {
+          await api.upload('/api/challenges/$id/cover', _cover!, 'cover.jpg');
+        } catch (e) {
+          if (mounted) showMessage(context, '챌린지는 만들었지만 대표 사진을 올리지 못했어요. ($e)');
+        }
+      }
+      if (mounted) Navigator.of(context).pop(id);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -196,6 +226,40 @@ class _ChallengeCreateScreenState extends State<ChallengeCreateScreen> {
                     ),
                     const Text('시작일 바꾸기', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
                   ]),
+                ),
+              ),
+              _label('대표 사진 (선택)'),
+              GestureDetector(
+                onTap: _pickCover,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    height: 150,
+                    color: AppColors.surfaceAlt,
+                    alignment: Alignment.center,
+                    child: _cover == null
+                        ? const Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.add_photo_alternate_outlined, color: AppColors.chipText, size: 28),
+                            SizedBox(height: 6),
+                            Text('목록 카드에 보일 사진을 골라 주세요',
+                                style: TextStyle(color: AppColors.chipText, fontSize: 12, fontWeight: FontWeight.w700)),
+                          ])
+                        : Stack(fit: StackFit.expand, children: [
+                            Image.memory(_cover!, fit: BoxFit.cover),
+                            Positioned(
+                              right: 10,
+                              top: 10,
+                              child: GestureDetector(
+                                onTap: () => setState(() => _cover = null),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(color: Color(0x99000000), shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                ),
+                              ),
+                            ),
+                          ]),
+                  ),
                 ),
               ),
               _label('얼마나 자주 인증하나요?'),

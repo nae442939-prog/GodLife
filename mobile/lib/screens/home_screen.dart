@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api_client.dart';
 import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
@@ -99,7 +100,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 150,
+              height: 186,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -297,7 +298,16 @@ class _RecoCard extends StatelessWidget {
         reload();
       },
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(height: 58, color: background, child: Icon(icon, color: foreground, size: 24)),
+        // 대표 사진이 있으면 사진을, 없거나 못 받으면 종류 아이콘을 보여 준다
+        SizedBox(
+          height: 94,
+          child: c.coverUrl == null
+              ? ColoredBox(color: background, child: Icon(icon, color: foreground, size: 28))
+              : Image.network('$serverBase${c.coverUrl}',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      ColoredBox(color: background, child: Icon(icon, color: foreground, size: 28))),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 11, 12, 13),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

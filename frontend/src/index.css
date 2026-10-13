@@ -2048,6 +2048,35 @@ a:focus-visible,
   box-shadow: 0 0 0 3px var(--focus);
 }
 
+/* 대표 사진: 카드 맨 위를 가득 채운다 (카드 안쪽 여백만큼 밖으로 뺀다) */
+.cl-card-link.has-cover {
+  overflow: hidden;
+}
+
+.cl-cover {
+  display: block;
+  width: calc(100% + 48px);
+  max-width: none;
+  height: 132px;
+  margin: -24px -24px 18px;
+  object-fit: cover;
+  background: var(--surface-alt, #f1ede2);
+}
+
+.cf-cover {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cf-cover img {
+  width: 132px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
 .cl-card-top {
   display: flex;
   align-items: flex-start;

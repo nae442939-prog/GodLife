@@ -52,12 +52,16 @@ class Challenge {
         frequencyType = j['frequencyType'] as String,
         weeklyCount = (j['weeklyCount'] as num?)?.toInt(),
         participantCount = (j['participantCount'] as num).toInt(),
-        maxParticipants = (j['maxParticipants'] as num?)?.toInt();
+        maxParticipants = (j['maxParticipants'] as num?)?.toInt(),
+        coverUrl = j['coverUrl'] as String?;
 
   final int id;
   final String title;
   final String description;
   final Category category;
+
+  /// 개설자가 올린 대표 사진 주소. 없으면 null (종류 아이콘을 보여 준다)
+  final String? coverUrl;
 
   /// '기타'의 세부 종류 이름 (산책 · 물 마시기 …). 없으면 null
   final String? subTypeName;
