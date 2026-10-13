@@ -8,16 +8,19 @@ import '../widgets/async_view.dart';
 import '../widgets/design.dart';
 import 'profile_screen.dart';
 
-/// 친구: 내가 추가한 사람(팔로잉)과 나를 추가한 사람(팔로워). 한 줄을 누르면 프로필로 가서 추가하거나 끊는다.
-class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({super.key});
+/// 팔로잉 · 팔로워 목록 (웹 마이페이지의 팔로우 목록 창과 같다). 한 줄을 누르면 프로필로 가서 팔로우하거나 끊는다.
+class FollowListScreen extends StatefulWidget {
+  const FollowListScreen({super.key, this.followers = false});
+
+  /// 처음에 팔로워 쪽을 보여 줄지
+  final bool followers;
 
   @override
-  State<FriendsScreen> createState() => _FriendsScreenState();
+  State<FollowListScreen> createState() => _FollowListScreenState();
 }
 
-class _FriendsScreenState extends State<FriendsScreen> {
-  bool _followers = false;
+class _FollowListScreenState extends State<FollowListScreen> {
+  late bool _followers = widget.followers;
 
   Future<List<Map<String, dynamic>>> _load() async {
     final api = context.read<AppState>().api;
@@ -28,15 +31,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('친구')),
+      appBar: AppBar(title: const Text('팔로우')),
       body: SafeArea(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: Row(children: [
-              PillChip('내가 추가한 친구', selected: !_followers, onTap: () => setState(() => _followers = false)),
+              PillChip('팔로잉', selected: !_followers, onTap: () => setState(() => _followers = false)),
               const SizedBox(width: 8),
-              PillChip('나를 추가한 사람', selected: _followers, onTap: () => setState(() => _followers = true)),
+              PillChip('팔로워', selected: _followers, onTap: () => setState(() => _followers = true)),
             ]),
           ),
           Expanded(
@@ -49,8 +52,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     const SizedBox(height: 120),
                     Text(
                         _followers
-                            ? '아직 나를 친구로 추가한 사람이 없어요.'
-                            : '아직 추가한 친구가 없어요.\n랭킹이나 챌린지 참가자에서 프로필을 눌러 친구를 추가해 보세요.',
+                            ? '아직 나를 팔로우하는 사람이 없어요.'
+                            : '아직 팔로우한 사람이 없어요.\n랭킹이나 챌린지 참가자에서 프로필을 눌러 팔로우해 보세요.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                             color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.6)),
@@ -95,7 +98,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                               ),
                               if (u['mutual'] == true) ...[
                                 const SizedBox(width: 8),
-                                ColorTag.of('서로 친구', ColorTag.mint),
+                                ColorTag.of('맞팔로우', ColorTag.mint),
                               ],
                               const Icon(Icons.chevron_right, color: Color(0xFFC7C0B0), size: 20),
                             ]),

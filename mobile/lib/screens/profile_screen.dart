@@ -8,11 +8,13 @@ import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
 import 'challenge_detail_screen.dart';
+import 'message_room_screen.dart';
 
 const _tierNames = {'BRONZE': '브론즈', 'SILVER': '실버', 'GOLD': '골드', 'PLATINUM': '플래티넘', 'DIAMOND': '다이아'};
 
-/// 다른 회원의 프로필: 사진 · 닉네임 · 기록과 [친구 추가] 버튼.
-/// 친구로 추가(팔로우)하면 랭킹의 '친구'에서 함께 순위를 겨룬다. 요청 · 수락 없이 바로 추가된다.
+/// 다른 회원의 프로필 (웹의 프로필과 같다): 사진 · 닉네임 · 기록과 [팔로우] [메시지] 버튼.
+/// 팔로우는 요청 · 수락 없이 바로 되고, 팔로우한 사람은 랭킹의 '친구'에서 함께 순위를 겨룬다.
+/// [메시지]는 늘 대화방으로 간다 (맞팔로우 · 같은 챌린지가 아니면 대화방에서 메시지 요청으로 보내진다).
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.userId});
 
@@ -30,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<Map<String, dynamic>> _load() async =>
       await _api.get('/api/users/${widget.userId}/profile') as Map<String, dynamic>;
 
-  /// 친구 추가 / 끊기. 끝나면 프로필을 다시 불러와 버튼과 팔로워 수를 맞춘다
+  /// 팔로우 / 언팔로우. 끝나면 프로필을 다시 불러와 버튼과 팔로워 수를 맞춘다
   Future<void> _toggle(Map<String, dynamic> p, Future<void> Function() reload) async {
     final following = p['following'] == true;
     setState(() => _busy = true);
@@ -41,7 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await _api.post('/api/users/${widget.userId}/follow');
       }
       await reload();
-      if (mounted) showMessage(context, following ? '친구를 끊었어요.' : '${p['nickname']}님을 친구로 추가했어요.');
+      if (mounted) showMessage(context, following ? '팔로우를 취소했어요.' : '${p['nickname']}님을 팔로우했어요.');
     } catch (e) {
       if (mounted) showMessage(context, '$e');
     } finally {
@@ -113,29 +115,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ]),
                   if (!mine && !blocked) ...[
                     const SizedBox(height: 16),
-                    // 친구 추가는 주요 버튼(코랄), 이미 친구면 조용한 테두리 버튼
-                    following
-                        ? OutlinedButton.icon(
-                            onPressed: _busy ? null : () => _toggle(p, reload),
-                            icon: const Icon(Icons.check, size: 18, color: AppColors.text),
-                            label: Text(followsMe ? '서로 친구 · 끊기' : '친구 추가됨 · 끊기',
-                                style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.w800)),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                              backgroundColor: AppColors.surfaceAlt,
-                              side: BorderSide.none,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                            ),
-                          )
-                        : FilledButton.icon(
-                            onPressed: _busy ? null : () => _toggle(p, reload),
-                            icon: const Icon(Icons.person_add_alt_1, size: 18),
-                            label: Text(followsMe ? '나도 친구 추가' : '친구 추가'),
+                    // 팔로우는 주요 버튼(코랄), 이미 팔로우 중이면 조용한 버튼. 옆에 메시지
+                    Row(children: [
+                      Expanded(
+                        child: following
+                            ? OutlinedButton.icon(
+                                onPressed: _busy ? null : () => _toggle(p, reload),
+                                icon: const Icon(Icons.check, size: 18, color: AppColors.text),
+                                label: const Text('팔로잉',
+                                    style: TextStyle(color: AppColors.text, fontWeight: FontWeight.w800)),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                  backgroundColor: AppColors.surfaceAlt,
+                                  side: BorderSide.none,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                ),
+                              )
+                            : FilledButton.icon(
+                                onPressed: _busy ? null : () => _toggle(p, reload),
+                                icon: const Icon(Icons.add, size: 18),
+                                label: Text(followsMe ? '맞팔로우' : '팔로우'),
+                              ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => MessageRoomScreen(userId: widget.userId))),
+                          icon: const Icon(Icons.chat_bubble_outline, size: 17, color: AppColors.text),
+                          label: const Text('메시지',
+                              style: TextStyle(color: AppColors.text, fontWeight: FontWeight.w800)),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(48),
+                            backgroundColor: AppColors.surface,
+                            side: const BorderSide(color: AppColors.border, width: 1.4),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                           ),
+                        ),
+                      ),
+                    ]),
+                    if (following && followsMe)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text('서로 팔로우하는 사이예요.',
+                            style: TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                      ),
                     if (followsMe && !following)
                       const Padding(
                         padding: EdgeInsets.only(top: 8),
-                        child: Text('나를 친구로 추가한 회원이에요.',
+                        child: Text('나를 팔로우하는 회원이에요.',
                             style: TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
                       ),
                   ],
