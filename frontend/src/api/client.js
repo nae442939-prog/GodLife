@@ -300,6 +300,13 @@ export const challengeApi = {
   // join = 만든 사람도 바로 참여 (같이 챌린지 만들기). 포인트 챌린지면 참가 포인트가 바로 빠진다
   create: (payload, { join = false } = {}) =>
     apiFetch(`/api/challenges${join ? '?join=true' : ''}`, { method: 'POST', body: payload }),
+  // 개설자만. 대표 사진 올리기/바꾸기 (JPG·PNG 5MB 이하) → 챌린지 상세
+  async changeCover(id, file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await authRaw(`/api/challenges/${id}/cover`, { method: 'POST', body: form })
+    return res.json()
+  },
   join: (id) => apiFetch(`/api/challenges/${id}/participants`, { method: 'POST' }),
   leave: (id) => apiFetch(`/api/challenges/${id}/participants/me`, { method: 'DELETE' }),
   // 진행 중 포기: 실패로 치고 챌린지에서 나간다 (204)

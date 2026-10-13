@@ -3,5 +3,5 @@
 server:
   port: 5174
   proxy:
-    - target: "https://52-79-61-201.sslip.io/"
+    - target: "https://mygodlife.duckdns.org/"
       prefix: "/api/"

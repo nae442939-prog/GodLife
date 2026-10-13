@@ -140,7 +140,7 @@ class AiVerificationApiTest {
     }
 
     @Test
-    @DisplayName("다른 종류로 꽤 확신하는데 챌린지 종류일 가능성이 거의 없으면(산책 챌린지에 키보드 사진) 확신도가 85% 가 안 돼도 돌려보낸다")
+    @DisplayName("다른 종류를 골랐고 챌린지 종류의 점수가 낮으면 확신도가 85% 가 안 돼도 돌려보낸다 (키보드 사진 · 카메라를 가린 사진)")
     void clearlyDifferentPhotoIsRejected() throws Exception {
         long id = challenge(5, 2); // 산책 = walk
         join(id, friend);
@@ -149,8 +149,13 @@ class AiVerificationApiTest {
         submit(id, friend).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VERIFICATION_REJECTED"));
 
-        // 산책일 가능성이 어느 정도 남아 있으면 돌려보내지 않고 검토로 넘긴다
-        ai("study", 0.62, 2, Map.of("study", 0.62, "walk", 0.3));
+        // 모델이 어느 쪽도 확신하지 못한 사진(카메라를 가림)도 산책 점수가 낮으면 돌려보낸다
+        ai("study", 0.47, 3, Map.of("study", 0.47, "walk", 0.18));
+        submit(id, friend).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VERIFICATION_REJECTED"));
+
+        // 산책일 가능성이 어느 정도 남아 있으면(두 종류 사이에서 망설임) 돌려보내지 않고 검토로 넘긴다
+        ai("study", 0.52, 2, Map.of("study", 0.52, "walk", 0.4));
         submit(id, friend).andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("IN_REVIEW"));
     }
 

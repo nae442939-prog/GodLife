@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api_client.dart';
 import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
@@ -79,35 +80,7 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                 child: _TodayItem(c, reload: reload),
               ),
-            // 랭킹으로 가는 띠
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
-              child: AppCard(
-                bordered: false,
-                radius: 18,
-                onTap: () =>
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RankingScreen())),
-                child: Row(children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(color: ColorTag.gold.$1, shape: BoxShape.circle),
-                    child: Icon(Icons.emoji_events, color: ColorTag.gold.$2, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('랭킹', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
-                      SizedBox(height: 3),
-                      Text('이번 달 인증왕과 내 순위 보기',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.muted)),
-                    ]),
-                  ),
-                  const Icon(Icons.chevron_right, color: Color(0xFFC7C0B0), size: 20),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(children: [
@@ -127,7 +100,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 150,
+              height: 186,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -137,6 +110,28 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(width: cardWidth, child: _RecoCard(data.recruiting[i], reload: reload)),
               ),
             ),
+            // 이번 달 랭킹: 홈을 내리면 시상대가 바로 보인다 (전체 보기 → 랭킹 화면)
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(children: [
+                const Expanded(
+                  child: Text('이번 달 랭킹',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+                ),
+                GestureDetector(
+                  onTap: () =>
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RankingScreen())),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Text('전체 보기',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted)),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: RankingPreview()),
           ]);
         });
       },
@@ -303,7 +298,16 @@ class _RecoCard extends StatelessWidget {
         reload();
       },
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(height: 58, color: background, child: Icon(icon, color: foreground, size: 24)),
+        // 대표 사진이 있으면 사진을, 없거나 못 받으면 종류 아이콘을 보여 준다
+        SizedBox(
+          height: 94,
+          child: c.coverUrl == null
+              ? ColoredBox(color: background, child: Icon(icon, color: foreground, size: 28))
+              : Image.network('$serverBase${c.coverUrl}',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      ColoredBox(color: background, child: Icon(icon, color: foreground, size: 28))),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 11, 12, 13),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

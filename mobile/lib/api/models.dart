@@ -52,12 +52,16 @@ class Challenge {
         frequencyType = j['frequencyType'] as String,
         weeklyCount = (j['weeklyCount'] as num?)?.toInt(),
         participantCount = (j['participantCount'] as num).toInt(),
-        maxParticipants = (j['maxParticipants'] as num?)?.toInt();
+        maxParticipants = (j['maxParticipants'] as num?)?.toInt(),
+        coverUrl = j['coverUrl'] as String?;
 
   final int id;
   final String title;
   final String description;
   final Category category;
+
+  /// 개설자가 올린 대표 사진 주소. 없으면 null (종류 아이콘을 보여 준다)
+  final String? coverUrl;
 
   /// '기타'의 세부 종류 이름 (산책 · 물 마시기 …). 없으면 null
   final String? subTypeName;
@@ -158,7 +162,8 @@ class Verification {
         nickname = j['nickname'] as String,
         receivedAt = DateTime.parse(j['receivedAt'] as String),
         status = j['status'] as String,
-        mine = j['mine'] as bool;
+        mine = j['mine'] as bool,
+        reported = (j['reported'] as bool?) ?? false;
 
   final int id;
   final int userId;
@@ -166,6 +171,9 @@ class Verification {
   final DateTime receivedAt;
   final String status; // APPROVED | IN_REVIEW
   final bool mine;
+
+  /// 내가 이 인증을 이미 신고했는지
+  bool reported;
 }
 
 class PointTransaction {

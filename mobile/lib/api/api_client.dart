@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 /// 서버 주소. 빌드할 때 --dart-define=API_BASE=... 로 바꿀 수 있다.
-const apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://52-79-61-201.sslip.io');
+const apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://mygodlife.duckdns.org');
 
 /// 실제로 붙는 서버 주소. 웹으로 빌드하면 앱을 내려준 그 서버(같은 출처)를 쓴다.
 final String serverBase = kIsWeb ? Uri.base.origin : apiBase;

@@ -11,7 +11,11 @@ import com.godlife.backend.chat.ChatService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,8 +24,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 
@@ -87,6 +94,23 @@ public class ChallengeController {
                                                         @AuthenticationPrincipal AuthUser authUser) {
         challengeService.regenerateInviteCode(id, authUser.id());
         return challengeService.detail(id, authUser.id());
+    }
+
+    /** 개설자만. 대표 사진 올리기/바꾸기 (multipart: file = JPG/PNG 5MB 이하) */
+    @PostMapping(value = "/api/challenges/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ChallengeDetailResponse changeCover(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser,
+                                               @RequestPart("file") MultipartFile file) {
+        challengeService.changeCover(id, authUser.id(), file);
+        return challengeService.detail(id, authUser.id());
+    }
+
+    /** 대표 사진. 사진을 바꾸면 주소도 바뀌므로 오래 캐시해도 된다. 목록 카드에 나오므로 비로그인도 볼 수 있다. */
+    @GetMapping("/api/challenge-covers/{folder}/{name}")
+    public ResponseEntity<Resource> cover(@PathVariable String folder, @PathVariable String name) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic())
+                .body(new FileSystemResource(challengeService.coverFile(folder, name)));
     }
 
     /** 개설자만, 시작일 전날까지. */
