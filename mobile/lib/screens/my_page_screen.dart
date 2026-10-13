@@ -9,6 +9,8 @@ import '../widgets/async_view.dart';
 import '../widgets/design.dart';
 import 'my_challenges_screen.dart';
 import 'notifications_screen.dart';
+import 'follow_list_screen.dart';
+import 'messages_screen.dart';
 import 'ranking_screen.dart';
 import 'settings_screen.dart';
 import 'wallet_screen.dart';
@@ -31,7 +33,16 @@ class MyPageScreen extends StatelessWidget {
       load: () async {
         final wallet = Wallet.fromJson(await state.api.get('/api/wallet') as Map<String, dynamic>);
         final tier = admin ? null : await state.api.get('/api/users/me/tier') as Map<String, dynamic>;
-        return _MyData(wallet, tier);
+        // 팔로워 · 팔로잉 수는 내 공개 프로필에서, 메시지는 안 읽은 수 + 받은 요청 수
+        final profile = await state.api.get('/api/users/${user.id}/profile') as Map<String, dynamic>;
+        final dm = await state.api.get('/api/messages/unread-count') as Map<String, dynamic>;
+        return _MyData(
+          wallet,
+          tier,
+          followers: (profile['followerCount'] as num).toInt(),
+          following: (profile['followingCount'] as num).toInt(),
+          unread: ((dm['count'] as num?)?.toInt() ?? 0) + ((dm['requests'] as num?)?.toInt() ?? 0),
+        );
       },
       builder: (context, data, reload) => ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 28), children: [
         // 프로필
@@ -78,6 +89,13 @@ class MyPageScreen extends StatelessWidget {
                   Text(user.email!,
                       style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600)),
                 ],
+                const SizedBox(height: 8),
+                // 팔로워 · 팔로잉: 누르면 목록으로
+                Row(children: [
+                  _follow(context, '팔로워', data.followers, true, reload),
+                  const SizedBox(width: 16),
+                  _follow(context, '팔로잉', data.following, false, reload),
+                ]),
               ]),
             ),
           ]),
@@ -118,6 +136,8 @@ class MyPageScreen extends StatelessWidget {
           child: Column(children: [
             _menu(Icons.flag, ColorTag.coral, '내 챌린지', () => open(const MyChallengesScreen())),
             _menu(Icons.emoji_events, ColorTag.gold, '랭킹', () => open(const RankingScreen())),
+            _menu(Icons.chat_bubble, ColorTag.mint, data.unread > 0 ? '메시지 · 새 소식 ${data.unread}' : '메시지',
+                () => open(const MessagesScreen())),
             _menu(Icons.account_balance_wallet, ColorTag.gold, '포인트 지갑 · 거래 내역', () => open(const WalletScreen())),
             _menu(Icons.shopping_bag, ColorTag.mint, '포인트 상점', () => openWeb('/shop')),
             _menu(Icons.notifications, ColorTag.lav, '알림', () => open(const NotificationsScreen())),
@@ -135,6 +155,25 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
       ]),
+    );
+  }
+
+  Widget _follow(BuildContext context, String label, int count, bool followers, Future<void> Function() reload) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () async {
+        await Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => FollowListScreen(followers: followers)));
+        reload();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text('$count', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w700)),
+        ]),
+      ),
     );
   }
 
@@ -178,10 +217,15 @@ class MyPageScreen extends StatelessWidget {
 }
 
 class _MyData {
-  _MyData(this.wallet, this.tier);
+  _MyData(this.wallet, this.tier, {required this.followers, required this.following, required this.unread});
 
   final Wallet wallet;
   final Map<String, dynamic>? tier;
+  final int followers;
+  final int following;
+
+  /// 안 읽은 메시지 수 + 받은 메시지 요청 수
+  final int unread;
 }
 
 /// 칭호(티어) 점수. 관리자는 칭호 대상이 아니라 보이지 않는다

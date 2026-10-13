@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/design.dart';
+import 'profile_screen.dart';
 
 /// 랭킹: 1 · 2 · 3등 시상대 + 그 아래 순위 + 내 순위.
 /// 이번 달(인증 횟수) · 친구(나 + 팔로우한 사람) · 팀전(내 챌린지 참가자끼리) · 전체(누적 성공) · 최장 연속 ·
@@ -53,6 +54,7 @@ class _RankingScreenState extends State<RankingScreen> {
     final entries = [
       for (final e in rows)
         _Entry(
+          userId: (e['userId'] as num?)?.toInt(),
           rank: (e['rank'] as num).toInt(),
           nickname: e['nickname'] as String,
           image: e['profileImageUrl'] as String?,
@@ -74,6 +76,7 @@ class _RankingScreenState extends State<RankingScreen> {
     if (_kind == 'season') {
       final s = await api.get('/api/seasons/current?type=weekly') as Map<String, dynamic>;
       _Entry entry(Map<String, dynamic> e) => _Entry(
+            userId: (e['userId'] as num?)?.toInt(),
             rank: (e['rank'] as num).toInt(),
             nickname: e['nickname'] as String,
             image: e['profileImageUrl'] as String?,
@@ -92,6 +95,7 @@ class _RankingScreenState extends State<RankingScreen> {
             _kind == 'friends' ? '/api/rankings/friends?metric=month_verify' : '/api/rankings/users?metric=$_kind')
         as Map<String, dynamic>;
     _Entry entry(Map<String, dynamic> e) => _Entry(
+          userId: (e['userId'] as num?)?.toInt(),
           rank: (e['rank'] as num).toInt(),
           nickname: e['nickname'] as String,
           image: e['profileImageUrl'] as String?,
@@ -238,7 +242,9 @@ class _RankingScreenState extends State<RankingScreen> {
                       padding: EdgeInsets.zero,
                       child: Column(children: [
                         for (final (i, e) in rest.indexed)
-                          Container(
+                          InkWell(
+                            onTap: () => _openProfile(context, e),
+                            child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: e.mine ? const Color(0xFFE3F5F1) : null,
@@ -264,6 +270,7 @@ class _RankingScreenState extends State<RankingScreen> {
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
                             ]),
                           ),
+                          ),
                       ]),
                     ),
                 ]);
@@ -278,6 +285,7 @@ class _RankingScreenState extends State<RankingScreen> {
 
 class _Entry {
   _Entry({
+    required this.userId,
     required this.rank,
     required this.nickname,
     required this.image,
@@ -286,6 +294,7 @@ class _Entry {
     this.bonus = 0,
   });
 
+  final int? userId;
   final int rank;
   final String nickname;
   final String? image;
@@ -318,6 +327,12 @@ class _RankData {
   final int? challengeId;
 }
 
+/// 순위의 한 사람을 눌렀을 때: 그 사람의 프로필(친구 추가)로 간다. 나 자신은 넘어가지 않는다
+void _openProfile(BuildContext context, _Entry e) {
+  if (e.userId == null || e.mine) return;
+  Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProfileScreen(userId: e.userId!)));
+}
+
 /// 프로필 동그라미: 사진이 있으면 사진, 없으면 닉네임 첫 글자
 class _Avatar extends StatelessWidget {
   const _Avatar(this.e, this.size, this.colors);
@@ -347,9 +362,12 @@ class _Avatar extends StatelessWidget {
 
 /// 시상대 한 칸: 프로필 · 닉네임 · 기록 · 단(순위 숫자)
 class _Step extends StatelessWidget {
-  const _Step(this.e, this.place, this.height, this.unit);
+  const _Step(this.e, this.place, this.height, this.unit, {this.tappable = true});
 
   final _Entry e;
+
+  /// 누르면 그 사람의 프로필로 갈지 (홈 미리보기는 통째로 랭킹 화면으로 가므로 끈다)
+  final bool tappable;
   final int place; // 0 = 가운데(1등 자리), 1 = 왼쪽, 2 = 오른쪽
   final double height;
   final String unit;
@@ -358,6 +376,14 @@ class _Step extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = _medal[place];
     final first = place == 0;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: tappable ? () => _openProfile(context, e) : null,
+      child: _column(colors, first),
+    );
+  }
+
+  Widget _column((Color, Color) colors, bool first) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       if (first) Icon(Icons.emoji_events, color: colors.$2, size: 24),
       const SizedBox(height: 4),
@@ -410,6 +436,7 @@ class _RankingPreviewState extends State<RankingPreview> {
   Future<_RankData> _load() async {
     final r = await context.read<AppState>().api.get('/api/rankings/users?metric=month_verify') as Map<String, dynamic>;
     _Entry entry(Map<String, dynamic> e) => _Entry(
+          userId: (e['userId'] as num?)?.toInt(),
           rank: (e['rank'] as num).toInt(),
           nickname: e['nickname'] as String,
           image: e['profileImageUrl'] as String?,
@@ -445,9 +472,11 @@ class _RankingPreviewState extends State<RankingPreview> {
                 ),
               ),
               child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Expanded(child: podium.length > 1 ? _Step(podium[1], 1, 52, '회') : const SizedBox()),
-                Expanded(child: _Step(podium[0], 0, 76, '회')),
-                Expanded(child: podium.length > 2 ? _Step(podium[2], 2, 38, '회') : const SizedBox()),
+                Expanded(
+                    child: podium.length > 1 ? _Step(podium[1], 1, 52, '회', tappable: false) : const SizedBox()),
+                Expanded(child: _Step(podium[0], 0, 76, '회', tappable: false)),
+                Expanded(
+                    child: podium.length > 2 ? _Step(podium[2], 2, 38, '회', tappable: false) : const SizedBox()),
               ]),
             ),
             if (data.me != null) ...[
