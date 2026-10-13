@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_client.dart';
+import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/design.dart';
 
 /// 랭킹: 1 · 2 · 3등 시상대 + 그 아래 순위 + 내 순위.
-/// 이번 달(인증 횟수) · 전체(누적 성공) · 최장 연속 · 주간 시즌(상위 3명 보너스) 네 가지를 칩으로 고른다.
+/// 이번 달(인증 횟수) · 친구(나 + 팔로우한 사람) · 팀전(내 챌린지 참가자끼리) · 전체(누적 성공) · 최장 연속 ·
+/// 주간 시즌(상위 3명 보너스)을 칩으로 고른다.
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
 
@@ -19,6 +21,8 @@ class RankingScreen extends StatefulWidget {
 /// (칩 이름, 설명, 값 뒤에 붙는 단위)
 const _kinds = {
   'month_verify': ('이번 달', '이번 달에 인증한 횟수', '회'),
+  'friends': ('친구', '나와 내가 팔로우한 사람끼리 · 이번 달에 인증한 횟수', '회'),
+  'team': ('팀전', '같은 챌린지 참가자끼리 · 이 챌린지에서 인증한 횟수', '회'),
   'total_success': ('전체', '지금까지 인증에 성공한 횟수', '회'),
   'max_streak': ('최장 연속', '가장 길게 이어 간 연속 인증', '일'),
   'season': ('주간 시즌', '이번 주 인증 횟수 · 상위 3명에게 보너스', '회'),
@@ -30,8 +34,43 @@ const _medal = [ColorTag.gold, ColorTag.lav, ColorTag.coral];
 class _RankingScreenState extends State<RankingScreen> {
   String _kind = 'month_verify';
 
+  /// 팀전에서 고른 챌린지 (없으면 진행 중인 것 먼저)
+  int? _challengeId;
+
+  /// 팀전: 내가 참여한 챌린지를 고르면 그 챌린지 참가자끼리의 순위
+  Future<_RankData> _loadTeam(ApiClient api) async {
+    final mine = ((await api.get('/api/me/challenges')) as List)
+        .map((e) => MyChallenge.fromJson(e as Map<String, dynamic>))
+        .where((c) => c.joined)
+        .toList();
+    if (mine.isEmpty) {
+      return _RankData(top: [], me: null, empty: '아직 참여 중인 챌린지가 없어요.\n챌린지에 참여하면 참가자끼리 순위를 겨룰 수 있어요.');
+    }
+    final selected = mine.where((c) => c.id == _challengeId).firstOrNull ??
+        mine.where((c) => c.inProgress).firstOrNull ??
+        mine.first;
+    final rows = ((await api.get('/api/challenges/${selected.id}/ranking')) as List).cast<Map<String, dynamic>>();
+    final entries = [
+      for (final e in rows)
+        _Entry(
+          rank: (e['rank'] as num).toInt(),
+          nickname: e['nickname'] as String,
+          image: e['profileImageUrl'] as String?,
+          value: (e['successDays'] as num).toInt(),
+          mine: e['mine'] == true,
+        ),
+    ];
+    return _RankData(
+      top: entries,
+      me: entries.where((e) => e.mine).firstOrNull,
+      challenges: mine,
+      challengeId: selected.id,
+    );
+  }
+
   Future<_RankData> _load() async {
     final api = context.read<AppState>().api;
+    if (_kind == 'team') return _loadTeam(api);
     if (_kind == 'season') {
       final s = await api.get('/api/seasons/current?type=weekly') as Map<String, dynamic>;
       _Entry entry(Map<String, dynamic> e) => _Entry(
@@ -48,7 +87,10 @@ class _RankingScreenState extends State<RankingScreen> {
         note: '${s['start']} ~ ${s['end']} · ${s['daysLeft']}일 남음',
       );
     }
-    final r = await api.get('/api/rankings/users?metric=$_kind') as Map<String, dynamic>;
+    // 친구 랭킹도 이번 달 인증 횟수로 겨룬다
+    final r = await api.get(
+            _kind == 'friends' ? '/api/rankings/friends?metric=month_verify' : '/api/rankings/users?metric=$_kind')
+        as Map<String, dynamic>;
     _Entry entry(Map<String, dynamic> e) => _Entry(
           rank: (e['rank'] as num).toInt(),
           nickname: e['nickname'] as String,
@@ -59,6 +101,43 @@ class _RankingScreenState extends State<RankingScreen> {
     return _RankData(
       top: ((r['top'] as List?) ?? []).map((e) => entry(e as Map<String, dynamic>)).toList(),
       me: r['me'] == null ? null : entry(r['me'] as Map<String, dynamic>),
+    );
+  }
+
+  /// 팀전: 내 챌린지 고르기 (가로로 넘기는 칩)
+  Widget _challengePicker(_RankData data, VoidCallback reload) {
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: data.challenges.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final c = data.challenges[i];
+          final on = c.id == data.challengeId;
+          return GestureDetector(
+            onTap: () {
+              _challengeId = c.id;
+              reload();
+            },
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 190),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: on ? AppColors.surface : AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: on ? AppColors.text : Colors.transparent, width: 1.4),
+              ),
+              child: Text(c.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w800, color: on ? AppColors.text : AppColors.chipText)),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -86,17 +165,21 @@ class _RankingScreenState extends State<RankingScreen> {
               load: _load,
               builder: (context, data, reload) {
                 if (data.top.isEmpty) {
-                  return ListView(children: const [
-                    SizedBox(height: 120),
-                    Center(
-                      child: Text('아직 순위가 없어요. 첫 인증의 주인공이 되어 보세요!',
-                          style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
-                    ),
+                  return ListView(padding: const EdgeInsets.symmetric(horizontal: 32), children: [
+                    const SizedBox(height: 120),
+                    Text(data.empty ?? '아직 순위가 없어요. 첫 인증의 주인공이 되어 보세요!',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.6)),
                   ]);
                 }
                 final podium = data.top.take(3).toList();
                 final rest = data.top.skip(3).toList();
                 return ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 28), children: [
+                  if (data.challenges.isNotEmpty) ...[
+                    _challengePicker(data, reload),
+                    const SizedBox(height: 12),
+                  ],
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(data.note == null ? hint : '$hint\n${data.note}',
@@ -139,6 +222,15 @@ class _RankingScreenState extends State<RankingScreen> {
                       ]),
                     ),
                   ],
+                  // 친구 랭킹에 나만 있으면: 아직 팔로우한 사람이 없다
+                  if (_kind == 'friends' && data.top.length == 1 && data.top.first.mine)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 14),
+                      child: Text('아직 팔로우한 사람이 없어요.\n팔로우하면 여기서 친구들과 순위를 겨룰 수 있어요.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600, height: 1.6)),
+                    ),
                   const SizedBox(height: 14),
                   if (rest.isNotEmpty)
                     AppCard(
@@ -205,11 +297,25 @@ class _Entry {
 }
 
 class _RankData {
-  _RankData({required this.top, required this.me, this.note});
+  _RankData({
+    required this.top,
+    required this.me,
+    this.note,
+    this.empty,
+    this.challenges = const [],
+    this.challengeId,
+  });
 
   final List<_Entry> top;
   final _Entry? me;
   final String? note;
+
+  /// 순위가 비었을 때 보여 줄 말 (없으면 기본 문구)
+  final String? empty;
+
+  /// 팀전: 내가 참여한 챌린지들과 지금 고른 것
+  final List<MyChallenge> challenges;
+  final int? challengeId;
 }
 
 /// 프로필 동그라미: 사진이 있으면 사진, 없으면 닉네임 첫 글자

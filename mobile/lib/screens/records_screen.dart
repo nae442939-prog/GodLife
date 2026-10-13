@@ -273,16 +273,11 @@ class _RecordsScreenState extends State<RecordsScreen> {
               switch (item['result'] as String) {
                 'DONE' => ColorTag.of('성공', ColorTag.mint),
                 'FAIL' => ColorTag.of('실패', _failColors),
-                // 오늘 아직 인증 전: 눌러서 바로 인증하러 가는 버튼 모양
-                'PENDING' => Container(
-                    padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
-                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(999)),
-                    child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('오늘 아직 · 인증하기',
-                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
-                      Icon(Icons.chevron_right, size: 15, color: Colors.white),
-                    ]),
-                  ),
+                // 오늘 아직 인증 전: 다른 결과와 같은 크기의 꼬리표 + 화살표 (줄을 누르면 바로 인증하러 간다)
+                'PENDING' => Row(mainAxisSize: MainAxisSize.min, children: [
+                    ColorTag.of('인증하기', ColorTag.gold),
+                    const Icon(Icons.chevron_right, size: 18, color: Color(0xFFC7C0B0)),
+                  ]),
                 _ => ColorTag.of('쉬는 날', _restColors),
               },
             ]),
