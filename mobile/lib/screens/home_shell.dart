@@ -10,7 +10,8 @@ import 'my_page_screen.dart';
 import 'notifications_screen.dart';
 import 'records_screen.dart';
 
-/// 로그인 뒤의 뼈대: 위에는 로고와 알림 종, 아래에는 탭 5개 (챌린지 · 커뮤니티 · 홈 · 갓생기록 · 마이페이지)
+/// 로그인 뒤의 뼈대: 아래 탭 5개(챌린지 · 커뮤니티 · 홈 · 갓생기록 · 마이페이지)는 늘 그 자리에 있고,
+/// 그 위에서만 화면이 바뀐다. 상세 · 인증 · 랭킹처럼 넘어가는 화면도 탭 위쪽 영역 안에서 열려 탭이 사라지지 않는다.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -18,10 +19,14 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
+/// 아래 탭 순서: 챌린지 · 커뮤니티 · 홈 · 갓생기록 · 마이페이지 (홈이 한가운데)
+const _home = 2;
+
 class _HomeShellState extends State<HomeShell> {
-  /// 아래 탭 순서: 챌린지 · 커뮤니티 · 홈 · 갓생기록 · 마이페이지 (홈이 한가운데)
-  static const _home = 2;
-  int _tab = _initialTab();
+  final _tab = ValueNotifier<int>(_initialTab());
+
+  /// 탭 위쪽 영역의 화면 쌓임 (탭 화면 → 상세 → 인증 …)
+  final _inner = GlobalKey<NavigatorState>();
 
   /// 웹 화면(충전 · 상점)의 아래 탭에서 넘어오면 주소의 ?tab= 으로 처음 탭을 고른다
   static int _initialTab() {
@@ -33,11 +38,69 @@ class _HomeShellState extends State<HomeShell> {
       _ => _home,
     };
   }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
+
+  /// 탭을 누르면 열려 있던 화면(상세 등)을 닫고 그 탭의 첫 화면으로 간다
+  void _select(int i) {
+    _inner.currentState?.popUntil((route) => route.isFirst);
+    _tab.value = i;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // 뒤로 가기는 탭 위쪽 영역에 열린 화면부터 닫는다
+      body: NavigatorPopHandler(
+        onPopWithResult: (_) => _inner.currentState?.maybePop(),
+        child: Navigator(
+          key: _inner,
+          onGenerateRoute: (settings) => MaterialPageRoute(
+            settings: settings,
+            builder: (_) => _TabsPage(tab: _tab),
+          ),
+        ),
+      ),
+      bottomNavigationBar: ValueListenableBuilder<int>(
+        valueListenable: _tab,
+        builder: (context, tab, _) => _BottomTabs(selected: tab, onSelect: _select),
+      ),
+    );
+  }
+}
+
+/// 탭의 첫 화면: 위에는 로고와 알림 종, 그 아래에 고른 탭의 내용
+class _TabsPage extends StatefulWidget {
+  const _TabsPage({required this.tab});
+
+  final ValueNotifier<int> tab;
+
+  @override
+  State<_TabsPage> createState() => _TabsPageState();
+}
+
+class _TabsPageState extends State<_TabsPage> {
   int _unread = 0;
 
   @override
   void initState() {
     super.initState();
+    widget.tab.addListener(_onTab);
+    _loadUnread();
+  }
+
+  @override
+  void dispose() {
+    widget.tab.removeListener(_onTab);
+    super.dispose();
+  }
+
+  void _onTab() {
+    setState(() {});
     _loadUnread();
   }
 
@@ -58,10 +121,10 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     // 탭을 누를 때마다 그 화면을 새로 불러온다 (화면마다 당겨서 새로 고침도 있다)
-    final body = switch (_tab) {
+    final body = switch (widget.tab.value) {
       0 => const ChallengeListScreen(),
       1 => const CommunityScreen(),
-      _home => HomeScreen(onBrowse: () => setState(() => _tab = 0), onCommunity: () => setState(() => _tab = 1)),
+      _home => HomeScreen(onBrowse: () => widget.tab.value = 0, onCommunity: () => widget.tab.value = 1),
       3 => const RecordsScreen(),
       _ => const MyPageScreen(),
     };
@@ -106,13 +169,6 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
       body: body,
-      bottomNavigationBar: _BottomTabs(
-        selected: _tab,
-        onSelect: (i) {
-          setState(() => _tab = i);
-          _loadUnread();
-        },
-      ),
     );
   }
 }
