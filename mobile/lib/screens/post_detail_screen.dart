@@ -6,6 +6,7 @@ import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import 'profile_screen.dart';
 
 /// 커뮤니티 글 상세: 본문 · 사진 · 좋아요 · 댓글(답글은 한 단계 들여 쓴다) · 댓글 쓰기
 class PostDetailScreen extends StatefulWidget {
@@ -97,21 +98,33 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             Expanded(
               child: ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 20), children: [
                 Row(children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppColors.surfaceAlt,
-                    backgroundImage:
-                        p.author.profileImageUrl != null ? NetworkImage('$serverBase${p.author.profileImageUrl}') : null,
-                    child: p.author.profileImageUrl == null
-                        ? const Icon(Icons.person, size: 20, color: AppColors.muted)
-                        : null,
-                  ),
-                  const SizedBox(width: 10),
+                  // 글쓴이를 누르면 프로필(친구 추가)로 간다
                   Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(p.author.nickname, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      Text(shortDateTime(p.createdAt), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
-                    ]),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.of(context)
+                          .push(MaterialPageRoute(builder: (_) => ProfileScreen(userId: p.author.id))),
+                      child: Row(children: [
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: AppColors.surfaceAlt,
+                          backgroundImage: p.author.profileImageUrl != null
+                              ? NetworkImage('$serverBase${p.author.profileImageUrl}')
+                              : null,
+                          child: p.author.profileImageUrl == null
+                              ? const Icon(Icons.person, size: 20, color: AppColors.muted)
+                              : null,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(p.author.nickname, style: const TextStyle(fontWeight: FontWeight.w700)),
+                            Text(shortDateTime(p.createdAt),
+                                style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                          ]),
+                        ),
+                      ]),
+                    ),
                   ),
                   if (p.mine)
                     IconButton(

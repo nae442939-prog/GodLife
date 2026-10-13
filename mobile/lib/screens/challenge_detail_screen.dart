@@ -8,6 +8,7 @@ import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
 import 'verify_screen.dart';
+import 'profile_screen.dart';
 
 /// 챌린지 상세: 색 띠(아이콘) → 제목 · 설명 → 규칙 카드 → 공지 → 참가자 → 참여하기 / 참여 취소 / 인증하러 가기
 class ChallengeDetailScreen extends StatefulWidget {
@@ -161,7 +162,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
                   const Text('아직 참가자가 없어요. 첫 번째로 참여해 보세요!',
                       style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
                 Wrap(spacing: 8, runSpacing: 8, children: [
-                  for (final (i, p) in c.participants.indexed) _person(p.nickname, i),
+                  for (final (i, p) in c.participants.indexed) _person(p, i),
                 ]),
               ]),
             ),
@@ -244,10 +245,19 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
     );
   }
 
-  /// 참가자 한 명: 색 동그라미(첫 글자) + 닉네임
-  Widget _person(String nickname, int index) {
+  /// 참가자 한 명: 색 동그라미(첫 글자) + 닉네임. 누르면 프로필(친구 추가)로 간다
+  Widget _person(Participant p, int index) {
     const palette = [ColorTag.coral, ColorTag.mint, ColorTag.gold, ColorTag.lav];
     final colors = palette[index % palette.length];
+    final nickname = p.nickname;
+    return GestureDetector(
+      onTap: () =>
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProfileScreen(userId: p.userId))),
+      child: _personChip(nickname, colors),
+    );
+  }
+
+  Widget _personChip(String nickname, (Color, Color) colors) {
     return Container(
       padding: const EdgeInsets.fromLTRB(5, 5, 12, 5),
       decoration: BoxDecoration(
