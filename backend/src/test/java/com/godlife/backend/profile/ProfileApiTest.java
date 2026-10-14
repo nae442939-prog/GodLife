@@ -149,7 +149,7 @@ class ProfileApiTest {
     }
 
     @Test
-    @DisplayName("관리자 뱃지: 관리자에게만 있고 늘 딴 상태라 바로 착용할 수 있다")
+    @DisplayName("관리자 뱃지: 관리자에게만 있고, 관리자는 기록과 상관없이 뱃지를 모두 딴 상태다")
     void adminBadge() throws Exception {
         // 보통 회원에게는 없고 착용할 수도 없다
         mvc.perform(get("/api/users/" + meUser.getId() + "/profile"))
@@ -166,7 +166,15 @@ class ProfileApiTest {
                 .andExpect(jsonPath("$.badges.length()").value(16))
                 .andExpect(jsonPath("$.badges[15].code").value("ADMIN"))
                 .andExpect(jsonPath("$.badges[15].group").value("SPECIAL"))
-                .andExpect(jsonPath("$.badges[15].earned").value(true));
+                .andExpect(jsonPath("$.badges[15].earned").value(true))
+                .andExpect(jsonPath("$.badges[?(@.earned == false)]").isEmpty())
+                .andExpect(jsonPath("$.badges[3].code").value("VERIFY_100"))
+                .andExpect(jsonPath("$.badges[3].current").value(100));
+        // 인증한 적이 없어도 가장 어려운 뱃지를 착용할 수 있다
+        mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"STREAK_100\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.equippedBadge").value("STREAK_100"));
         mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + admin)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"ADMIN\"}"))
                 .andExpect(status().isOk())

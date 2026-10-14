@@ -16,7 +16,8 @@ import java.util.List;
  * @param followsMe   이 사람이 나를 팔로우하는지
  * @param blocked     내가 이 사람을 차단했는지 (비로그인·내 프로필이면 false)
  * @param tier       칭호(티어) — BRONZE / SILVER / GOLD / PLATINUM / DIAMOND
- * @param badges      뱃지 전체 목록(15개)과 땄는지 · 얼마나 왔는지 (기록으로 그때그때 계산한다). 관리자는 '관리자' 뱃지가 하나 더 있다
+ * @param badges      뱃지 전체 목록(15개)과 땄는지 · 얼마나 왔는지 (기록으로 그때그때 계산한다).
+ *                    관리자는 모두 딴 상태이고 '관리자' 뱃지가 하나 더 있다
  * @param equippedBadge 착용한 뱃지 코드 — 이름 옆에 보여 준다 (착용하지 않았으면 null)
  */
 public record ProfileResponse(Long id, String nickname, String profileImageUrl, String bio, LocalDate joinedAt,
