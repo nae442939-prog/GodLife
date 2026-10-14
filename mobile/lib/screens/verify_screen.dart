@@ -36,12 +36,20 @@ class _VerifyScreenState extends State<VerifyScreen> {
   Future<_VerifyData> _load() async {
     final mine = await _api.get('$_base/me') as Map<String, dynamic>;
     final list = await _api.get(_base) as List;
+    // 시작 전이면 '언제부터 인증할 수 있는지' 알려 주려고 시작일을 받는다 (못 받으면 날짜 없이 안내)
+    String? startDate;
+    if (mine['state'] == 'NOT_STARTED') {
+      try {
+        startDate = ((await _api.get('/api/challenges/${widget.challengeId}')) as Map)['startDate'] as String?;
+      } catch (_) {}
+    }
     return _VerifyData(
       state: mine['state'] as String,
       successDays: (mine['successDays'] as num).toInt(),
       targetCount: (mine['targetCount'] as num).toInt(),
       currentStreak: (mine['currentStreak'] as num).toInt(),
       today: list.map((v) => Verification.fromJson(v as Map<String, dynamic>)).toList(),
+      startDate: startDate,
     );
   }
 
@@ -130,8 +138,17 @@ class _VerifyScreenState extends State<VerifyScreen> {
                           fontWeight: FontWeight.w800)),
                 ),
                 const SizedBox(height: 13),
-                Text(_headline(data.state),
+                Text(_headline(data.state, data.startDate),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, height: 1.35, letterSpacing: -0.4)),
+                if (data.state == 'NOT_STARTED' && data.startDate != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                      daysUntil(data.startDate!) > 0
+                          ? '시작까지 ${daysUntil(data.startDate!)}일 남았어요. 인증은 시작하는 날부터 할 수 있어요.'
+                          : '곧 시작해요. 잠시 뒤 다시 열어 주세요.',
+                      style: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.5, color: Color(0xFF6B6558))),
+                ],
                 const SizedBox(height: 14),
                 Row(children: [
                   Expanded(
@@ -255,12 +272,12 @@ class _VerifyScreenState extends State<VerifyScreen> {
     );
   }
 
-  String _headline(String state) => switch (state) {
+  String _headline(String state, String? startDate) => switch (state) {
         'OPEN' => '오늘 인증을\n아직 안 했어요',
         'DONE_TODAY' => '오늘 인증을 마쳤어요!\n내일도 이어가요',
         'WEEK_DONE' => '이번 주 인증 횟수를\n다 채웠어요!',
         'TIME_CLOSED' => '지금은 인증할 수 있는\n시간이 아니에요',
-        'NOT_STARTED' => '아직 시작 전인\n챌린지예요',
+        'NOT_STARTED' => startDate == null ? '아직 시작 전인\n챌린지예요' : '${koreanDate(startDate)}부터\n인증할 수 있어요',
         'ENDED' => '끝난 챌린지예요',
         _ => '지금은 인증할 수 없어요',
       };
@@ -273,6 +290,7 @@ class _VerifyData {
     required this.targetCount,
     required this.currentStreak,
     required this.today,
+    this.startDate,
   });
 
   final String state;
@@ -280,6 +298,9 @@ class _VerifyData {
   final int targetCount;
   final int currentStreak;
   final List<Verification> today;
+
+  /// 챌린지 시작일 (시작 전일 때만 받는다)
+  final String? startDate;
 }
 
 /// 참가자 인증 사진 한 칸. 참가자만 볼 수 있는 사진이라 토큰을 붙여 받는다

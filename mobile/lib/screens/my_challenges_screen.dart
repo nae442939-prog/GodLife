@@ -113,7 +113,7 @@ class MyChallengeCard extends StatelessWidget {
       'DONE_TODAY' => '오늘 인증 완료',
       'WEEK_DONE' => '이번 주 완료',
       'TIME_CLOSED' => '인증 시간이 아니에요',
-      'NOT_STARTED' => '시작 전',
+      'NOT_STARTED' => daysUntil(c.startDate) > 0 ? '시작 전 · D-${daysUntil(c.startDate)}' : '시작 전',
       'ENDED' => '종료',
       _ => '참여 중',
     };
