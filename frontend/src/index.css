@@ -13682,11 +13682,50 @@ a.sh-line-name:hover {
   border-top: 1px solid var(--border);
 }
 
-/* 폰에서 보는 웹 화면: 위 메뉴 대신 앱(/app/)과 같은 아래 탭, 바탕도 앱과 같은 색 */
-body:has(.app.is-phone),
-.app.is-phone {
+/* 폰에서 보는 웹 화면(상점 · 충전 · 설정): 위 메뉴 대신 앱(/app/)과 같은 아래 탭.
+   색도 앱(mobile/lib/theme.dart 의 AppColors)과 같게 맞춘다. 앱은 다크 모드가 없어서, 폰이 다크 모드여도
+   이 화면만 어두워지지 않게 밝은 색으로 고정한다 (위 다크 모드 :root · 상점 --sh-* 보다 이 줄이 우선한다).
+   :root 에 거는 이유: 바탕은 html 이 칠하고, 창(팝업)도 같은 변수를 쓰기 때문 */
+:root:has(.app.is-phone) {
+  color-scheme: light;
   --bg: #fdfbf6;
+  --surface: #ffffff;
+  --surface-alt: #f1ede2;
+  --text: #201d17;
+  --muted: #a39c8c;
+  --border: #f1ede2;
+  --primary: #ee6a4d;
+  --primary-hover: #d9593e;
+  --on-primary: #ffffff;
+  --accent-mint: #0f9c86;
+  --accent-amber: #c2932a;
+  --accent-blue: #3273c2;
+  --header-nav: #4a4638;
+  --danger: #d6336c;
+  --focus: rgba(238, 106, 77, 0.35);
+  --sh-cream: #fbf2e6;
+  --sh-banner: #fbf4e8;
+  --sh-banner-line: #f2e3c6;
+  --sh-gold: #a8935f;
+  --sh-gold-deep: #8a7a52;
+  --sh-icon-coupon: #d9a15c;
+  --sh-icon-box: #b79a68;
+  --sh-coupon: #c2742f;
+  --sh-coupon-bg: #fdeee1;
+  --sh-plain: #948e7c;
+  --sh-plain-bg: #f1ece1;
+  --sh-mint: #0f9c86;
+  --sh-mint-light: #14b8a0;
   background: #fdfbf6;
+}
+
+.is-phone .rn-page {
+  --rank-me: #e3f5ec;
+  --rank-me-line: #b9e4cd;
+}
+
+.is-phone .site-header::before {
+  background: color-mix(in srgb, #fdfbf6 94%, transparent);
 }
 
 .phone-back {
