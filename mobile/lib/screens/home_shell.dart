@@ -9,6 +9,7 @@ import 'home_screen.dart';
 import 'my_page_screen.dart';
 import 'notifications_screen.dart';
 import 'records_screen.dart';
+import '../widgets/celebrations.dart';
 
 /// 로그인 뒤의 뼈대: 아래 탭 5개(챌린지 · 커뮤니티 · 홈 · 갓생기록 · 마이페이지)는 늘 그 자리에 있고,
 /// 그 위에서만 화면이 바뀐다. 상세 · 인증 · 랭킹처럼 넘어가는 화면도 탭 위쪽 영역 안에서 열려 탭이 사라지지 않는다.
@@ -91,6 +92,14 @@ class _TabsPageState extends State<_TabsPage> {
     super.initState();
     widget.tab.addListener(_onTab);
     _loadUnread();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _greet());
+  }
+
+  /// 웹에서 회원가입을 마치고 넘어왔으면(?welcome=1) 환영 창을 먼저 띄우고, 새로 딴 뱃지가 있으면 축하한다
+  Future<void> _greet() async {
+    if (!mounted) return;
+    if (Uri.base.queryParameters['welcome'] == '1') await showWelcome(context);
+    if (mounted) await checkNewBadges(context);
   }
 
   @override

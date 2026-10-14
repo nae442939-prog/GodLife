@@ -9,6 +9,7 @@ import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import '../widgets/celebrations.dart';
 import '../widgets/design.dart';
 
 /// 오늘의 인증: 카메라로 바로 찍은 사진만 올린다 (앨범에서 고르기 없음 — 예전 사진 재사용 방지).
@@ -78,6 +79,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
         _noticeIsError = false;
       });
       await _view.currentState?.reload();
+      if (mounted) await checkNewBadges(context);
     } on ApiException catch (e) {
       setState(() {
         // VERIFICATION_REJECTED: AI 가 챌린지와 다른 사진이라고 본 것 → 저장되지 않았으니 바로 다시 찍는다

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { challengeApi, communityApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { ChallengeCard } from '../challenge/ChallengeCard.jsx'
+import { WelcomePopup } from '../components/Celebrations.jsx'
 import { TOPIC_LABEL } from '../community/format.js'
 import { StepCards } from '../home/StepCards.jsx'
 import { HomeRanking } from '../ranking/HomeRanking.jsx'
@@ -56,6 +57,14 @@ const HOME_POST_COUNT = 3
 export function HomePage() {
   const { user, status } = useAuth()
   const authed = status === 'authed'
+  // 회원가입을 막 마치고 왔으면 환영 창 (닫으면 주소의 상태를 지워 새로 고쳐도 다시 뜨지 않게)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [welcome, setWelcome] = useState(Boolean(location.state?.welcome))
+  const closeWelcome = () => {
+    setWelcome(false)
+    navigate('.', { replace: true, state: null })
+  }
   // 모집 중인 공개 챌린지 중 참가자 많은 순 3개 (누르면 상세로). 실패하면 빈 목록으로 둔다.
   const [popular, setPopular] = useState(null)
   // 커뮤니티 인기글 (좋아요 많은 순 3개)
@@ -252,6 +261,7 @@ export function HomePage() {
           </div>
         </section>
       )}
+      {welcome && authed && <WelcomePopup nickname={user.nickname} onClose={closeWelcome} />}
     </>
   )
 }

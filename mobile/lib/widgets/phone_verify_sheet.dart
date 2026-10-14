@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../app_state.dart';
 import '../theme.dart';
+import 'celebrations.dart';
 
 /// 휴대폰 본인인증 (앱 안에서): 번호 → 인증번호 받기 → 확인 → 내 계정에 번호 등록.
 /// 소셜 로그인으로 가입하면 번호가 없어 챌린지에 참여할 수 없으므로 참여 · 설정 · 마이페이지에서 띄운다.
@@ -15,6 +16,8 @@ Future<bool> verifyPhone(BuildContext context) async {
     backgroundColor: AppColors.bg,
     builder: (_) => const _PhoneVerifySheet(),
   );
+  // 번호가 없는 회원은 소셜로 막 가입한 사람이다: 인증을 마치면 가입 축하
+  if (done == true && context.mounted) await showWelcome(context);
   return done == true;
 }
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ON_PHONE } from '../components/device.js'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { userApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
@@ -17,7 +18,9 @@ export function VerifyPhonePage() {
     setError('')
     try {
       updateUser(await userApi.registerPhone(phoneProof))
-      navigate('/', { replace: true })
+      // 가입을 마쳤으면 환영 창을 띄운다. 폰이면 앱 화면(/app/)이 띄운다
+      if (ON_PHONE) window.location.replace('/app/?welcome=1')
+      else navigate('/', { replace: true, state: { welcome: true } })
     } catch (err) {
       setError(err.message)
       setPhoneKey((k) => k + 1)

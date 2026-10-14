@@ -8129,6 +8129,173 @@ button.mp-bio {
 
 /* ---------- 팔로잉 · 팔로워 목록 창 ---------- */
 
+/* ---------- 축하 창 (회원가입 · 새 뱃지) ---------- */
+.cele-pop {
+  max-width: 380px;
+  padding: 28px 24px 22px;
+  text-align: center;
+}
+
+.cele-burst {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 108px;
+  height: 108px;
+  margin: 0 auto 14px;
+  font-size: 52px;
+  background: radial-gradient(circle, color-mix(in srgb, #f2c94c 30%, var(--surface)) 0 58%, transparent 60%);
+  border-radius: 50%;
+  animation: cele-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.cele-burst img {
+  width: 76px;
+  height: 76px;
+}
+
+@keyframes cele-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cele-burst {
+    animation: none;
+  }
+}
+
+.cele-eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--header-nav);
+}
+
+.cele-title {
+  margin: 4px 0 10px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.cele-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.cele-desc,
+.cele-more {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.cele-steps {
+  margin: 14px 0 0;
+  padding: 12px 14px 12px 32px;
+  font-size: 0.88rem;
+  line-height: 1.8;
+  text-align: left;
+  background: var(--surface-alt);
+  border-radius: 12px;
+}
+
+.cele-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.cele-actions .btn {
+  flex: 1;
+}
+
+.cele-done {
+  flex: 1;
+  margin: 0;
+  align-self: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-mint);
+}
+
+.cele-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--header-nav);
+}
+
+/* 캘린더 날짜 창의 그날 결과 */
+.rec-pop-results {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.rec-pop-results li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  background: var(--surface-alt);
+  border-radius: 10px;
+}
+
+.rec-pop-result-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rec-pop-result-text {
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.rec-pop-results .is-fail .rec-pop-result-text {
+  color: var(--danger);
+}
+
+.rec-pop-results .is-done .rec-pop-result-text {
+  color: var(--accent-mint);
+}
+
+.rec-pop-results .is-pending .rec-pop-result-text {
+  color: var(--accent-amber);
+}
+
+.rec-pop-verify {
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--surface);
+  background: var(--header-nav);
+  border-radius: 999px;
+}
+
+.rec-pop-none {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
 .fl-back {
   position: fixed;
   inset: 0;

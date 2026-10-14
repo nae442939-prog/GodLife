@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { checkBadges } from '../components/badgeCheck.js'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { challengeApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
@@ -34,6 +35,7 @@ export function ChallengeDetailPage() {
     try {
       const challenge = await fn(id)
       setState((s) => ({ ...s, challenge }))
+      checkBadges()
     } catch (err) {
       setActionError(err.message)
     } finally {
