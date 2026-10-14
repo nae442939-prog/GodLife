@@ -71,7 +71,9 @@ public class ProfileService {
         List<Badge> badges = new ArrayList<>(badges(totalSuccess, maxStreak, completed, count(JOINED_SQL, userId),
                 count(HOSTED_SQL, userId), followers));
         if (user.getRole() == Role.ADMIN) {
-            // 관리자에게만 있는 뱃지 (기록과 상관없이 늘 딴 상태). 보통 회원의 목록에는 나오지 않는다
+            // 관리자는 기록과 상관없이 모든 뱃지를 딴 상태로 보여 준다 (시연 · 뱃지 화면 확인용)
+            badges.replaceAll(b -> new Badge(b.code(), b.group(), b.name(), b.description(), true, b.target(), b.target()));
+            // 관리자에게만 있는 뱃지. 보통 회원의 목록에는 나오지 않는다
             badges.add(Badge.of("ADMIN", "SPECIAL", "관리자", "갓생살기를 운영하는 관리자", 1, 1));
         }
         return new ProfileResponse(user.getId(), user.getNickname(), user.getProfileImageUrl(), user.getBio(),
