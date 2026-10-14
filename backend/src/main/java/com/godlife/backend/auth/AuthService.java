@@ -7,6 +7,7 @@ import com.godlife.backend.common.crypto.Hashing;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.config.JwtProperties;
+import com.godlife.backend.demo.MemberJoinedEvent;
 import com.godlife.backend.phone.PhoneVerification;
 import com.godlife.backend.phone.PhoneVerificationService;
 import com.godlife.backend.user.User;
@@ -14,6 +15,7 @@ import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserStatus;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class AuthService {
     private final Clock clock;
     private final PhoneVerificationService phoneVerificationService;
     private final TransactionTemplate transactionTemplate;
+    private final ApplicationEventPublisher events;
 
     /** 존재하지 않는 이메일로 로그인할 때도 BCrypt 비교를 한 번 수행해 응답 시간 차이로 가입 여부를 알 수 없게 한다. */
     private String dummyHash;
@@ -71,6 +74,8 @@ public class AuthService {
                 created.rememberPhone(phone.getPhoneEnc());
                 User user = userRepository.saveAndFlush(created);
                 phone.linkUser(user.getId());
+                // 테스트 서버면 가입이 끝난 뒤 체험 데이터를 넣는다 (DemoStarterListener)
+                events.publishEvent(new MemberJoinedEvent(user.getId()));
                 return user;
             });
         } catch (DataIntegrityViolationException e) {
