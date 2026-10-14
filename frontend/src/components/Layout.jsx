@@ -3,7 +3,7 @@ import { BadgeWatcher } from './Celebrations.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import { Footer } from './Footer.jsx'
 import { Header } from './Header.jsx'
-import { PhoneTabBar } from './PhoneTabBar.jsx'
+import { PhoneBackBar, PhoneTabBar } from './PhoneTabBar.jsx'
 import { ON_PHONE } from './device.js'
 
 /** 모든 페이지가 공유하는 뼈대: 헤더 + 본문 + 푸터. */
@@ -19,6 +19,7 @@ export function Layout() {
   return (
     <div className={`app${ON_PHONE ? ' is-phone' : ''}`}>
       <Header />
+      {ON_PHONE && <PhoneBackBar />}
       <main className="site-main">
         <Outlet />
       </main>

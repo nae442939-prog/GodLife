@@ -125,7 +125,7 @@ export function MyPage() {
             className="mp-avatarEditBtn"
             onClick={() => fileRef.current?.click()}
             disabled={photo.busy}
-            aria-label="프로필 사진 바꾸기"
+            aria-label="프로필 사진 수정"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
               <path

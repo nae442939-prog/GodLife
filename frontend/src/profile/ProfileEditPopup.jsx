@@ -127,7 +127,7 @@ export function ProfileEditPopup({ onClose, profile, onProfile }) {
                 className="settings-camera"
                 onClick={() => fileRef.current?.click()}
                 disabled={photoBusy}
-                aria-label="프로필 사진 바꾸기"
+                aria-label="프로필 사진 수정"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                   <path d="M4 8h3l2-2.5h6L17 8h3v11H4V8z" strokeWidth="1.8" strokeLinejoin="round" />
@@ -147,11 +147,11 @@ export function ProfileEditPopup({ onClose, profile, onProfile }) {
                 onClick={() => fileRef.current?.click()}
                 disabled={photoBusy}
               >
-                {photoBusy ? '올리는 중…' : '사진 바꾸기'}
+                {photoBusy ? '올리는 중…' : '프로필 사진 수정'}
               </button>
               {user.profileImageUrl && (
                 <button type="button" className="btn btn-ghost btn-sm" onClick={removePhoto} disabled={photoBusy}>
-                  사진 빼기
+                  사진 삭제
                 </button>
               )}
               <span className="field-hint">JPG · PNG, 5MB 이하</span>

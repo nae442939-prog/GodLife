@@ -13682,7 +13682,31 @@ a.sh-line-name:hover {
   border-top: 1px solid var(--border);
 }
 
-/* 폰에서 보는 웹 화면: 위 메뉴 대신 앱(/app/)과 같은 아래 탭 */
+/* 폰에서 보는 웹 화면: 위 메뉴 대신 앱(/app/)과 같은 아래 탭, 바탕도 앱과 같은 색 */
+body:has(.app.is-phone),
+.app.is-phone {
+  --bg: #fdfbf6;
+  background: #fdfbf6;
+}
+
+.phone-back {
+  padding: 6px 12px 0;
+}
+
+.phone-back button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px 8px 4px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
 .is-phone .menu,
 .is-phone .mnav {
   display: none;

@@ -10,6 +10,28 @@ const TABS = [
   { tab: 'my', label: '마이페이지', icon: 'M12 12a4 4 0 100-8 4 4 0 000 8zM5 20c0-3.5 3-5 7-5s7 1.5 7 5z' },
 ]
 
+/**
+ * 폰에서 웹 화면 맨 위에 붙는 [‹ 뒤로]: 앱에서 넘어왔으면 앱으로 돌아가고,
+ * 처음부터 이 주소로 들어왔으면(돌아갈 곳이 없으면) 앱의 마이페이지로 간다.
+ */
+export function PhoneBackBar() {
+  function goBack() {
+    const fromHere = document.referrer.startsWith(window.location.origin)
+    if (fromHere && window.history.length > 1) window.history.back()
+    else window.location.href = '/app/?tab=my'
+  }
+  return (
+    <div className="phone-back">
+      <button type="button" onClick={goBack} aria-label="뒤로 가기">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        뒤로
+      </button>
+    </div>
+  )
+}
+
 export function PhoneTabBar() {
   return (
     <nav className="phone-tabs" aria-label="앱 메뉴">
