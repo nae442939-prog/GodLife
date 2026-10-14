@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { profileApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
-import { BADGE_EMOJI } from '../profile/badges.js'
+import { badgeImage } from '../profile/badges.js'
 
 // 묶음 순서와 이름
 const GROUPS = [
@@ -10,6 +10,8 @@ const GROUPS = [
   { key: 'STREAK', title: '연속 인증' },
   { key: 'FINISH', title: '챌린지 완주' },
   { key: 'ACTIVITY', title: '활동' },
+  // 관리자에게만 있는 뱃지 (보통 회원은 이 묶음이 비어 있어 그리지 않는다)
+  { key: 'SPECIAL', title: '특별' },
 ]
 
 /**
@@ -84,7 +86,7 @@ export function BadgesPage() {
                     <li key={b.code}>
                       <div className={`bg-card${b.earned ? ' is-earned' : ''}`}>
                         <span className="pf-badge-icon" aria-hidden="true">
-                          {BADGE_EMOJI[b.code] ?? '🏅'}
+                          <img src={badgeImage(b.code)} alt="" />
                         </span>
                         <strong>{b.name}</strong>
                         <p>{b.description}</p>

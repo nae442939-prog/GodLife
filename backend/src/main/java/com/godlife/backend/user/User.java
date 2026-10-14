@@ -44,6 +44,10 @@ public class User {
 
     private String bio;
 
+    /** 착용한 뱃지 코드 (이름 옆에 보여 준다). 착용하지 않았으면 null */
+    @Column(name = "equipped_badge")
+    private String equippedBadge;
+
     /** 휴대폰 번호 HMAC 해시(원문 미저장). 계정당 1개, 번호당 1계정. 소셜 가입 직후에는 null. */
     @Column(name = "phone_hash")
     private String phoneHash;
@@ -117,6 +121,11 @@ public class User {
         this.bio = bio;
     }
 
+    /** 뱃지 착용 (null 이면 해제) */
+    public void equipBadge(String code) {
+        this.equippedBadge = code;
+    }
+
     /** 프로필 사진 주소 바꾸기 (null 이면 기본 아이콘) */
     public void changeProfileImage(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
@@ -131,6 +140,7 @@ public class User {
         this.phoneEnc = null;
         this.profileImageUrl = null;
         this.bio = null;
+        this.equippedBadge = null;
     }
 
     private static User create(String email, String nickname) {

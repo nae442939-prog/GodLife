@@ -6,6 +6,7 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/design.dart';
+import 'profile_edit_screen.dart';
 
 /// 설정: 프로필 · 알림 · 보안(자동 로그인 · 비밀번호) · 차단한 사용자 · 고객센터 · 탈퇴 · 로그아웃.
 /// 휴대폰 번호 변경 · 1:1 문의 · 회원 탈퇴는 확인 절차가 긴 화면이라 웹 설정으로 보낸다.
@@ -84,7 +85,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               AppCard(
                 padding: EdgeInsets.zero,
                 child: Column(children: [
-                  _row(Icons.badge_outlined, '닉네임 · 한 줄 소개', value: user.nickname, onTap: () => _editProfile()),
+                  _row(Icons.badge_outlined, '프로필 수정 (사진 · 닉네임 · 소개 · 뱃지)',
+                      value: user.nickname,
+                      onTap: () => Navigator.of(context)
+                          .push(MaterialPageRoute(builder: (_) => const ProfileEditScreen()))),
                   _line(),
                   _row(Icons.mail_outline, '이메일', value: user.email ?? '-'),
                   if (socials.isNotEmpty) ...[_line(), _row(Icons.link, '연결된 소셜 계정', value: socials)],
@@ -170,28 +174,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
       ),
-    );
-  }
-
-  /// 닉네임 · 한 줄 소개 고치기
-  Future<void> _editProfile() async {
-    final state = context.read<AppState>();
-    final nickname = TextEditingController(text: state.user?.nickname ?? '');
-    final bio = TextEditingController(text: state.user?.bio ?? '');
-    await _sheet(
-      title: '프로필 수정',
-      fields: [
-        TextField(controller: nickname, maxLength: 20, decoration: const InputDecoration(labelText: '닉네임')),
-        const SizedBox(height: 8),
-        TextField(
-            controller: bio, maxLength: 200, maxLines: 3, decoration: const InputDecoration(labelText: '한 줄 소개')),
-      ],
-      action: '저장하기',
-      onSubmit: () async {
-        await _api.put('/api/users/me/profile', body: {'nickname': nickname.text.trim(), 'bio': bio.text.trim()});
-        await state.reloadUser();
-        return '프로필을 바꿨어요.';
-      },
     );
   }
 

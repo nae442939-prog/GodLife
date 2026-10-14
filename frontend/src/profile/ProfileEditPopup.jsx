@@ -1,22 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
-import { userApi } from '../api/client.js'
+import { profileApi, userApi } from '../api/client.js'
 import { NICKNAME_HINT, nicknameError } from '../auth/rules.js'
 import { useAuth } from '../auth/useAuth.js'
 import { Field } from '../components/Field.jsx'
+import { badgeImage } from './badges.js'
 
 const BIO_MAX = 200
 
 /**
- * 프로필 수정 창 (마이페이지의 [수정]): 사진 · 닉네임 · 한 줄 소개.
- * 위쪽 미리보기에 고치는 대로 바로 보인다. 사진은 고르는 즉시 바뀌고, 닉네임 · 한 줄 소개는 [저장]을 눌러야 바뀐다.
+ * 프로필 수정 창 (마이페이지의 [수정]): 사진 · 닉네임 · 한 줄 소개 · 뱃지 착용.
+ * 위쪽 미리보기에 고치는 대로 바로 보인다. 사진과 뱃지는 고르는 즉시 바뀌고, 닉네임 · 한 줄 소개는 [저장]을 눌러야 바뀐다.
+ * @param profile   내 프로필 (뱃지 목록 · 착용한 뱃지). 아직 못 불러왔으면 뱃지 칸을 그리지 않는다
+ * @param onProfile 뱃지를 착용 · 해제하면 바뀐 프로필을 돌려준다
  */
-export function ProfileEditPopup({ onClose }) {
+export function ProfileEditPopup({ onClose, profile, onProfile }) {
   const { user, updateUser } = useAuth()
   const [nickname, setNickname] = useState(user.nickname)
   const [bio, setBio] = useState(user.bio ?? '')
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const [photoBusy, setPhotoBusy] = useState(false)
+  const [badgeBusy, setBadgeBusy] = useState(false)
   const fileRef = useRef(null)
 
   useEffect(() => {
@@ -62,6 +66,22 @@ export function ProfileEditPopup({ onClose }) {
       setPhotoBusy(false)
     }
   }
+
+  // 뱃지 착용 (code = null 이면 해제). 착용 중인 뱃지를 다시 누르면 해제된다
+  async function equipBadge(code) {
+    setBadgeBusy(true)
+    setErrors((cur) => ({ ...cur, badge: '' }))
+    try {
+      onProfile(await profileApi.equipBadge(code))
+    } catch (err) {
+      setErrors((cur) => ({ ...cur, badge: err.message }))
+    } finally {
+      setBadgeBusy(false)
+    }
+  }
+
+  const earnedBadges = profile ? profile.badges.filter((b) => b.earned) : []
+  const equipped = profile?.equippedBadge ?? null
 
   async function removePhoto() {
     setPhotoBusy(true)
@@ -172,6 +192,50 @@ export function ProfileEditPopup({ onClose }) {
               {bio.length}/{BIO_MAX}
             </p>
           </div>
+          {profile && (
+            <div className="field">
+              <span className="pe-label">뱃지 착용</span>
+              {earnedBadges.length === 0 ? (
+                <p className="field-hint">아직 딴 뱃지가 없어요. 첫 인증을 하면 첫 뱃지를 받아요.</p>
+              ) : (
+                <>
+                  <ul className="pe-badges">
+                    <li>
+                      <button
+                        type="button"
+                        className={`pe-badge${equipped ? '' : ' is-on'}`}
+                        aria-pressed={!equipped}
+                        disabled={badgeBusy}
+                        onClick={() => equipBadge(null)}
+                      >
+                        착용 안 함
+                      </button>
+                    </li>
+                    {earnedBadges.map((b) => (
+                      <li key={b.code}>
+                        <button
+                          type="button"
+                          className={`pe-badge${equipped === b.code ? ' is-on' : ''}`}
+                          aria-pressed={equipped === b.code}
+                          title={b.description}
+                          disabled={badgeBusy}
+                          onClick={() => equipBadge(equipped === b.code ? null : b.code)}
+                        >
+                          <img src={badgeImage(b.code)} alt="" /> {b.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="field-hint">착용한 뱃지는 이름 옆에 보여요. 고르는 즉시 바뀌어요.</p>
+                </>
+              )}
+              {errors.badge && (
+                <p className="form-error" role="alert">
+                  {errors.badge}
+                </p>
+              )}
+            </div>
+          )}
           {errors.form && (
             <p className="form-error" role="alert">
               {errors.form}

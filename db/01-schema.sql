@@ -33,6 +33,7 @@ CREATE TABLE users (
   nickname          VARCHAR(30)  NOT NULL,
   profile_image_url VARCHAR(500) NULL,
   bio               VARCHAR(200) NULL COMMENT '자기소개',
+  equipped_badge    VARCHAR(30)  NULL COMMENT '착용한 뱃지 코드 (이름 옆에 보여 준다. 없으면 NULL)',
   phone_hash        CHAR(64)     NULL COMMENT '휴대폰 번호 HMAC 해시(원문 미저장). UNIQUE = 계정당 1개 → 다중계정 베팅 악용 방지',
   phone_enc         VARCHAR(100) NULL COMMENT '휴대폰 번호 암호화 값 (본인에게만 다시 보여 준다)',
   tier_id           INT          NOT NULL DEFAULT 1 COMMENT '신규 가입자는 최저 티어(id=1, BRONZE)',

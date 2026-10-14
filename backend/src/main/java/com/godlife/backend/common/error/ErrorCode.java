@@ -31,6 +31,7 @@ public enum ErrorCode {
     PHONE_NOT_REGISTERED(HttpStatus.FORBIDDEN, "휴대폰 인증을 마친 회원만 이용할 수 있습니다."),
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없어요."),
+    BADGE_NOT_EARNED(HttpStatus.BAD_REQUEST, "아직 따지 못한 뱃지는 착용할 수 없어요."),
     CANNOT_FOLLOW(HttpStatus.FORBIDDEN, "팔로우할 수 없는 회원이에요."),
     MESSAGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "메시지는 서로 팔로우한 친구끼리만 보낼 수 있어요."),
 

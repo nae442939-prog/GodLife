@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BADGE_EMOJI } from './badges.js'
+import { badgeImage } from './badges.js'
 
 const TIER = {
   BRONZE: { label: '브론즈', emoji: '🥉' },
@@ -36,6 +36,7 @@ export function ProfileCard({ u, actions, bioHint, meta, error }) {
           <div className="pf-info">
             <h1 className="pf-name">
               {u.nickname}
+              <EquippedBadge u={u} />
               <span className={`pf-tier is-${u.tier.toLowerCase()}`} title="칭호">
                 <span aria-hidden="true">{tier.emoji}</span> {tier.label}
               </span>
@@ -59,6 +60,17 @@ export function ProfileCard({ u, actions, bioHint, meta, error }) {
       <ProfileBadges u={u} />
       <ProfileStats u={u} />
     </section>
+  )
+}
+
+/** 이름 옆의 착용한 뱃지 (마이페이지의 프로필 수정에서 착용 · 해제한다). 착용하지 않았으면 그리지 않는다 */
+export function EquippedBadge({ u }) {
+  const badge = u.equippedBadge && u.badges.find((b) => b.code === u.equippedBadge)
+  if (!badge) return null
+  return (
+    <span className="pf-equipped" title={`착용한 뱃지: ${badge.name}`}>
+      <img src={badgeImage(badge.code)} alt={`착용한 뱃지 ${badge.name}`} />
+    </span>
   )
 }
 
@@ -86,7 +98,7 @@ export function ProfileBadges({ u, allTo }) {
         {shown.map((b) => (
           <li key={b.code} className={`pf-badge${b.earned ? ' is-earned' : ''}`} title={b.description}>
             <span className="pf-badge-icon" aria-hidden="true">
-              {BADGE_EMOJI[b.code] ?? '🏅'}
+              <img src={badgeImage(b.code)} alt="" />
             </span>
             <span className="pf-badge-name">{b.name}</span>
             <span className="pf-badge-desc">{b.earned ? '획득' : b.description}</span>

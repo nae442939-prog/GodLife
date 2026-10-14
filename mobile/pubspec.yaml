@@ -71,6 +71,10 @@ flutter:
       fonts:
         - asset: assets/fonts/NotoSansKR.ttf
 
+  # 뱃지 그림 (Microsoft Fluent Emoji 3D, MIT — assets/badges/CREDITS.md). 파일 이름 = 뱃지 코드
+  assets:
+    - assets/badges/
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
