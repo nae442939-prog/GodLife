@@ -8,6 +8,7 @@ import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
 import 'challenge_detail_screen.dart';
+import 'diary_list_screen.dart';
 import 'verify_screen.dart';
 
 // 기분은 이모지 대신 아이콘으로 그린다 (이모지 글꼴은 따로 내려받아야 해서 처음에 네모로 보인다)
@@ -82,8 +83,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
     if (mounted) setState(() => _version++);
   }
 
-  /// 달력의 날짜를 누르면: 그날 챌린지마다 성공 · 실패 · 오늘 아직(누르면 인증)과 일기를 아래에서 올라오는 창으로 보여 준다.
-  /// 창을 닫으면 그 날짜를 골라 둔다 (달력 아래에도 같은 내용이 보인다)
+  /// 달력의 날짜를 누르면: 그날 미션(챌린지)마다 성공 · 실패 · 오늘 아직과, 그날 쓴 일기를 아래에서 올라오는 창으로 보여 준다.
+  /// 화면의 날짜는 그대로 둔다 (다른 날짜로 넘어가지 않는다). 일기를 누르면 일기 목록에서 그날 일기를 연다
   Future<void> _showDay(String date, String today) async {
     final day = _api.get('/api/records/days/$date');
     await showModalBottomSheet<void>(
@@ -127,13 +128,140 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     if (count('REST') > 0) ColorTag.of('쉬는 날 ${count('REST')}', _restColors),
                   ]),
                 ),
-              ..._dayDetail(date, data, today, onLeave: () => Navigator.of(sheetContext).pop()),
+              Text(_dayTitle(date, today),
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+              const SizedBox(height: 12),
+              if (items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 6),
+                  child: Text('이날은 인증할 미션이 없었어요.',
+                      style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                ),
+              // 미션마다 결과만 (오늘 아직이면 눌러서 인증하러)
+              for (final item in items)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _resultRow(item, onLeave: () => Navigator.of(sheetContext).pop()),
+                ),
+              const SizedBox(height: 14),
+              const Text('이날의 일기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+              const SizedBox(height: 10),
+              ..._diaryLinks(date, (data['diaries'] as List).cast<Map<String, dynamic>>(),
+                  onLeave: () => Navigator.of(sheetContext).pop()),
             ]);
           },
         ),
       ),
     );
-    if (mounted) setState(() => _selected = date);
+  }
+
+  String _dayTitle(String date, String today) {
+    final parts = date.split('-');
+    return '${int.parse(parts[1])}월 ${int.parse(parts[2])}일${date == today ? ' · 오늘' : ''}';
+  }
+
+  /// 미션 결과 한 줄 (달력 날짜 창): 아이콘 · 제목 · 성공 / 실패 / 인증하기 / 쉬는 날
+  Widget _resultRow(Map<String, dynamic> item, {VoidCallback? onLeave}) {
+    return AppCard(
+      bordered: false,
+      radius: 16,
+      onTap: item['result'] == 'PENDING'
+          ? () {
+              onLeave?.call();
+              _openItem(item);
+            }
+          : null,
+      child: Row(children: [
+        CategoryIcon(_categoryNames[(item['categoryId'] as num).toInt()] ?? '기타',
+            title: item['title'] as String, size: 36),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Text(item['title'] as String,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
+        ),
+        const SizedBox(width: 8),
+        switch (item['result'] as String) {
+          'DONE' => ColorTag.of('성공', ColorTag.mint),
+          'FAIL' => ColorTag.of('실패', _failColors),
+          'PENDING' => ColorTag.of('인증하기', ColorTag.gold),
+          _ => ColorTag.of('쉬는 날', _restColors),
+        },
+      ]),
+    );
+  }
+
+  /// 그날 쓴 일기들 (기분 · 첫 줄만). 누르면 일기 목록에서 그날 일기를 연다
+  List<Widget> _diaryLinks(String date, List<Map<String, dynamic>> diaries, {VoidCallback? onLeave}) {
+    if (diaries.isEmpty) {
+      return const [
+        Text('이날 쓴 일기가 없어요.',
+            style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+      ];
+    }
+    return [
+      for (final diary in diaries)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: AppCard(
+            bordered: false,
+            radius: 16,
+            onTap: () {
+              onLeave?.call();
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => DiaryListScreen(focusDate: date, focusId: (diary['id'] as num).toInt())));
+            },
+            child: Row(children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(color: ColorTag.gold.$1, shape: BoxShape.circle),
+                child: Icon(_moods[diary['mood']] ?? Icons.edit_note, size: 18, color: ColorTag.gold.$2),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                    ((diary['content'] as String?) ?? '').trim().isEmpty
+                        ? '(사진 · 기분만 남긴 일기)'
+                        : (diary['content'] as String).split('\n').first,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              const Icon(Icons.chevron_right, size: 18, color: Color(0xFFC7C0B0)),
+            ]),
+          ),
+        ),
+    ];
+  }
+
+  /// 달력 아래: 일기 목록으로 가는 줄
+  Widget _diaryListEntry() {
+    return AppCard(
+      bordered: false,
+      radius: 18,
+      padding: const EdgeInsets.all(16),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DiaryListScreen())),
+      child: Row(children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(color: ColorTag.lav.$1, shape: BoxShape.circle),
+          child: Icon(Icons.menu_book, size: 19, color: ColorTag.lav.$2),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('일기 목록', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+            SizedBox(height: 2),
+            Text('언제 어떤 일기를 썼는지 날짜별로 모아 봐요',
+                style: TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+        const Icon(Icons.chevron_right, color: Color(0xFFC7C0B0)),
+      ]),
+    );
   }
 
   Future<void> _deleteDiary(int id) async {
@@ -203,6 +331,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
               ]),
             ]),
           ),
+          const SizedBox(height: 12),
+          _diaryListEntry(),
           const SizedBox(height: 22),
           if (data.selected == null)
             const Padding(
