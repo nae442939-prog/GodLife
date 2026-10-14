@@ -42,6 +42,8 @@ dependencies:
   provider: ^6.1.5+1
   url_launcher: ^6.3.3
   flutter_svg: ^2.3.0
+  # 이미 축하한 뱃지를 기기에 적어 둔다 (새로 딴 뱃지만 '뱃지를 받았어요!')
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

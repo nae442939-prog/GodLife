@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ON_PHONE } from '../components/device.js'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { accountApi } from '../api/client.js'
 import { NICKNAME_HINT, PASSWORD_HINT, nicknameError, passwordError } from '../auth/rules.js'
@@ -90,7 +91,9 @@ export function SignupPage() {
     try {
       await signup({ ...payload, phoneProof })
       await login({ email: payload.email, password: payload.password })
-      navigate('/', { replace: true })
+      // 가입을 마쳤으면 환영 창을 띄운다. 폰이면 앱 화면(/app/)이 띄운다
+      if (ON_PHONE) window.location.replace('/app/?welcome=1')
+      else navigate('/', { replace: true, state: { welcome: true } })
     } catch (err) {
       if (err.code === 'DUPLICATE_EMAIL') setErrors({ email: err.message })
       else if (err.code === 'DUPLICATE_NICKNAME') setErrors({ nickname: err.message })

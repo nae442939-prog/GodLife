@@ -307,6 +307,7 @@ function DiaryPopup({ date, onClose }) {
           <p className="rec-none">불러오는 중…</p>
         ) : (
           <>
+            <DayResults day={day} date={date} />
             <DayDiaries day={day} />
             <Link to={`/records?date=${date}`} className="rec-pop-write">
               {day.diaries.length > 0 ? '+ 일기 하나 더 쓰기' : '+ 일기 쓰러 가기'}
@@ -315,6 +316,29 @@ function DiaryPopup({ date, onClose }) {
         )}
       </div>
     </div>
+  )
+}
+
+/** 그날 챌린지마다 결과: 성공 · 실패 · 오늘 아직(누르면 인증하러) · 쉬는 날 */
+function DayResults({ day }) {
+  if (day.items.length === 0) return <p className="rec-pop-none">이날은 진행한 챌린지가 없어요.</p>
+  return (
+    <ul className="rec-pop-results" aria-label="그날 결과">
+      {day.items.map((it) => (
+        <li key={it.challengeId} className={`is-${it.result.toLowerCase()}`}>
+          <span className={`rec-mark is-${it.result.toLowerCase()}`} aria-hidden="true" />
+          <Link to={`/challenges/${it.challengeId}`} className="rec-pop-result-title">
+            {it.title}
+          </Link>
+          <span className="rec-pop-result-text">{RESULT_TEXT[it.result]}</span>
+          {it.result === 'PENDING' && (
+            <Link to={`/challenges/${it.challengeId}/verify`} className="rec-pop-verify">
+              인증하기
+            </Link>
+          )}
+        </li>
+      ))}
+    </ul>
   )
 }
 

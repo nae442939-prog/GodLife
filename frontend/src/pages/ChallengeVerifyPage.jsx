@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { checkBadges } from '../components/badgeCheck.js'
 import { Link, useParams } from 'react-router-dom'
 import { challengeApi, verificationApi } from '../api/client.js'
 import { closedText, hasProgress } from '../challenge/format.js'
@@ -217,6 +218,7 @@ function CameraStage({ challengeId, onUploaded }) {
         try {
           const saved = await verificationApi.submit(challengeId, new File([blob], 'camera.jpg', { type: 'image/jpeg' }))
           onUploaded(saved, url)
+          checkBadges()
         } catch (err) {
           URL.revokeObjectURL(url)
           setFrozen(null)

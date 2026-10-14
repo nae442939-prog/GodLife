@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
+import '../widgets/celebrations.dart';
 import '../widgets/phone_verify_sheet.dart';
 import 'challenge_chat_screen.dart';
 import 'verify_screen.dart';
@@ -83,6 +84,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
     final wait = daysUntil(c.startDate);
     await _act(() => context.read<AppState>().api.post(_joinPath),
         wait > 0 ? '참여했어요! ${koreanDate(c.startDate)}부터 인증할 수 있어요.' : '참여했어요! 오늘부터 바로 인증할 수 있어요.');
+    if (mounted) await checkNewBadges(context);
   }
 
   Future<void> _leave(ChallengeDetail c) async {
