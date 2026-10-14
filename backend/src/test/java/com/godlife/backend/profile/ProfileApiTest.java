@@ -3,6 +3,7 @@ package com.godlife.backend.profile;
 import com.godlife.backend.auth.JwtProvider;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,6 +47,8 @@ class ProfileApiTest {
     @Autowired UserRepository userRepository;
     @Autowired JwtProvider jwtProvider;
     @Autowired Clock clock;
+    @Autowired JdbcTemplate jdbc;
+    @Autowired EntityManager entityManager;
 
     private String host;
     private User meUser;
@@ -103,6 +108,69 @@ class ProfileApiTest {
                 .andExpect(jsonPath("$.challenges.length()").value(1))
                 .andExpect(jsonPath("$.challenges[0].id").value(open))
                 .andExpect(jsonPath("$.challenges[0].inProgress").value(true));
+    }
+
+    @Test
+    @DisplayName("뱃지 착용: 딴 뱃지만 착용할 수 있고, 프로필에 보이며, 비우면 해제된다")
+    void equipBadge() throws Exception {
+        // 아직 딴 뱃지가 없으면 착용할 수 없다
+        mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + me)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"FIRST_VERIFY\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BADGE_NOT_EARNED"));
+
+        long open = challenge("PUBLIC");
+        join(open);
+        mvc.perform(multipart("/api/challenges/" + open + "/verifications")
+                        .file(new MockMultipartFile("file", "c.png", "image/png", png()))
+                        .header("Authorization", "Bearer " + me))
+                .andExpect(status().isCreated());
+
+        mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + me)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"FIRST_VERIFY\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.equippedBadge").value("FIRST_VERIFY"));
+        // 남이 봐도 보인다
+        mvc.perform(get("/api/users/" + meUser.getId() + "/profile"))
+                .andExpect(jsonPath("$.equippedBadge").value("FIRST_VERIFY"));
+        // 없는 코드 · 아직 못 딴 뱃지는 안 된다 (착용 중인 것은 그대로)
+        mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + me)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"VERIFY_10\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/users/" + meUser.getId() + "/profile"))
+                .andExpect(jsonPath("$.equippedBadge").value("FIRST_VERIFY"));
+
+        mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + me)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":null}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.equippedBadge").doesNotExist());
+        mvc.perform(put("/api/users/me/badge").contentType(MediaType.APPLICATION_JSON).content("{\"code\":null}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("관리자 뱃지: 관리자에게만 있고 늘 딴 상태라 바로 착용할 수 있다")
+    void adminBadge() throws Exception {
+        // 보통 회원에게는 없고 착용할 수도 없다
+        mvc.perform(get("/api/users/" + meUser.getId() + "/profile"))
+                .andExpect(jsonPath("$.badges.length()").value(15));
+        mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + me)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"ADMIN\"}"))
+                .andExpect(status().isBadRequest());
+
+        jdbc.update("UPDATE users SET role = 'ADMIN' WHERE id = ?", meUser.getId());
+        entityManager.clear();
+        String admin = jwtProvider.createAccessToken(meUser.getId(), "ADMIN");
+
+        mvc.perform(get("/api/users/" + meUser.getId() + "/profile"))
+                .andExpect(jsonPath("$.badges.length()").value(16))
+                .andExpect(jsonPath("$.badges[15].code").value("ADMIN"))
+                .andExpect(jsonPath("$.badges[15].group").value("SPECIAL"))
+                .andExpect(jsonPath("$.badges[15].earned").value(true));
+        mvc.perform(put("/api/users/me/badge").header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"ADMIN\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.equippedBadge").value("ADMIN"));
     }
 
     // ---------- helpers ----------

@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -67,6 +68,12 @@ public class ProfileService {
         long completed = participantRepository.countByUserIdAndStatus(userId, ParticipantStatus.COMPLETED);
         long totalSuccess = (long) rankingService.valueOf(RankingMetric.TOTAL_SUCCESS, userId);
         long followers = followRepository.followerCount(userId);
+        List<Badge> badges = new ArrayList<>(badges(totalSuccess, maxStreak, completed, count(JOINED_SQL, userId),
+                count(HOSTED_SQL, userId), followers));
+        if (user.getRole() == Role.ADMIN) {
+            // 관리자에게만 있는 뱃지 (기록과 상관없이 늘 딴 상태). 보통 회원의 목록에는 나오지 않는다
+            badges.add(Badge.of("ADMIN", "SPECIAL", "관리자", "갓생살기를 운영하는 관리자", 1, 1));
+        }
         return new ProfileResponse(user.getId(), user.getNickname(), user.getProfileImageUrl(), user.getBio(),
                 user.getCreatedAt() == null ? null : user.getCreatedAt().toLocalDate(),
                 (long) rankingService.valueOf(RankingMetric.MONTH_VERIFY, userId),
@@ -80,8 +87,31 @@ public class ProfileService {
                 viewerId != null && followRepository.exists(userId, viewerId),
                 viewerId != null && blockRepository.existsByBlockerIdAndBlockedId(viewerId, userId),
                 tierOf(user),
-                badges(totalSuccess, maxStreak, completed, count(JOINED_SQL, userId), count(HOSTED_SQL, userId),
-                        followers));
+                badges,
+                earned(badges, user.getEquippedBadge()) ? user.getEquippedBadge() : null);
+    }
+
+    /**
+     * 뱃지 착용 · 해제 (한 번에 하나만). 딴 뱃지만 착용할 수 있다.
+     * @param code 착용할 뱃지 코드. 비우면 해제
+     */
+    @Transactional
+    public ProfileResponse equipBadge(Long userId, String code) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (code == null || code.isBlank()) {
+            user.equipBadge(null);
+        } else {
+            if (!earned(profile(userId, userId).badges(), code)) {
+                throw new BusinessException(ErrorCode.BADGE_NOT_EARNED);
+            }
+            user.equipBadge(code);
+        }
+        return profile(userId, userId);
+    }
+
+    private static boolean earned(List<Badge> badges, String code) {
+        return code != null && badges.stream().anyMatch(b -> b.earned() && b.code().equals(code));
     }
 
     /** 관리자는 칭호 대신 '관리자'(ADMIN)로 보여 준다 */
