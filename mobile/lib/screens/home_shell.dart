@@ -98,7 +98,9 @@ class _TabsPageState extends State<_TabsPage> {
   /// 웹에서 회원가입을 마치고 넘어왔으면(?welcome=1) 환영 창을 먼저 띄우고, 새로 딴 뱃지가 있으면 축하한다
   Future<void> _greet() async {
     if (!mounted) return;
-    if (Uri.base.queryParameters['welcome'] == '1') await showWelcome(context);
+    if (Uri.base.queryParameters['welcome'] == '1') {
+      await showWelcome(context, onBrowse: () => widget.tab.value = 0);
+    }
     if (mounted) await checkNewBadges(context);
   }
 
