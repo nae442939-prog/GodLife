@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { profileApi, rankingApi, tierApi, userApi, verificationApi, walletApi } from '../api/client.js'
 import { useAuth } from '../auth/useAuth.js'
 import { FollowListPopup } from '../profile/FollowListPopup.jsx'
-import { ProfileBadges, TierChip } from '../profile/ProfileCard.jsx'
+import { EquippedBadge, ProfileBadges, TierChip } from '../profile/ProfileCard.jsx'
 import { ProfileEditPopup } from '../profile/ProfileEditPopup.jsx'
 import { TierProgress } from './TierPage.jsx'
 
@@ -142,6 +142,7 @@ export function MyPage() {
         <div className="mp-profileText">
           <div className="mp-nameRow">
             <span className="mp-nameValue">{user.nickname}</span>
+            {u && <EquippedBadge u={u} />}
             {u && <TierChip tier={u.tier} />}
             <button type="button" className="mp-fieldEditBtn" onClick={openEdit}>
               수정
@@ -321,7 +322,13 @@ export function MyPage() {
       </div>
 
       {followList && <FollowListPopup key={followList} mode={followList} onClose={closeFollowList} />}
-      {editing && <ProfileEditPopup onClose={closeEdit} />}
+      {editing && (
+        <ProfileEditPopup
+          onClose={closeEdit}
+          profile={u}
+          onProfile={(profile) => setState({ profile, error: '' })}
+        />
+      )}
     </div>
   )
 }

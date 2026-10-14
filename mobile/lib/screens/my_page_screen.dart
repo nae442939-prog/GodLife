@@ -6,10 +6,12 @@ import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import '../widgets/badge_medal.dart';
 import '../widgets/design.dart';
 import 'admin_screen.dart';
 import 'my_challenges_screen.dart';
 import 'notifications_screen.dart';
+import 'profile_edit_screen.dart';
 import 'badges_screen.dart';
 import 'follow_list_screen.dart';
 import 'messages_screen.dart';
@@ -30,7 +32,9 @@ class MyPageScreen extends StatelessWidget {
     final image = user.profileImageUrl;
     final admin = user.role == 'ADMIN';
 
-    void open(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    Future<void> open(Widget page) async {
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    }
 
     return AsyncView<_MyData>(
       load: () async {
@@ -44,14 +48,17 @@ class MyPageScreen extends StatelessWidget {
           tier,
           followers: (profile['followerCount'] as num).toInt(),
           following: (profile['followingCount'] as num).toInt(),
+          badges: ((profile['badges'] as List?) ?? []).cast<Map<String, dynamic>>(),
+          equippedBadge: profile['equippedBadge'] as String?,
           unread: ((dm['count'] as num?)?.toInt() ?? 0) + ((dm['requests'] as num?)?.toInt() ?? 0),
         );
       },
       builder: (context, data, reload) => ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 28), children: [
-        // 프로필
+        // 프로필: 누르면 프로필 수정 (사진 · 닉네임 · 소개 · 뱃지 착용)
         AppCard(
           bordered: false,
           padding: const EdgeInsets.all(18),
+          onTap: () => open(const ProfileEditScreen()).then((_) => reload()),
           child: Row(children: [
             Container(
               width: 54,
@@ -81,7 +88,16 @@ class MyPageScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
                   ),
-                  if (admin) ...[const SizedBox(width: 7), ColorTag.of('관리자', ColorTag.gold)],
+                  // 착용한 뱃지 (프로필 수정에서 착용 · 해제)
+                  if (data.equippedBadge != null) ...[
+                    const SizedBox(width: 6),
+                    BadgeMedal(data.equippedBadge, earned: true, size: 22, showLabel: false),
+                  ],
+                  // 이름 옆 칭호 (웹의 프로필 카드와 같다). 관리자는 칭호 대신 '관리자'
+                  if (admin)
+                    ...[const SizedBox(width: 7), ColorTag.of('관리자', ColorTag.gold)]
+                  else if (data.tier?['tier'] case {'name': final String tierName})
+                    ...[const SizedBox(width: 7), ColorTag.of(tierName, ColorTag.gold)],
                 ]),
                 if (user.bio != null && user.bio!.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -101,6 +117,7 @@ class MyPageScreen extends StatelessWidget {
                 ]),
               ]),
             ),
+            const Icon(Icons.chevron_right, color: Color(0xFFC7C0B0), size: 20),
           ]),
         ),
         const SizedBox(height: 16),
@@ -120,6 +137,10 @@ class MyPageScreen extends StatelessWidget {
         if (data.tier != null) ...[
           const SizedBox(height: 16),
           _TierCard(data.tier!),
+        ],
+        if (data.badges.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _BadgeCard(data.badges, onAll: () => open(const BadgesScreen())),
         ],
         if (!user.phoneVerified) ...[
           const SizedBox(height: 16),
@@ -144,12 +165,13 @@ class MyPageScreen extends StatelessWidget {
             _menu(Icons.emoji_events, ColorTag.gold, '랭킹', () => open(const RankingScreen())),
             _menu(Icons.chat_bubble, ColorTag.mint, data.unread > 0 ? '메시지 · 새 소식 ${data.unread}' : '메시지',
                 () => open(const MessagesScreen())),
-            _menu(Icons.military_tech, ColorTag.lav, '뱃지', () => open(const BadgesScreen())),
             _menu(Icons.insights, ColorTag.coral, '주간 회고', () => open(const WeeklyReportScreen())),
             _menu(Icons.account_balance_wallet, ColorTag.gold, '포인트 지갑 · 거래 내역', () => open(const WalletScreen())),
             _menu(Icons.shopping_bag, ColorTag.mint, '포인트 상점', () => openWeb('/shop')),
             _menu(Icons.notifications, ColorTag.lav, '알림', () => open(const NotificationsScreen())),
-            _menu(Icons.settings, (AppColors.surfaceAlt, AppColors.brown), '설정', () => open(const SettingsScreen())),
+            // 설정에서 닉네임 · 착용한 뱃지를 바꾸고 돌아오면 다시 불러온다
+            _menu(Icons.settings, (AppColors.surfaceAlt, AppColors.brown), '설정',
+                () => open(const SettingsScreen()).then((_) => reload())),
             _menu(Icons.logout, (const Color(0xFFF6E2DC), const Color(0xFFC2574A)), '로그아웃', () => state.logout(),
                 danger: true, last: true),
           ]),
@@ -225,15 +247,107 @@ class MyPageScreen extends StatelessWidget {
 }
 
 class _MyData {
-  _MyData(this.wallet, this.tier, {required this.followers, required this.following, required this.unread});
+  _MyData(this.wallet, this.tier,
+      {required this.followers,
+      required this.following,
+      required this.badges,
+      required this.equippedBadge,
+      required this.unread});
 
   final Wallet wallet;
   final Map<String, dynamic>? tier;
   final int followers;
   final int following;
 
+  /// 전체 뱃지 (딴 것 · 아직인 것)
+  final List<Map<String, dynamic>> badges;
+
+  /// 착용한 뱃지 코드 (없으면 null)
+  final String? equippedBadge;
+
   /// 안 읽은 메시지 수 + 받은 메시지 요청 수
   final int unread;
+}
+
+/// 뱃지 줄 (웹 마이페이지와 같다): 미리보기 7개를 옆으로 넘겨 본다. 딴 것 먼저 또렷하게, 남는 자리는 아직인 것을 흐리게 + 따는 조건
+class _BadgeCard extends StatelessWidget {
+  const _BadgeCard(this.badges, {required this.onAll});
+
+  final List<Map<String, dynamic>> badges;
+  final VoidCallback onAll;
+
+  static const _preview = 7;
+
+  @override
+  Widget build(BuildContext context) {
+    final earned = badges.where((b) => b['earned'] == true).toList();
+    final shown = [...earned, ...badges.where((b) => b['earned'] != true)].take(_preview).toList();
+    return AppCard(
+      bordered: false,
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            const Text('뱃지', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+            const SizedBox(width: 6),
+            Text('${earned.length}/${badges.length}',
+                style: const TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            const Spacer(),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onAll,
+              child: const Text('전체 보기 ›',
+                  style: TextStyle(color: AppColors.brown, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 138,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: shown.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (_, i) => _tile(shown[i]),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _tile(Map<String, dynamic> b) {
+    final earned = b['earned'] == true;
+    return Container(
+      width: 104,
+      padding: const EdgeInsets.fromLTRB(6, 11, 6, 8),
+      decoration: BoxDecoration(
+        color: earned ? const Color(0xFFFDF8E7) : AppColors.surfaceAlt,
+        border: Border.all(color: earned ? const Color(0xFFEACF93) : const Color(0xFFE6E0D2)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(children: [
+        BadgeMedal(b['code'] as String?, earned: earned, size: 50),
+        const SizedBox(height: 6),
+        Text(b['name'] as String,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 12.5, fontWeight: FontWeight.w800, color: earned ? AppColors.text : AppColors.muted)),
+        const SizedBox(height: 3),
+        Text(earned ? '획득' : b['description'] as String,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 10.5,
+                height: 1.35,
+                fontWeight: earned ? FontWeight.w800 : FontWeight.w600,
+                color: earned ? const Color(0xFFB07A12) : AppColors.muted)),
+      ]),
+    );
+  }
 }
 
 /// 칭호(티어) 점수. 관리자는 칭호 대상이 아니라 보이지 않는다

@@ -4,14 +4,17 @@ import 'package:provider/provider.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import '../widgets/badge_medal.dart';
 import '../widgets/design.dart';
 
-/// (서버 값, 묶음 이름, 색, 아이콘)
+/// (서버 값, 묶음 이름, 색)
 const _groups = [
-  ('VERIFY', '인증 횟수', ColorTag.coral, Icons.photo_camera),
-  ('STREAK', '연속 인증', ColorTag.gold, Icons.local_fire_department),
-  ('FINISH', '완주', ColorTag.mint, Icons.flag),
-  ('ACTIVITY', '활동', ColorTag.lav, Icons.auto_awesome),
+  ('VERIFY', '인증 횟수', ColorTag.coral),
+  ('STREAK', '연속 인증', ColorTag.gold),
+  ('FINISH', '완주', ColorTag.mint),
+  ('ACTIVITY', '활동', ColorTag.lav),
+  // 관리자에게만 있는 뱃지 (보통 회원은 이 묶음이 비어 있어 그리지 않는다)
+  ('SPECIAL', '특별', ColorTag.gold),
 ];
 
 /// 뱃지 전체 보기 (웹의 /me/badges 와 같다): 딴 개수와 묶음별 뱃지 · 얼마나 왔는지
@@ -65,7 +68,8 @@ class BadgesScreen extends StatelessWidget {
                       style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600)),
                 ]),
               ),
-              for (final (key, name, colors, icon) in _groups) ...[
+              for (final (key, name, colors) in _groups)
+                if (badges.any((b) => b['group'] == key)) ...[
                 const SizedBox(height: 22),
                 Text(name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                 const SizedBox(height: 12),
@@ -73,7 +77,7 @@ class BadgesScreen extends StatelessWidget {
                   bordered: false,
                   padding: EdgeInsets.zero,
                   child: Column(children: [
-                    for (final b in badges.where((b) => b['group'] == key)) _badge(b, colors, icon),
+                    for (final b in badges.where((b) => b['group'] == key)) _badge(b, colors),
                   ]),
                 ),
               ],
@@ -84,8 +88,8 @@ class BadgesScreen extends StatelessWidget {
     );
   }
 
-  /// 뱃지 한 줄: 딴 것은 색 동그라미 + '획득', 아직이면 회색 + 진행 막대
-  Widget _badge(Map<String, dynamic> b, (Color, Color) colors, IconData icon) {
+  /// 뱃지 한 줄: 딴 것은 색 메달 + '획득', 아직이면 회색 메달 + 진행 막대
+  Widget _badge(Map<String, dynamic> b, (Color, Color) colors) {
     final earned = b['earned'] == true;
     final current = (b['current'] as num).toInt();
     final target = (b['target'] as num).toInt();
@@ -93,13 +97,8 @@ class BadgesScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFF5F2EA)))),
       child: Row(children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(color: earned ? colors.$1 : AppColors.surfaceAlt, shape: BoxShape.circle),
-          child: Icon(icon, size: 19, color: earned ? colors.$2 : AppColors.navIdle),
-        ),
-        const SizedBox(width: 12),
+        BadgeMedal(b['code'] as String?, earned: earned, size: 44),
+        const SizedBox(width: 13),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(b['name'] as String,

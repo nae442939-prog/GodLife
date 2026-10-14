@@ -5,6 +5,7 @@ import '../api/api_client.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import '../widgets/badge_medal.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
 import 'challenge_detail_screen.dart';
@@ -92,6 +93,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
                     ),
+                    if (p['equippedBadge'] != null) ...[
+                      const SizedBox(width: 6),
+                      BadgeMedal(p['equippedBadge'] as String?, earned: true, size: 24, showLabel: false),
+                    ],
                     if (_tierNames[p['tier']] != null) ...[
                       const SizedBox(width: 7),
                       ColorTag.of(_tierNames[p['tier']]!, ColorTag.gold),

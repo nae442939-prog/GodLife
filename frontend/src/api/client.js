@@ -444,6 +444,8 @@ export const recordApi = {
 // 회원 프로필 (비로그인도 볼 수 있음)
 export const profileApi = {
   get: (userId) => apiFetch(`/api/users/${userId}/profile`),
+  // 뱃지 착용 · 해제 (code = 딴 뱃지 코드, null 이면 해제) → 바뀐 내 프로필
+  equipBadge: (code) => apiFetch('/api/users/me/badge', { method: 'PUT', body: { code } }),
   // 팔로우 / 언팔로우 (여러 번 눌러도 결과가 같다)
   follow: (userId) => apiFetch(`/api/users/${userId}/follow`, { method: 'POST' }),
   unfollow: (userId) => apiFetch(`/api/users/${userId}/follow`, { method: 'DELETE' }),
