@@ -1,7 +1,7 @@
 # 갓생살기 (GodLife)
 
 습관 챌린지 서비스입니다. 운동 · 공부 · 독서 같은 챌린지에 포인트를 걸고, 매일 사진으로 인증합니다.
-끝까지 해낸 사람은 건 포인트를 그대로 돌려받고, 해내지 못한 사람의 포인트는 해낸 사람들에게 **보상 포인트**로 나눠집니다.
+끝까지 해낸 사람은 건 포인트를 그대로 돌려받고, 해내지 못한 사람의 포인트 해낸 사람들에게 **보상 포인트**로 나눠집니다.
 
 부트캠프 과제로 만든 풀스택 개인 프로젝트입니다.
 
@@ -16,7 +16,7 @@
 - 결과가 우연이 아니라 본인의 인증(노력)으로 정해집니다.
 - 현금 출금 · 환전 기능이 없습니다. 보상 포인트는 포인트 상점에서만 쓸 수 있습니다.
 - 예외는 하나뿐입니다: 본인이 직접 충전하고 쓰지 않은 금액의 결제 취소(환불).
-  그래서 포인트 원장은 출처(충전 / 보상 / 상점)를 나눠 기록하고, 환불은 충전분만 대상으로 합니다.
+그래서 포인트 원장은 출처(충전 / 보상 / 상점)를 나눠 기록하고, 환불은 충전분만 대상으로 합니다.
 
 **포인트가 두 번 나가지 않게 했습니다.**
 정산 · 결제 · 주문은 DB 트랜잭션 + 행 잠금(`SELECT ... FOR UPDATE`) + 멱등 키로 처리합니다.
@@ -42,6 +42,7 @@
 | 영역 | 스택 |
 |---|---|
 | Frontend | React 19 + Vite (JavaScript) |
+| Mobile | Flutter (Dart) — 안드로이드 APK, 모바일 웹 빌드 |
 | Backend | Java 21 + Spring Boot 4 (Maven), Spring Security(JWT), JPA + JDBC, MySQL 8 |
 | AI 서버 | Python + FastAPI + PyTorch (MobileNetV2 전이학습 모델 서빙) |
 
@@ -50,11 +51,12 @@ AI 서버를 따로 둔 이유는 Java 에서 PyTorch 로 학습한 모델을 �
 ## 폴더 구조
 
 ```
-backend/     Spring Boot (기능별 패키지: auth, challenge, verification, settlement, wallet, ...)
-frontend/    Vite + React
-ai-server/   FastAPI 추론 서버, training/ 에 학습 스크립트와 노트북
-db/          00-init.sql(DB · 계정) → 01-schema.sql(테이블) → 02-seed.sql(기준 데이터), migrations/(변경 이력)
-docs/        erd.md (스키마에서 자동 생성한 ERD), erd.html (초기 시안)
+backend/ Spring Boot (기능별 패키지: auth, challenge, verification, settlement, wallet, ...)
+frontend/ Vite + React
+mobile/ Flutter 앱 (안드로이드 · 모바일 웹, 자세히는 mobile/README.md)
+ai-server/ FastAPI 추론 서버, training/ 에 학습 스크립트와 노트북
+db/ 00-init.sql(DB · 계정) → 01-schema.sql(테이블) → 02-seed.sql(기준 데이터), migrations/(변경 이력)
+docs/ erd.md (스키마에서 자동 생성한 ERD), erd.html (초기 시안)
 ```
 
 DB 구조는 [docs/erd.md](docs/erd.md) 에 있습니다.
@@ -79,7 +81,7 @@ mysql -u godlife_user -p godlife < db/02-seed.sql
 ### 2. 백엔드 (http://localhost:8080)
 
 ```bash
-cp backend/.env.example backend/.env    # 값 채우기: DB 비밀번호, JWT_SECRET, PHONE_HMAC_SECRET 은 필수
+cp backend/.env.example backend/.env # 값 채우기: DB 비밀번호, JWT_SECRET, PHONE_HMAC_SECRET 은 필수
 cd backend
 ./mvnw spring-boot:run
 ```
@@ -91,7 +93,7 @@ cd backend
 ```bash
 cd ai-server
 python -m venv venv
-venv\Scripts\activate                   # macOS / Linux: source venv/bin/activate
+venv\Scripts\activate # macOS / Linux: source venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --port 8000
 ```
@@ -109,6 +111,22 @@ npm run dev
 ```
 
 개발 서버가 `/api` · `/ws` 요청을 백엔드로 넘겨 주므로 브라우저에서는 5173 번만 열면 됩니다.
+
+### 5. 모바일 앱 (Flutter)
+
+준비물: Flutter SDK, Android SDK
+
+```bash
+cd mobile
+flutter pub get
+flutter test # 단위 테스트
+flutter run # 연결된 폰 · 에뮬레이터에서 실행
+flutter build apk --release # build/app/outputs/flutter-apk/app-release.apk
+```
+
+기본으로 배포 서버를 보고, 다른 서버에 붙이려면 `--dart-define=API_BASE=...` 로 지정합니다.
+아이폰처럼 APK 를 깔 수 없는 기기에서는 같은 코드를 웹으로 빌드해 브라우저로 엽니다.
+화면 구성과 자세한 실행 방법은 [mobile/README.md](mobile/README.md) 에 있습니다.
 
 ## 테스트
 
