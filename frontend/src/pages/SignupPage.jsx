@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ON_PHONE } from '../components/device.js'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { accountApi } from '../api/client.js'
 import { NICKNAME_HINT, PASSWORD_HINT, nicknameError, passwordError } from '../auth/rules.js'
 import { useAuth } from '../auth/useAuth.js'
@@ -23,7 +23,6 @@ function validate({ email, password, passwordConfirm, nickname }) {
 
 export function SignupPage() {
   const { status, signup, login } = useAuth()
-  const navigate = useNavigate()
 
   // passwordConfirm 은 화면에서만 확인하고 서버로 보내지 않는다
   const [form, setForm] = useState({ email: '', password: '', passwordConfirm: '', nickname: '' })
@@ -35,8 +34,14 @@ export function SignupPage() {
   const [submitting, setSubmitting] = useState(false)
   // 인증한 번호로 이미 가입된 계정 (있으면 가입 대신 그 계정으로 로그인하도록 안내한다)
   const [existingAccount, setExistingAccount] = useState(null)
+  // 방금 가입을 마쳤는지. 로그인되는 순간 아래 줄이 홈으로 보내는데, 그때 환영 창을 띄우라고 함께 알린다
+  const [justJoined, setJustJoined] = useState(false)
 
-  if (status === 'authed') return <Navigate to="/" replace />
+  if (status === 'authed') {
+    if (!justJoined) return <Navigate to="/" replace />
+    // 폰이면 앱 화면(/app/)이 환영 창을 띄운다 (주소를 바꾸는 동안 아무것도 그리지 않는다)
+    return ON_PHONE ? null : <Navigate to="/" replace state={{ welcome: true }} />
+  }
 
   const onChange = (e) => {
     const { name, value } = e.target
@@ -90,10 +95,10 @@ export function SignupPage() {
     setSubmitting(true)
     try {
       await signup({ ...payload, phoneProof })
+      setJustJoined(true)
+      // 로그인되면 위의 줄이 환영 창과 함께 홈으로 보낸다. 폰이면 앱 화면으로 옮겨 앱이 띄운다
       await login({ email: payload.email, password: payload.password })
-      // 가입을 마쳤으면 환영 창을 띄운다. 폰이면 앱 화면(/app/)이 띄운다
       if (ON_PHONE) window.location.replace('/app/?welcome=1')
-      else navigate('/', { replace: true, state: { welcome: true } })
     } catch (err) {
       if (err.code === 'DUPLICATE_EMAIL') setErrors({ email: err.message })
       else if (err.code === 'DUPLICATE_NICKNAME') setErrors({ nickname: err.message })
