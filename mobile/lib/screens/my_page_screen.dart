@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/design.dart';
+import 'admin_screen.dart';
 import 'my_challenges_screen.dart';
 import 'notifications_screen.dart';
 import 'badges_screen.dart';
@@ -136,6 +137,9 @@ class MyPageScreen extends StatelessWidget {
           bordered: false,
           padding: EdgeInsets.zero,
           child: Column(children: [
+            if (admin)
+              _menu(Icons.admin_panel_settings, ColorTag.gold, '관리자 · 검토 · 신고 · 문의',
+                  () => open(const AdminScreen())),
             _menu(Icons.flag, ColorTag.coral, '내 챌린지', () => open(const MyChallengesScreen())),
             _menu(Icons.emoji_events, ColorTag.gold, '랭킹', () => open(const RankingScreen())),
             _menu(Icons.chat_bubble, ColorTag.mint, data.unread > 0 ? '메시지 · 새 소식 ${data.unread}' : '메시지',
