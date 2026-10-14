@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api_client.dart';
 import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
@@ -134,7 +135,18 @@ class ChallengeCard extends StatelessWidget {
         onBack?.call();
       },
       child: Row(children: [
-        CategoryIcon(c.category.name, title: c.title, subType: c.subTypeName),
+        // 대표 사진이 있으면 동그란 사진을, 없으면 종류 아이콘을 보여 준다
+        if (c.coverUrl != null)
+          ClipOval(
+            child: Image.network('$serverBase${c.coverUrl}',
+                width: 46,
+                height: 46,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) =>
+                    CategoryIcon(c.category.name, title: c.title, subType: c.subTypeName)),
+          )
+        else
+          CategoryIcon(c.category.name, title: c.title, subType: c.subTypeName),
         const SizedBox(width: 13),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

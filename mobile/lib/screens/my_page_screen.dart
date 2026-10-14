@@ -9,11 +9,13 @@ import '../widgets/async_view.dart';
 import '../widgets/design.dart';
 import 'my_challenges_screen.dart';
 import 'notifications_screen.dart';
+import 'badges_screen.dart';
 import 'follow_list_screen.dart';
 import 'messages_screen.dart';
 import 'ranking_screen.dart';
 import 'settings_screen.dart';
 import 'wallet_screen.dart';
+import 'weekly_report_screen.dart';
 
 /// 마이페이지 (시안): 프로필 → 포인트 → 메뉴(동그란 색 아이콘) → 안내 문구
 class MyPageScreen extends StatelessWidget {
@@ -138,6 +140,8 @@ class MyPageScreen extends StatelessWidget {
             _menu(Icons.emoji_events, ColorTag.gold, '랭킹', () => open(const RankingScreen())),
             _menu(Icons.chat_bubble, ColorTag.mint, data.unread > 0 ? '메시지 · 새 소식 ${data.unread}' : '메시지',
                 () => open(const MessagesScreen())),
+            _menu(Icons.military_tech, ColorTag.lav, '뱃지', () => open(const BadgesScreen())),
+            _menu(Icons.insights, ColorTag.coral, '주간 회고', () => open(const WeeklyReportScreen())),
             _menu(Icons.account_balance_wallet, ColorTag.gold, '포인트 지갑 · 거래 내역', () => open(const WalletScreen())),
             _menu(Icons.shopping_bag, ColorTag.mint, '포인트 상점', () => openWeb('/shop')),
             _menu(Icons.notifications, ColorTag.lav, '알림', () => open(const NotificationsScreen())),

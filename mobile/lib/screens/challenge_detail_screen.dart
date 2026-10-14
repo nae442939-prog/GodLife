@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api_client.dart';
 import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
+import 'challenge_chat_screen.dart';
 import 'verify_screen.dart';
 import 'profile_screen.dart';
 
-/// 챌린지 상세: 색 띠(아이콘) → 제목 · 설명 → 규칙 카드 → 공지 → 참가자 → 참여하기 / 참여 취소 / 인증하러 가기
+/// 챌린지 상세: 대표 사진(없으면 색 띠 · 아이콘) → 제목 · 설명 → 규칙 카드 → 공지 → 참가자
+/// → 오픈채팅(참가자만) · 참여하기 / 참여 취소 / 인증하러 가기
 class ChallengeDetailScreen extends StatefulWidget {
-  const ChallengeDetailScreen({super.key, required this.id});
+  const ChallengeDetailScreen({super.key, required this.id, this.inviteCode});
 
   final int id;
+
+  /// 초대 링크 코드로 들어온 경우 (메시지의 초대 카드). 비공개 챌린지도 이 코드로 보고 참여할 수 있다
+  final String? inviteCode;
 
   @override
   State<ChallengeDetailScreen> createState() => _ChallengeDetailScreenState();
@@ -25,8 +32,31 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
   bool _busy = false;
 
   Future<ChallengeDetail> _load() async {
-    final data = await context.read<AppState>().api.get('/api/challenges/${widget.id}');
+    final api = context.read<AppState>().api;
+    final code = widget.inviteCode;
+    final data = await api.get(code == null ? '/api/challenges/${widget.id}' : '/api/challenges/invite/$code');
     return ChallengeDetail.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// 참여 주소: 초대 코드로 들어왔으면 초대 링크로 참여한다
+  String get _joinPath => widget.inviteCode == null
+      ? '/api/challenges/${widget.id}/participants'
+      : '/api/challenges/invite/${widget.inviteCode}/participants';
+
+  /// 개설자: 대표 사진 올리기 · 바꾸기
+  Future<void> _changeCover() async {
+    final XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+    } catch (_) {
+      if (mounted) showMessage(context, '사진을 불러오지 못했어요.');
+      return;
+    }
+    if (picked == null || !mounted) return;
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    await _act(() => context.read<AppState>().api.upload('/api/challenges/${widget.id}/cover', bytes, 'cover.jpg'),
+        '대표 사진을 바꿨어요.');
   }
 
   Future<void> _join(ChallengeDetail c) async {
@@ -45,7 +75,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
       );
       if (ok != true) return;
     }
-    await _act(() => context.read<AppState>().api.post('/api/challenges/${c.id}/participants'), '참여했어요!');
+    await _act(() => context.read<AppState>().api.post(_joinPath), '참여했어요!');
   }
 
   Future<void> _leave(ChallengeDetail c) async {
@@ -79,30 +109,54 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
           return Column(children: [
             Expanded(
               child: ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 24), children: [
-                // 맨 위 색 띠: 챌린지 아이콘 + 상태
+                // 맨 위: 대표 사진(없으면 색 띠 + 아이콘) + 상태. 개설자에게는 사진 바꾸기 버튼
                 Container(
-                  height: 120,
+                  height: c.coverUrl == null ? 120 : 170,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(22)),
-                  child: Stack(children: [
-                    Center(
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: const BoxDecoration(color: Color(0xBFFFFFFF), shape: BoxShape.circle),
-                        child: Icon(icon, color: foreground, size: 32),
+                  child: Stack(fit: StackFit.expand, children: [
+                    if (c.coverUrl != null)
+                      Image.network('$serverBase${c.coverUrl}',
+                          fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox.shrink())
+                    else
+                      Center(
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: const BoxDecoration(color: Color(0xBFFFFFFF), shape: BoxShape.circle),
+                          child: Icon(icon, color: foreground, size: 32),
+                        ),
                       ),
-                    ),
                     Positioned(
                       left: 14,
                       top: 14,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                         decoration:
-                            BoxDecoration(color: const Color(0xBFFFFFFF), borderRadius: BorderRadius.circular(999)),
+                            BoxDecoration(color: const Color(0xE6FFFFFF), borderRadius: BorderRadius.circular(999)),
                         child: Text(_statusLabel(c.status),
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: foreground)),
                       ),
                     ),
+                    if (c.host)
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: GestureDetector(
+                          onTap: _busy ? null : _changeCover,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                            decoration: BoxDecoration(
+                                color: const Color(0xE6FFFFFF), borderRadius: BorderRadius.circular(999)),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Icon(Icons.photo_camera_outlined, size: 14, color: AppColors.text),
+                              const SizedBox(width: 5),
+                              Text(c.coverUrl == null ? '대표 사진 올리기' : '사진 바꾸기',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                            ]),
+                          ),
+                        ),
+                      ),
                   ]),
                 ),
                 const SizedBox(height: 18),
@@ -173,7 +227,30 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
               ),
               child: SafeArea(
                 top: false,
-                child: Padding(padding: const EdgeInsets.fromLTRB(20, 10, 20, 12), child: _action(c)),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+                  // 개설자 · 참가자에게는 오픈채팅 버튼이 왼쪽에 붙는다
+                  child: Row(children: [
+                    if (c.member) ...[
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 50),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          backgroundColor: AppColors.surface,
+                          side: const BorderSide(color: AppColors.cardBorder),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                        ),
+                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => ChallengeChatScreen(challengeId: c.id, title: c.title))),
+                        icon: const Icon(Icons.forum_outlined, size: 18, color: AppColors.text),
+                        label: const Text('오픈채팅',
+                            style: TextStyle(color: AppColors.text, fontWeight: FontWeight.w800)),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(child: _action(c)),
+                  ]),
+                ),
               ),
             ),
           ]);

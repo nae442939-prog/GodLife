@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_client.dart';
+import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
@@ -131,6 +132,65 @@ class _MessageRoomScreenState extends State<MessageRoomScreen> {
     }
   }
 
+  /// 대화 상대를 내 챌린지에 초대한다: 참여 중인 챌린지를 고르면 대화방에 초대 카드가 올라간다
+  Future<void> _invite() async {
+    final List<MyChallenge> mine;
+    try {
+      mine = ((await _api.get('/api/me/challenges')) as List)
+          .map((e) => MyChallenge.fromJson(e as Map<String, dynamic>))
+          .where((c) => c.joined || c.host)
+          .toList();
+    } catch (e) {
+      if (mounted) showMessage(context, '$e');
+      return;
+    }
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<MyChallenge>(
+      context: context,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+      builder: (context) => SafeArea(
+        child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(8, 18, 8, 12), children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(14, 0, 14, 8),
+            child: Text('초대할 챌린지', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+          ),
+          if (mine.isEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(14, 8, 14, 16),
+              child: Text('참여 중인 챌린지가 없어요. 챌린지에 참여하거나 만들면 초대할 수 있어요.',
+                  style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.6)),
+            ),
+          for (final c in mine)
+            ListTile(
+              title: Text(c.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+              subtitle: Text('${c.startDate} ~ ${c.endDate}',
+                  style: const TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.chevron_right, color: Color(0xFFC7C0B0), size: 20),
+              onTap: () => Navigator.pop(context, c),
+            ),
+        ]),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final sent = await _api.post('$_base/challenge-invite', body: {'challengeId': picked.id}) as Map<String, dynamic>;
+      if (!mounted) return;
+      setState(() {
+        if (!_messages.any((m) => m['id'] == sent['id'])) _messages = [..._messages, sent];
+      });
+      _toBottom();
+    } catch (e) {
+      if (mounted) showMessage(context, '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   /// 받은 메시지 요청 수락 · 거절. 거절하면 대화 목록으로 돌아간다
   Future<void> _respond(bool accept) async {
     setState(() => _busy = true);
@@ -177,6 +237,13 @@ class _MessageRoomScreenState extends State<MessageRoomScreen> {
                   Flexible(child: Text(partner['nickname'] as String, overflow: TextOverflow.ellipsis)),
                 ]),
               ),
+        actions: [
+          // 바로 대화하는 사이에게만 챌린지 초대를 보낼 수 있다 (웹과 같다)
+          if (room != null && room['direct'] == true && room['canSend'] == true)
+            IconButton(
+                tooltip: '챌린지 초대', onPressed: _busy ? null : _invite, icon: const Icon(Icons.flag_outlined)),
+          const SizedBox(width: 6),
+        ],
       ),
       body: SafeArea(
         child: room == null
@@ -355,14 +422,18 @@ class _MessageRoomScreenState extends State<MessageRoomScreen> {
         const SizedBox(height: 10),
         if (mine || open)
           OutlinedButton(
+            // 받은 초대는 초대 코드로 연다 (비공개 챌린지도 보고 참여할 수 있다)
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => ChallengeDetailScreen(id: (invite['challengeId'] as num).toInt()))),
+                builder: (_) => ChallengeDetailScreen(
+                    id: (invite['challengeId'] as num).toInt(),
+                    inviteCode: mine ? null : invite['inviteCode'] as String?))),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(38),
               side: const BorderSide(color: AppColors.text),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
             ),
-            child: const Text('챌린지 보기', style: TextStyle(color: AppColors.text, fontWeight: FontWeight.w800)),
+            child: Text(mine ? '챌린지 보기' : '보고 참여하기',
+                style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.w800)),
           )
         else
           const Text('모집이 끝난 챌린지예요',
