@@ -5,10 +5,12 @@ import com.godlife.backend.auth.dto.IssuedTokens;
 import com.godlife.backend.common.crypto.Hashing;
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.demo.MemberJoinedEvent;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.UserRepository;
 import com.godlife.backend.user.UserStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,7 @@ public class SocialLoginService {
     private final SocialAccountRepository socialAccountRepository;
     private final UserRepository userRepository;
     private final AuthService authService;
+    private final ApplicationEventPublisher events;
 
     /**
      * 같은 사용자가 두 탭에서 동시에 처음 로그인하면 유니크 제약(provider, provider_user_id)에 걸려 한쪽이 실패한다.
@@ -68,6 +71,8 @@ public class SocialLoginService {
         if (user == null) {
             String email = verifiedEmail != null ? verifiedEmail : virtualEmail(profile);
             user = userRepository.save(User.createSocial(email, availableNickname(profile.nickname())));
+            // 테스트 서버면 가입이 끝난 뒤 체험 데이터를 넣는다 (DemoStarterListener)
+            events.publishEvent(new MemberJoinedEvent(user.getId()));
         }
         socialAccountRepository.save(SocialAccount.link(user.getId(), profile.provider(), profile.providerUserId()));
         return user;
