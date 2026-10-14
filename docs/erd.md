@@ -142,6 +142,7 @@ erDiagram
         VARCHAR nickname UK
         VARCHAR profile_image_url
         VARCHAR bio
+        VARCHAR equipped_badge
         CHAR phone_hash UK
         VARCHAR phone_enc
         INT tier_id FK
@@ -229,6 +230,7 @@ erDiagram
 | `nickname` | `VARCHAR(30)` |  | UK |  |  |
 | `profile_image_url` | `VARCHAR(500)` | O |  |  |  |
 | `bio` | `VARCHAR(200)` | O |  |  | 자기소개 |
+| `equipped_badge` | `VARCHAR(30)` | O |  |  | 착용한 뱃지 코드 (이름 옆에 보여 준다. 없으면 NULL) |
 | `phone_hash` | `CHAR(64)` | O | UK |  | 휴대폰 번호 HMAC 해시(원문 미저장). UNIQUE = 계정당 1개 → 다중계정 베팅 악용 방지 |
 | `phone_enc` | `VARCHAR(100)` | O |  |  | 휴대폰 번호 암호화 값 (본인에게만 다시 보여 준다) |
 | `tier_id` | `INT` |  | FK | 1 | 신규 가입자는 최저 티어(id=1, BRONZE) |
@@ -347,6 +349,7 @@ erDiagram
         INT sub_type_id FK
         VARCHAR title
         TEXT description
+        VARCHAR cover_key
         VARCHAR notice
         DATETIME notice_updated_at
         ENUM mode
@@ -459,6 +462,7 @@ erDiagram
 | `sub_type_id` | `INT` | O | FK |  | 카테고리 세부 종류 (기타만, 고르지 않으면 NULL) |
 | `title` | `VARCHAR(100)` |  |  |  |  |
 | `description` | `TEXT` |  |  |  |  |
+| `cover_key` | `VARCHAR(255)` | O |  |  | 대표 사진 파일 키 (없으면 NULL) |
 | `notice` | `VARCHAR(300)` | O |  |  | 방장 공지. 채팅방 맨 위 고정 |
 | `notice_updated_at` | `DATETIME` | O |  |  |  |
 | `mode` | `ENUM('FREE','BET')` |  |  |  | FREE(무료) · BET(베팅) |
@@ -1486,7 +1490,7 @@ erDiagram
 |---|---|:---:|---|---|---|
 | `id` | `BIGINT` |  | PK |  |  |
 | `user_id` | `BIGINT` |  | FK |  |  |
-| `type` | `ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT','REPORT_ALERT', 'FOLLOW','MESSAGE_REQUEST','INQUIRY_ANSWER','VERIFY_REJECTED','ORDER','TIER','SEASON', 'WEEKLY_REPORT')` |  |  |  |  |
+| `type` | `ENUM('SETTLEMENT','VERIFY_REMINDER','COMMENT','REPORT_RESULT','REPORT_ALERT', 'FOLLOW','MESSAGE_REQUEST','INQUIRY_ANSWER','VERIFY_REJECTED','ORDER','TIER','SEASON', 'WEEKLY_REPORT','WELCOME')` |  |  |  |  |
 | `title` | `VARCHAR(100)` |  |  |  |  |
 | `body` | `VARCHAR(300)` |  |  |  |  |
 | `link` | `VARCHAR(200)` | O |  |  | 누르면 갈 화면 주소 |
