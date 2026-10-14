@@ -32,9 +32,10 @@ Future<void> checkNewBadges(BuildContext context) async {
   }
 }
 
-/// 회원가입(소셜 가입자는 휴대폰 인증)을 마쳤을 때 한 번 띄우는 환영 창.
-/// 주소의 ?welcome=1 은 새로 고쳐도 남아 있으므로, 회원마다 한 번만 띄우도록 기기에 적어 둔다
-Future<void> showWelcome(BuildContext context) async {
+/// 회원가입(소셜 가입자는 휴대폰 인증)을 마쳤을 때 한 번 띄우는 환영 창 (시안: 어두운 막 위에 상자 없이 떠 있는 민트 동그라미).
+/// 주소의 ?welcome=1 은 새로 고쳐도 남아 있으므로, 회원마다 한 번만 띄우도록 기기에 적어 둔다.
+/// [onBrowse] 를 주면 오른쪽 버튼이 '챌린지 둘러보기'(챌린지 탭으로), 없으면 '시작하기'(닫기만)
+Future<void> showWelcome(BuildContext context, {VoidCallback? onBrowse}) async {
   final user = context.read<AppState>().user;
   if (user == null) return;
   try {
@@ -46,28 +47,119 @@ Future<void> showWelcome(BuildContext context) async {
   }
   if (!context.mounted) return;
   final nickname = user.nickname;
-  await showDialog<void>(
+  await showGeneralDialog<void>(
     context: context,
-    builder: (context) => _Celebration(
-      art: const Text('🎉', style: TextStyle(fontSize: 54)),
-      eyebrow: '회원가입 완료',
-      title: '$nickname님, 가입을 축하해요!',
-      body: Column(children: [
-        const Text('갓생살기에 오신 걸 환영해요. 이렇게 시작해 보세요.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.muted, fontSize: 13, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-          decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12)),
-          child: const Text('1. 오늘 시작하는 챌린지에 참여해요\n2. 카메라로 인증 사진을 찍어 올려요\n3. 첫 인증에 성공하면 첫 뱃지를 받아요',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, height: 1.8)),
-        ),
-      ]),
-      actions: [FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('시작하기'))],
-    ),
+    barrierDismissible: true, // 어두운 막을 누르면 닫힌다
+    barrierLabel: '닫기',
+    barrierColor: const Color(0x9E14120E),
+    transitionDuration: const Duration(milliseconds: 180),
+    transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
+    pageBuilder: (context, _, _) => _WelcomeModal(nickname: nickname, onBrowse: onBrowse),
   );
+}
+
+const _welcomeSteps = ['오늘 시작하는 챌린지에 참여해요', '카메라로 인증 사진을 찍어 올려요', '첫 인증에 성공하면 첫 뱃지를 받아요'];
+
+/// 환영 창 내용: 민트 동그라미(체크) → 흰 제목 → 흐린 설명 → 번호 단계 → [닫기] [챌린지 둘러보기]
+class _WelcomeModal extends StatelessWidget {
+  const _WelcomeModal({required this.nickname, this.onBrowse});
+
+  final String nickname;
+  final VoidCallback? onBrowse;
+
+  @override
+  Widget build(BuildContext context) {
+    const white = Colors.white;
+    return Center(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 36),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 104,
+                height: 104,
+                margin: const EdgeInsets.only(bottom: 22),
+                decoration: const BoxDecoration(
+                  color: AppColors.mint,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Color(0x290F9C86), spreadRadius: 10),
+                    BoxShadow(color: Color(0x8C000000), blurRadius: 40, offset: Offset(0, 20), spreadRadius: -14),
+                  ],
+                ),
+                child: const Icon(Icons.check_rounded, color: white, size: 40),
+              ),
+              Text('$nickname님, 가입을 축하해요!',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: white, fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+              const SizedBox(height: 8),
+              const Text('갓생살기에 오신 걸 환영해요.\n이렇게 시작해 보세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0x9EFFFFFF), fontSize: 13, fontWeight: FontWeight.w600, height: 1.55)),
+              const SizedBox(height: 26),
+              for (final (i, step) in _welcomeSteps.indexed)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(4, 0, 4, i == _welcomeSteps.length - 1 ? 30 : 12),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(
+                      width: 18,
+                      height: 18,
+                      margin: const EdgeInsets.only(top: 1),
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(color: Color(0x24FFFFFF), shape: BoxShape.circle),
+                      child: Text('${i + 1}',
+                          style: const TextStyle(color: white, fontSize: 10.5, fontWeight: FontWeight.w800, height: 1)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(step,
+                          style: const TextStyle(
+                              color: Color(0xDBFFFFFF), fontSize: 13, fontWeight: FontWeight.w600, height: 1.4)),
+                    ),
+                  ]),
+                ),
+              Row(children: [
+                Expanded(child: _pill('닫기', const Color(0x1FFFFFFF), null, () => Navigator.of(context).pop())),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: _pill(onBrowse == null ? '시작하기' : '챌린지 둘러보기', AppColors.primary,
+                      const BoxShadow(color: Color(0x8CEE6A4D), blurRadius: 26, offset: Offset(0, 16), spreadRadius: -12),
+                      () {
+                    Navigator.of(context).pop();
+                    onBrowse?.call();
+                  }),
+                ),
+              ]),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(String label, Color color, BoxShadow? shadow, VoidCallback onTap) {
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(999), boxShadow: shadow == null ? null : [shadow]),
+      child: Material(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Text(label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w800, letterSpacing: -0.1)),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _BadgeDialog extends StatefulWidget {

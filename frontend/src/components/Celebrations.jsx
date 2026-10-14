@@ -123,33 +123,41 @@ export function BadgeWatcher() {
   )
 }
 
-/** 회원가입을 마치고 처음 홈에 왔을 때 한 번 띄우는 환영 창 */
+/** 회원가입을 마치고 처음 홈에 왔을 때 한 번 띄우는 환영 창 (시안: 어두운 막 위에 상자 없이 떠 있는 민트 동그라미) */
 export function WelcomePopup({ nickname, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return (
-    <div className="fl-back cele-back" onClick={onClose}>
-      <div
-        className="fl-pop cele-pop"
-        role="dialog"
-        aria-modal="true"
-        aria-label="회원가입을 축하해요"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="cele-burst is-welcome" aria-hidden="true">
-          🎉
+    // 어두운 막 자체를 눌렀을 때만 닫힌다 (글자 · 버튼 사이 빈 곳은 그대로)
+    <div className="wel-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="wel-modal" role="dialog" aria-modal="true" aria-labelledby="wel-title">
+        <div className="wel-badge" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24">
+            <path d="M5 12.5l4.5 4.5L19 7" stroke="#ffffff" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
-        <p className="cele-eyebrow">회원가입 완료</p>
-        <h2 className="cele-title">{nickname}님, 가입을 축하해요!</h2>
-        <p className="cele-desc">갓생살기에 오신 걸 환영해요. 이렇게 시작해 보세요.</p>
-        <ol className="cele-steps">
+        <h2 id="wel-title" className="wel-title">
+          {nickname}님, 가입을 축하해요!
+        </h2>
+        <p className="wel-desc">
+          갓생살기에 오신 걸 환영해요.
+          <br />
+          이렇게 시작해 보세요.
+        </p>
+        <ol className="wel-steps">
           <li>오늘 시작하는 챌린지에 참여해요</li>
           <li>카메라로 인증 사진을 찍어 올려요</li>
           <li>첫 인증에 성공하면 첫 뱃지를 받아요</li>
         </ol>
-        <div className="cele-actions">
-          <button type="button" className="btn btn-outline" onClick={onClose}>
+        <div className="wel-actions">
+          <button type="button" className="wel-btn wel-btn--ghost" onClick={onClose}>
             닫기
           </button>
-          <Link to="/challenges" className="btn btn-dark" onClick={onClose}>
+          <Link to="/challenges" className="wel-btn wel-btn--primary" onClick={onClose}>
             챌린지 둘러보기
           </Link>
         </div>

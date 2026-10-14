@@ -8129,7 +8129,140 @@ button.mp-bio {
 
 /* ---------- 팔로잉 · 팔로워 목록 창 ---------- */
 
-/* ---------- 축하 창 (회원가입 · 새 뱃지) ---------- */
+/* ---------- 회원가입 환영 창 (시안: 어두운 막 위에 상자 없이 떠 있는 민트 동그라미) ---------- */
+.wel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 36px;
+  background: rgba(20, 18, 14, 0.62);
+  animation: wel-fade 0.18s ease;
+}
+
+@keyframes wel-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.wel-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+}
+
+.wel-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  margin-bottom: 22px;
+  background: #0f9c86;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 10px rgba(15, 156, 134, 0.16),
+    0 20px 40px -14px rgba(0, 0, 0, 0.55);
+}
+
+.wel-title {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.wel-desc {
+  margin: 0 0 26px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.wel-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 30px;
+  padding: 0 4px;
+  list-style: none;
+  counter-reset: wel-step;
+}
+
+.wel-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.86);
+  text-align: left;
+  counter-increment: wel-step;
+}
+
+.wel-steps li::before {
+  content: counter(wel-step);
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+}
+
+.wel-actions {
+  display: flex;
+  gap: 9px;
+  width: 100%;
+}
+
+.wel-btn {
+  flex: 1;
+  padding: 14px 0;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  border-radius: 999px;
+}
+
+.wel-btn--ghost {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.wel-btn--primary {
+  background: #ee6a4d;
+  box-shadow: 0 16px 26px -12px rgba(238, 106, 77, 0.55);
+}
+
+.wel-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* ---------- 축하 창 (새 뱃지) ---------- */
 .cele-pop {
   max-width: 380px;
   padding: 28px 24px 22px;
@@ -8195,16 +8328,6 @@ button.mp-bio {
   margin: 4px 0 0;
   font-size: 0.88rem;
   color: var(--muted);
-}
-
-.cele-steps {
-  margin: 14px 0 0;
-  padding: 12px 14px 12px 32px;
-  font-size: 0.88rem;
-  line-height: 1.8;
-  text-align: left;
-  background: var(--surface-alt);
-  border-radius: 12px;
 }
 
 .cele-actions {
