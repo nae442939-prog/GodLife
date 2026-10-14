@@ -45,7 +45,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     try {
       await _api.put('/api/users/me/profile', body: {'nickname': nickname, 'bio': _bio.text.trim()});
       await _state.reloadUser();
-      if (mounted) showMessage(context, '프로필을 바꿨어요.');
+      if (mounted) showMessage(context, '프로필을 수정했어요.');
     } catch (e) {
       if (mounted) showMessage(context, '$e');
     } finally {
@@ -63,7 +63,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
     if (picked == null || !mounted) return;
     final bytes = await picked.readAsBytes();
-    await _photo(() => _api.upload('/api/users/me/profile-image', bytes, 'profile.jpg'), '프로필 사진을 바꿨어요.');
+    await _photo(() => _api.upload('/api/users/me/profile-image', bytes, 'profile.jpg'), '프로필 사진을 수정했어요.');
   }
 
   Future<void> _photo(Future<dynamic> Function() request, String done) async {
@@ -137,14 +137,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               ),
               const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                _small(_photoBusy ? '올리는 중…' : '사진 바꾸기', _photoBusy ? null : _changePhoto),
+                _small(_photoBusy ? '올리는 중…' : '프로필 사진 수정', _photoBusy ? null : _changePhoto),
                 if (image != null) ...[
                   const SizedBox(width: 8),
                   _small(
-                      '사진 빼기',
+                      '사진 삭제',
                       _photoBusy
                           ? null
-                          : () => _photo(() => _api.delete('/api/users/me/profile-image'), '프로필 사진을 뺐어요.')),
+                          : () => _photo(() => _api.delete('/api/users/me/profile-image'), '프로필 사진을 삭제했어요.')),
                 ],
               ]),
               const SizedBox(height: 6),
