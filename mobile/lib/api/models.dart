@@ -100,6 +100,7 @@ class ChallengeDetail extends Challenge {
         canLeave = j['canLeave'] as bool,
         joined = j['joined'] as bool,
         host = j['host'] as bool,
+        member = (j['member'] as bool?) ?? false,
         notice = j['notice'] as String?,
         participants = ((j['participants'] as List?) ?? [])
             .map((p) => Participant.fromJson(p as Map<String, dynamic>))
@@ -112,6 +113,9 @@ class ChallengeDetail extends Challenge {
   final bool canLeave;
   final bool joined;
   final bool host;
+
+  /// 개설자이거나 참여 중인 사람 (오픈채팅을 볼 수 있다)
+  final bool member;
   final String? notice;
   final List<Participant> participants;
 }
