@@ -96,7 +96,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 }
 
-/// 일기 한 개: 기분 · 쓴 시각 · 글 · 사진
+/// 일기 한 개 (목록): 기분 · 쓴 시각 · 글 앞부분(3줄) · 사진. 누르면 일기 전체를 연다
 class _DiaryCard extends StatefulWidget {
   const _DiaryCard(this.diary, {required this.highlighted});
 
@@ -130,6 +130,7 @@ class _DiaryCardState extends State<_DiaryCard> {
         bordered: false,
         radius: 18,
         padding: const EdgeInsets.all(14),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DiaryDetailScreen(d, photo: photo))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(
@@ -149,7 +150,10 @@ class _DiaryCardState extends State<_DiaryCard> {
           ]),
           if (content.trim().isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(content, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, height: 1.6)),
+            Text(content,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, height: 1.6)),
           ],
           if (photo != null) ...[
             const SizedBox(height: 10),
@@ -158,8 +162,79 @@ class _DiaryCardState extends State<_DiaryCard> {
               child: FutureBuilder<Uint8List>(
                 future: photo,
                 builder: (context, snap) => snap.hasData
-                    ? Image.memory(snap.data!, height: 180, width: double.infinity, fit: BoxFit.cover)
-                    : const SizedBox(height: 180, child: ColoredBox(color: AppColors.surfaceAlt)),
+                    ? Image.memory(snap.data!, height: 120, width: double.infinity, fit: BoxFit.cover)
+                    : const SizedBox(height: 120, child: ColoredBox(color: AppColors.surfaceAlt)),
+              ),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+/// 일기 한 개 전체: 날짜 · 기분 · 쓴 시각 · 글 전체 · 사진 (목록에서 누르면 연다)
+class DiaryDetailScreen extends StatelessWidget {
+  const DiaryDetailScreen(this.diary, {super.key, this.photo});
+
+  final Map<String, dynamic> diary;
+
+  /// 목록에서 받아 둔 사진 (다시 받지 않는다)
+  final Future<Uint8List>? photo;
+
+  @override
+  Widget build(BuildContext context) {
+    final mood = diary['mood'] as String?;
+    final content = (diary['content'] as String?) ?? '';
+    final written = DateTime.tryParse('${diary['createdAt']}');
+    final image = photo;
+    return Scaffold(
+      appBar: AppBar(title: Text(koreanDate(diary['date'] as String))),
+      body: SafeArea(
+        child: ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 32), children: [
+          Row(children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: ColorTag.gold.$1, shape: BoxShape.circle),
+              child: Icon(_moodIcons[mood] ?? Icons.edit_note, size: 22, color: ColorTag.gold.$2),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(mood == null ? '일기' : '기분 · ${_moodNames[mood]}',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                if (written != null) ...[
+                  const SizedBox(height: 2),
+                  Text('${written.month}월 ${written.day}일 ${two(written.hour)}:${two(written.minute)}에 씀',
+                      style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600)),
+                ],
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 18),
+          AppCard(
+            bordered: false,
+            radius: 18,
+            padding: const EdgeInsets.all(18),
+            child: SelectableText(
+              content.trim().isEmpty ? '(글 없이 기분 · 사진만 남긴 일기예요)' : content,
+              style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w500,
+                  height: 1.75,
+                  color: content.trim().isEmpty ? AppColors.muted : AppColors.text),
+            ),
+          ),
+          if (image != null) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: FutureBuilder<Uint8List>(
+                future: image,
+                builder: (context, snap) => snap.hasData
+                    ? Image.memory(snap.data!, width: double.infinity, fit: BoxFit.fitWidth)
+                    : const SizedBox(height: 220, child: ColoredBox(color: AppColors.surfaceAlt)),
               ),
             ),
           ],
