@@ -9,6 +9,7 @@ import {
   frequencyText,
   periodText,
   pointText,
+  shortDate,
   timeText,
   toIsoDate,
 } from './format.js'
@@ -322,6 +323,12 @@ function JoinAction({ challenge: c, authed, from, busy, joinLabel, onJoin, onLea
     return (
       <div className="joined">
         <p className="joined-badge">참여 중인 챌린지예요</p>
+        {daysBetween(toIsoDate(new Date()), c.startDate) > 0 && (
+          <p className="dt-note">
+            D-{daysBetween(toIsoDate(new Date()), c.startDate)} · {shortDate(c.startDate)} 시작 — 인증은 시작일부터 할 수
+            있어요.
+          </p>
+        )}
         {onLeave && c.canLeave ? (
           <button type="button" className="btn btn-outline btn-block dt-btn" onClick={onLeave} disabled={busy}>
             참여 취소

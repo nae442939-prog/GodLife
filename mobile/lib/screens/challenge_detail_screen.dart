@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/design.dart';
+import '../widgets/phone_verify_sheet.dart';
 import 'challenge_chat_screen.dart';
 import 'verify_screen.dart';
 import 'profile_screen.dart';
@@ -60,6 +61,10 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
   }
 
   Future<void> _join(ChallengeDetail c) async {
+    // 소셜 로그인으로 가입해 번호가 없으면 여기서 바로 인증하고 이어서 참여한다
+    if (context.read<AppState>().user?.phoneVerified != true) {
+      if (!await verifyPhone(context) || !mounted) return;
+    }
     if (!c.isFree) {
       final ok = await showDialog<bool>(
         context: context,

@@ -8,6 +8,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/badge_medal.dart';
 import '../widgets/design.dart';
+import '../widgets/phone_verify_sheet.dart';
 import 'admin_screen.dart';
 import 'my_challenges_screen.dart';
 import 'notifications_screen.dart';
@@ -147,8 +148,8 @@ class MyPageScreen extends StatelessWidget {
           AppCard(
             bordered: false,
             padding: const EdgeInsets.all(16),
-            onTap: () => open(const SettingsScreen()),
-            child: const Text('휴대폰 본인인증을 해야 챌린지에 참여할 수 있어요. 설정에서 인증해 주세요.',
+            onTap: () => verifyPhone(context),
+            child: const Text('휴대폰 본인인증을 해야 챌린지에 참여할 수 있어요. 여기를 눌러 인증해 주세요.',
                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.5)),
           ),
         ],
