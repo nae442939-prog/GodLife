@@ -228,6 +228,14 @@ class _ChallengeCreateScreenState extends State<ChallengeCreateScreen> {
                   ]),
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                child: Text(
+                    daysUntil(_iso(_start)) > 0
+                        ? '인증은 시작일(${koreanDate(_iso(_start))})부터 할 수 있어요. 오늘 바로 인증하려면 시작일을 오늘로 골라 주세요.'
+                        : '오늘 시작해서 오늘부터 바로 인증할 수 있어요.',
+                    style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600, height: 1.5)),
+              ),
               _label('대표 사진 (선택)'),
               GestureDetector(
                 onTap: _pickCover,

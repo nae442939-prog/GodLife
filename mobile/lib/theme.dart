@@ -101,3 +101,18 @@ String two(int n) => n.toString().padLeft(2, '0');
 
 /// 10.12 09:41
 String shortDateTime(DateTime t) => '${two(t.month)}.${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
+
+const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+
+/// '2026-10-16' → '10월 16일(목)'
+String koreanDate(String iso) {
+  final d = DateTime.parse(iso);
+  return '${d.month}월 ${d.day}일(${_weekdays[d.weekday - 1]})';
+}
+
+/// 오늘부터 그 날짜까지 남은 날 (오늘이면 0, 지났으면 음수)
+int daysUntil(String iso) {
+  final d = DateTime.parse(iso);
+  final now = DateTime.now();
+  return DateTime(d.year, d.month, d.day).difference(DateTime(now.year, now.month, now.day)).inDays;
+}

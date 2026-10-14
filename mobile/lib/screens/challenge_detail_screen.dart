@@ -75,7 +75,9 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
       );
       if (ok != true) return;
     }
-    await _act(() => context.read<AppState>().api.post(_joinPath), '참여했어요!');
+    final wait = daysUntil(c.startDate);
+    await _act(() => context.read<AppState>().api.post(_joinPath),
+        wait > 0 ? '참여했어요! ${koreanDate(c.startDate)}부터 인증할 수 있어요.' : '참여했어요! 오늘부터 바로 인증할 수 있어요.');
   }
 
   Future<void> _leave(ChallengeDetail c) async {
@@ -159,6 +161,27 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
                       ),
                   ]),
                 ),
+                // 시작 전: 언제 시작하는지, 그 전에는 인증이 안 된다는 것을 먼저 알려 준다
+                if (daysUntil(c.startDate) > 0) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    decoration: BoxDecoration(color: ColorTag.gold.$1, borderRadius: BorderRadius.circular(16)),
+                    child: Row(children: [
+                      Icon(Icons.event, size: 20, color: ColorTag.gold.$2),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('D-${daysUntil(c.startDate)} · ${koreanDate(c.startDate)} 시작',
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 2),
+                          const Text('인증은 시작하는 날부터 할 수 있어요. 그 전에는 참여만 해 두면 돼요.',
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF6B6558))),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 Row(children: [
                   ColorTag.of(c.subTypeName ?? c.category.name, (background, foreground)),

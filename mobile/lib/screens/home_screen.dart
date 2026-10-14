@@ -110,6 +110,15 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(width: cardWidth, child: _RecoCard(data.recruiting[i], reload: reload)),
               ),
             ),
+            // 처음 온 사람을 위한 사용법 (웹 홈의 '이렇게 진행돼요')
+            const SizedBox(height: 10),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text('이렇게 진행돼요', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+            ),
+            const SizedBox(height: 12),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: _Steps()),
+            const SizedBox(height: 22),
             // 이번 달 랭킹: 홈을 내리면 시상대가 바로 보인다 (전체 보기 → 랭킹 화면)
             const SizedBox(height: 10),
             Padding(
@@ -144,6 +153,58 @@ class _HomeData {
 
   final List<MyChallenge> mine;
   final List<Challenge> recruiting;
+}
+
+/// (제목, 설명, 색, 아이콘) — 웹 홈의 STEPS 와 같은 흐름
+const _steps = [
+  ('챌린지에 참여', '운동 · 공부 · 독서처럼 하고 싶은 습관을 골라 참여해요. 포인트를 걸지 않는 무료 챌린지도 있어요.', ColorTag.coral,
+      Icons.flag),
+  ('시작일부터 매일 사진 인증', '챌린지가 시작하는 날부터 카메라로 찍어 올려요. 직접 학습한 AI 가 챌린지와 맞는 사진인지 확인해요.',
+      ColorTag.gold, Icons.photo_camera),
+  ('인증한 만큼 돌려받아요', '건 포인트는 인증한 만큼 그대로 돌려받아요. 무료 챌린지는 기록과 뱃지가 쌓여요.', ColorTag.mint, Icons.savings),
+  ('보상은 포인트 상점에서', '인증하지 못한 몫은 성공한 참가자들에게 보상 포인트로 나눠져요. 보상 포인트는 포인트 상점에서 써요.', ColorTag.lav,
+      Icons.shopping_bag),
+];
+
+/// 사용법 4단계: 번호가 붙은 색 동그라미 + 제목 + 설명
+class _Steps extends StatelessWidget {
+  const _Steps();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      bordered: false,
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Column(children: [
+        for (final (i, (title, body, colors, icon)) in _steps.indexed)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              border: i == _steps.length - 1 ? null : const Border(bottom: BorderSide(color: Color(0xFFF5F2EA))),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(color: colors.$1, shape: BoxShape.circle),
+                child: Icon(icon, size: 18, color: colors.$2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('${i + 1}. $title', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text(body,
+                      style: const TextStyle(
+                          color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600, height: 1.5)),
+                ]),
+              ),
+            ]),
+          ),
+      ]),
+    );
+  }
 }
 
 /// 맨 위 소개 띠 (복숭아색 → 민트색으로 번지는 바탕)
