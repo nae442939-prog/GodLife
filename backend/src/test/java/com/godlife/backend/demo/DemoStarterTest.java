@@ -72,11 +72,17 @@ class DemoStarterTest {
         mvc.perform(get("/api/records/days/" + today).header("Authorization", token))
                 .andExpect(jsonPath("$.items[?(@.challengeId == " + starter + ")].result").value("PENDING"));
 
+        // 환영 알림 (누르면 체험 챌린지로)
+        assertThat(jdbc.queryForObject("SELECT link FROM notifications WHERE user_id = ? AND type = 'WELCOME'", String.class,
+                me.getId())).isEqualTo("/challenges/" + starter);
+
         // 다시 불러도 그대로
         assertThat(demoStarter.seed(me.getId())).isFalse();
         assertThat(count("SELECT COUNT(*) FROM challenges WHERE host_id = ? AND title = ?", me.getId(), DemoStarter.TITLE))
                 .isEqualTo(1);
         assertThat(demoStarter.membersWithoutStarter()).doesNotContain(me.getId()).contains(host.getId());
+        assertThat(count("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND type = 'WELCOME'", me.getId())).isEqualTo(1);
+        assertThat(demoStarter.membersWithoutWelcome()).doesNotContain(me.getId());
     }
 
     @Test

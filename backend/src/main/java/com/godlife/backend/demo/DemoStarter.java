@@ -1,6 +1,8 @@
 package com.godlife.backend.demo;
 
 import com.godlife.backend.challenge.InviteCodeGenerator;
+import com.godlife.backend.notification.Notification;
+import com.godlife.backend.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -14,10 +16,11 @@ import java.util.List;
 
 /**
  * 테스트 서버용 체험 데이터 (app.demo.starter-data=true 일 때만 DemoStarterListener 가 부른다).
- * 가입하자마자 써 볼 거리가 있도록 두 가지를 넣는다. 포인트는 건드리지 않는다 (무료 챌린지만).
+ * 가입하자마자 써 볼 거리가 있도록 넣는다. 포인트는 건드리지 않는다 (무료 챌린지만).
  * ① 아직 참여한 챌린지가 없으면: 오늘 시작하는 공개 무료 챌린지 3개에 참여 → 바로 인증해 볼 수 있다
  * ② 본인만 보는 '갓생 체험' 챌린지: 6일 전에 시작해 지난 기록(성공 5일 · 실패 1일)이 들어 있어 캘린더 · 갓생기록에
  *    표시가 찍히고, 오늘은 '오늘 아직'이라 아무 사진으로나 인증해 볼 수 있다 (종류가 '기타'라 AI 가 사진 종류를 보지 않는다)
+ * ③ 알림: '가입을 축하해요'(무엇을 넣어 두었는지, 누르면 체험 챌린지로). '오늘 인증하는 날이에요'는 리스너가 이어서 보낸다
  * 회원마다 한 번만 들어간다 (체험 챌린지가 이미 있으면 건너뛴다).
  */
 @Service
@@ -34,9 +37,11 @@ public class DemoStarter {
     private static final int STARTED_DAYS_AGO = 6;
     private static final int TOTAL_DAYS = 14;
     private static final int TODAY_JOINS = 3;
+    private static final String WELCOME_KEY = "welcome";
 
     private final NamedParameterJdbcTemplate jdbc;
     private final InviteCodeGenerator inviteCodeGenerator;
+    private final NotificationService notificationService;
     private final Clock clock;
 
     /** 체험 데이터를 아직 받지 않은 실제 회원 (더미 · 관리자 · 정지 · 탈퇴 제외) */
@@ -47,6 +52,15 @@ public class DemoStarter {
                   AND NOT EXISTS (SELECT 1 FROM challenges c WHERE c.host_id = u.id AND c.title = :title)
                 ORDER BY u.id
                 """, new MapSqlParameterSource("title", TITLE), Long.class);
+    }
+
+    /** 체험 데이터는 받았는데 환영 알림이 없는 회원 (환영 알림이 생기기 전에 받은 회원) */
+    public List<Long> membersWithoutWelcome() {
+        return jdbc.queryForList("""
+                SELECT c.host_id FROM challenges c
+                WHERE c.title = :title
+                  AND NOT EXISTS (SELECT 1 FROM notifications n WHERE n.user_id = c.host_id AND n.dedupe_key = :key)
+                """, new MapSqlParameterSource("title", TITLE).addValue("key", WELCOME_KEY), Long.class);
     }
 
     /** 한 회원에게 체험 데이터를 넣는다. 이미 받았으면 아무것도 하지 않는다. 넣었으면 true */
@@ -62,14 +76,31 @@ public class DemoStarter {
         }
         Long joined = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM challenge_participants WHERE user_id = :u", p, Long.class);
-        if (joined == null || joined == 0) {
-            joinTodayChallenges(p);
-        }
-        createStarterChallenge(p);
+        int joinedToday = joined == null || joined == 0 ? joinTodayChallenges(p) : 0;
+        long starterId = createStarterChallenge(p);
+        welcome(userId, starterId, joinedToday);
         return true;
     }
 
-    private void joinTodayChallenges(MapSqlParameterSource p) {
+    /** 이미 체험 데이터를 받은 회원에게 환영 알림만 (같은 회원에게 두 번 가지 않는다) */
+    @Transactional
+    public void welcome(Long userId) {
+        List<Long> starter = jdbc.queryForList("SELECT id FROM challenges WHERE host_id = :u AND title = :title",
+                new MapSqlParameterSource("u", userId).addValue("title", TITLE), Long.class);
+        if (!starter.isEmpty()) {
+            welcome(userId, starter.get(0), 0);
+        }
+    }
+
+    private void welcome(Long userId, long starterId, int joinedToday) {
+        String joinedText = joinedToday > 0 ? "오늘 시작하는 챌린지 " + joinedToday + "개에 참여해 두었고, " : "";
+        notificationService.notify(userId, Notification.Type.WELCOME, "가입을 축하해요! 체험 데이터를 준비했어요",
+                joinedText + "'갓생 체험' 챌린지에 지난 6일 기록을 넣어 두었어요. 갓생기록 달력에서 성공 · 실패를 눌러 보고, "
+                        + "오늘은 아무 사진으로나 인증해 보세요.",
+                "/challenges/" + starterId, WELCOME_KEY);
+    }
+
+    private int joinTodayChallenges(MapSqlParameterSource p) {
         List<Long> ids = jdbc.queryForList("""
                 SELECT id FROM challenges
                 WHERE mode = 'FREE' AND visibility = 'PUBLIC' AND status IN ('RECRUITING', 'ONGOING')
@@ -82,9 +113,10 @@ public class DemoStarter {
             jdbc.update("INSERT INTO challenge_participants (challenge_id, user_id, deposit_amount) VALUES (:c, :u, 0)", c);
             jdbc.update("UPDATE challenges SET participant_count = participant_count + 1 WHERE id = :c", c);
         }
+        return ids.size();
     }
 
-    private void createStarterChallenge(MapSqlParameterSource p) {
+    private long createStarterChallenge(MapSqlParameterSource p) {
         LocalDate today = (LocalDate) p.getValue("today");
         LocalDate start = today.minusDays(STARTED_DAYS_AGO);
         MapSqlParameterSource c = new MapSqlParameterSource(p.getValues())
@@ -131,6 +163,7 @@ public class DemoStarter {
                             SHA2(CONCAT('demo-starter-', :pid, '-', :day), 256), 'APPROVED')
                     """, new MapSqlParameterSource("pid", participantId).addValue("day", day).addValue("image", image));
         }
+        return challengeId;
     }
 
     private String inviteCode() {

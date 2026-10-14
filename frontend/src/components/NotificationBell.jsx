@@ -11,6 +11,7 @@ const TYPE_ICON = {
   INQUIRY_ANSWER: '📮',
   REPORT_ALERT: '🚨',
   WEEKLY_REPORT: '📊',
+  WELCOME: '🎉',
 }
 
 /**
