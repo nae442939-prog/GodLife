@@ -70,6 +70,11 @@ public final class RecordDtos {
     public record DayResponse(LocalDate date, List<DayItem> items, List<DiaryEntry> diaries, List<WeekDay> week) {
     }
 
+    /** 일기 목록 한 줄 (언제 무슨 일기를 썼는지): 일기의 날짜 · 글 · 기분 · 사진이 있는지 · 쓴 시각 */
+    public record DiaryListItem(Long id, LocalDate date, String content, String mood, boolean photo,
+                                LocalDateTime createdAt) {
+    }
+
     /** 새로 쓴 일기의 id */
     public record DiaryCreated(Long id) {
     }

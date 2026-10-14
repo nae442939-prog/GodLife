@@ -8,6 +8,7 @@ import com.godlife.backend.record.dto.RecordDtos.Day;
 import com.godlife.backend.record.dto.RecordDtos.DayItem;
 import com.godlife.backend.record.dto.RecordDtos.DayResponse;
 import com.godlife.backend.record.dto.RecordDtos.DiaryEntry;
+import com.godlife.backend.record.dto.RecordDtos.DiaryListItem;
 import com.godlife.backend.record.dto.RecordDtos.MonthResponse;
 import com.godlife.backend.record.dto.RecordDtos.Summary;
 import com.godlife.backend.record.dto.RecordDtos.WeekDay;
@@ -114,6 +115,18 @@ public class RecordService {
                         tags.getOrDefault(rs.getLong("id"), List.of()), rs.getString("photo_key") != null,
                         rs.getTimestamp("created_at").toLocalDateTime()));
         return new DayResponse(date, items, diaries, week(me, date));
+    }
+
+    /** 일기 목록: 내가 쓴 일기 전체를 최근 날짜부터 (같은 날은 쓴 순서). 많아도 최근 300개까지 */
+    @Transactional(readOnly = true)
+    public List<DiaryListItem> diaries(Long me) {
+        return jdbc.query("""
+                SELECT id, entry_date, content, mood, photo_key, created_at FROM diary_entries
+                WHERE user_id = :me ORDER BY entry_date DESC, id LIMIT 300
+                """, new MapSqlParameterSource("me", me),
+                (rs, i) -> new DiaryListItem(rs.getLong("id"), rs.getDate("entry_date").toLocalDate(),
+                        rs.getString("content"), rs.getString("mood"), rs.getString("photo_key") != null,
+                        rs.getTimestamp("created_at").toLocalDateTime()));
     }
 
     /** 날짜 · 챌린지별 결과 한 줄 (주간 회고 리포트가 쓴다) */

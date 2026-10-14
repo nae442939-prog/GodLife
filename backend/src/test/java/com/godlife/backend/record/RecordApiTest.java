@@ -188,6 +188,21 @@ class RecordApiTest {
                 .andExpect(jsonPath("$.week[6].mood").value("GREAT"));
         month(a, YearMonth.from(past), null).andExpect(jsonPath(day(past) + ".diary").value(true));
 
+        // 일기 목록: 최근 날짜부터, 같은 날은 쓴 순서. 남의 목록에는 없다
+        long todays = createDiary(a, today, "{\"content\":\"오늘 일기\",\"mood\":\"GOOD\"}");
+        mvc.perform(get("/api/records/diaries").header("Authorization", "Bearer " + a))
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].id").value(todays))
+                .andExpect(jsonPath("$[0].date").value(today.toString()))
+                .andExpect(jsonPath("$[0].mood").value("GOOD"))
+                .andExpect(jsonPath("$[1].id").value(first))
+                .andExpect(jsonPath("$[2].id").value(second))
+                .andExpect(jsonPath("$[2].date").value(past.toString()));
+        mvc.perform(get("/api/records/diaries").header("Authorization", "Bearer " + b))
+                .andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(delete("/api/records/diaries/" + todays).header("Authorization", "Bearer " + a))
+                .andExpect(status().isNoContent());
+
         // 다른 사람에게는 보이지 않고, 고치거나 지울 수도 없다
         mvc.perform(get("/api/records/days/" + past).header("Authorization", "Bearer " + b))
                 .andExpect(jsonPath("$.diaries.length()").value(0));

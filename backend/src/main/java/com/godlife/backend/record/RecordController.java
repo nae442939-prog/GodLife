@@ -3,6 +3,7 @@ package com.godlife.backend.record;
 import com.godlife.backend.auth.AuthUser;
 import com.godlife.backend.record.dto.RecordDtos.DayResponse;
 import com.godlife.backend.record.dto.RecordDtos.DiaryCreated;
+import com.godlife.backend.record.dto.RecordDtos.DiaryListItem;
 import com.godlife.backend.record.dto.RecordDtos.DiaryRequest;
 import com.godlife.backend.record.dto.RecordDtos.MonthResponse;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 /** 갓생기록 (로그인 회원, 본인 기록만): 캘린더 · 그날 결과 · 일기 */
 @RestController
@@ -53,6 +55,12 @@ public class RecordController {
     public DayResponse day(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                            @AuthenticationPrincipal AuthUser authUser) {
         return recordService.day(authUser.id(), date);
+    }
+
+    /** 일기 목록: 언제 무슨 일기를 썼는지 (최근 날짜부터) */
+    @GetMapping("/api/records/diaries")
+    public List<DiaryListItem> diaries(@AuthenticationPrincipal AuthUser authUser) {
+        return recordService.diaries(authUser.id());
     }
 
     /** 일기 새로 쓰기: 글 · 기분 · 태그한 챌린지 (하루에 여러 개 쓸 수 있다) */
