@@ -32,7 +32,8 @@ class _ChallengeCreateScreenState extends State<ChallengeCreateScreen> {
   String _mode = 'FREE';
   Category? _category;
   int? _subTypeId;
-  late DateTime _start = DateTime.now().add(const Duration(days: 1));
+  // 기본은 오늘 시작: 만들자마자 인증해 볼 수 있다 (내일로 두면 오늘은 인증이 막혀 고장으로 오해하기 쉽다)
+  late DateTime _start = DateTime.now();
   int _days = 14;
   int? _weekly; // null = 매일
   int _fee = 3000;

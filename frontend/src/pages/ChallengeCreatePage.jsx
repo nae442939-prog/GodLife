@@ -67,15 +67,16 @@ function ModeIcon({ mode }) {
 }
 
 function initialForm() {
-  const tomorrow = addDays(toIsoDate(new Date()), 1)
+  // 기본은 오늘 시작: 만들자마자 인증해 볼 수 있다 (내일로 두면 오늘은 인증이 막혀 고장으로 오해하기 쉽다)
+  const today = toIsoDate(new Date())
   return {
     categoryId: '',
     // 카테고리 세부 종류 ('기타'만 있다). '' = 그 밖 (AI 가 사진 종류를 확인하지 않는다)
     subTypeId: '',
     title: '',
     description: '',
-    startDate: tomorrow,
-    endDate: addDays(tomorrow, 13),
+    startDate: today,
+    endDate: addDays(today, 13),
     frequencyType: 'DAILY',
     weeklyCount: '3',
     maxParticipants: '20',
@@ -434,6 +435,11 @@ export function ChallengeCreatePage() {
                 min={toIsoDate(new Date())}
                 onChange={(iso) => setField('startDate', iso)}
                 error={errors.startDate}
+                hint={
+                  form.startDate && daysBetween(toIsoDate(new Date()), form.startDate) > 0
+                    ? '인증은 시작일부터 할 수 있어요. 오늘 바로 하려면 오늘로 골라 주세요.'
+                    : '오늘부터 바로 인증할 수 있어요.'
+                }
                 rangeStart={form.startDate}
                 rangeEnd={form.endDate}
               />

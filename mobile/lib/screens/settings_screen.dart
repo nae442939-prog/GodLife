@@ -6,6 +6,7 @@ import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/design.dart';
+import '../widgets/phone_verify_sheet.dart';
 import 'profile_edit_screen.dart';
 
 /// 설정: 프로필 · 알림 · 보안(자동 로그인 · 비밀번호) · 차단한 사용자 · 고객센터 · 탈퇴 · 로그아웃.
@@ -94,7 +95,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (socials.isNotEmpty) ...[_line(), _row(Icons.link, '연결된 소셜 계정', value: socials)],
                   _line(),
                   _row(Icons.phone_iphone, '휴대폰 번호',
-                      value: user.phoneVerified ? '인증 완료' : '인증 필요', onTap: () => openWeb('/settings?tab=info')),
+                      value: user.phoneVerified ? '인증 완료' : '인증 필요',
+                      onTap: user.phoneVerified ? null : () => verifyPhone(context)),
                 ]),
               ),
               _title('알림'),
