@@ -82,6 +82,60 @@ class _RecordsScreenState extends State<RecordsScreen> {
     if (mounted) setState(() => _version++);
   }
 
+  /// 달력의 날짜를 누르면: 그날 챌린지마다 성공 · 실패 · 오늘 아직(누르면 인증)과 일기를 아래에서 올라오는 창으로 보여 준다.
+  /// 창을 닫으면 그 날짜를 골라 둔다 (달력 아래에도 같은 내용이 보인다)
+  Future<void> _showDay(String date, String today) async {
+    final day = _api.get('/api/records/days/$date');
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        minChildSize: 0.35,
+        maxChildSize: 0.92,
+        builder: (sheetContext, scroll) => FutureBuilder<dynamic>(
+          future: day,
+          builder: (sheetContext, snap) {
+            if (snap.hasError) {
+              return Center(
+                  child: Text('${snap.error}', style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600)));
+            }
+            if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+            final data = snap.data as Map<String, dynamic>;
+            final items = (data['items'] as List).cast<Map<String, dynamic>>();
+            int count(String result) => items.where((i) => i['result'] == result).length;
+            return ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(20, 10, 20, 28), children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(99)),
+                ),
+              ),
+              // 한눈에: 성공 · 실패 · 오늘 아직 개수
+              if (items.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Wrap(spacing: 6, children: [
+                    if (count('DONE') > 0) ColorTag.of('성공 ${count('DONE')}', ColorTag.mint),
+                    if (count('FAIL') > 0) ColorTag.of('실패 ${count('FAIL')}', _failColors),
+                    if (count('PENDING') > 0) ColorTag.of('오늘 아직 ${count('PENDING')}', ColorTag.gold),
+                    if (count('REST') > 0) ColorTag.of('쉬는 날 ${count('REST')}', _restColors),
+                  ]),
+                ),
+              ..._dayDetail(date, data, today, onLeave: () => Navigator.of(sheetContext).pop()),
+            ]);
+          },
+        ),
+      ),
+    );
+    if (mounted) setState(() => _selected = date);
+  }
+
   Future<void> _deleteDiary(int id) async {
     try {
       await _api.delete('/api/records/diaries/$id');
@@ -197,7 +251,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
     final isToday = iso == today;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => setState(() => _selected = iso),
+      onTap: () => _showDay(iso, today),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 150),
@@ -231,7 +285,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
     );
   }
 
-  List<Widget> _dayDetail(String date, Map<String, dynamic> day, String today) {
+  /// [onLeave]: 창 안에서 그릴 때 다른 화면으로 넘어가기 전에 창을 닫는다
+  List<Widget> _dayDetail(String date, Map<String, dynamic> day, String today, {VoidCallback? onLeave}) {
     final items = (day['items'] as List).cast<Map<String, dynamic>>();
     final diaries = (day['diaries'] as List).cast<Map<String, dynamic>>();
     final parts = date.split('-');
@@ -258,7 +313,10 @@ class _RecordsScreenState extends State<RecordsScreen> {
             bordered: false,
             radius: 18,
             // '오늘 아직'이면 바로 인증하러 가고, 그 밖에는 챌린지 상세를 연다
-            onTap: () => _openItem(item),
+            onTap: () {
+              onLeave?.call();
+              _openItem(item);
+            },
             child: Row(children: [
               CategoryIcon(_categoryNames[(item['categoryId'] as num).toInt()] ?? '기타',
                   title: item['title'] as String, size: 42),
@@ -290,7 +348,10 @@ class _RecordsScreenState extends State<RecordsScreen> {
         ),
         if (canWrite)
           GestureDetector(
-            onTap: () => _write(date),
+            onTap: () {
+              onLeave?.call();
+              _write(date);
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(999)),
