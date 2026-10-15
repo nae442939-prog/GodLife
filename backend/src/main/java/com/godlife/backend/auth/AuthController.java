@@ -1,9 +1,11 @@
 package com.godlife.backend.auth;
 
+import com.godlife.backend.auth.dto.AppLoginRequest;
 import com.godlife.backend.auth.dto.IssuedTokens;
 import com.godlife.backend.auth.dto.LoginRequest;
 import com.godlife.backend.auth.dto.SignupRequest;
 import com.godlife.backend.auth.dto.TokenResponse;
+import com.godlife.backend.auth.social.AppLoginCodes;
 import com.godlife.backend.device.DeviceService;
 import com.godlife.backend.user.User;
 import com.godlife.backend.user.dto.UserResponse;
@@ -29,6 +31,7 @@ public class AuthController {
     private final AuthService authService;
     private final RefreshCookies refreshCookies;
     private final DeviceService deviceService;
+    private final AppLoginCodes appLoginCodes;
 
     @PostMapping("/signup")
     public ResponseEntity<UserResponse> signup(@Valid @RequestBody SignupRequest request, HttpServletRequest http) {
@@ -40,6 +43,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
         IssuedTokens tokens = authService.login(request);
+        recordDevice(tokens.userId(), http);
+        return withRefreshCookie(tokens);
+    }
+
+    /** 앱의 소셜 로그인: 브라우저에서 받은 1회용 코드를 토큰으로 바꾸고, 리프레시 쿠키는 앱의 쿠키 저장소로 간다 */
+    @PostMapping("/app-login")
+    public ResponseEntity<TokenResponse> appLogin(@Valid @RequestBody AppLoginRequest request, HttpServletRequest http) {
+        IssuedTokens tokens = appLoginCodes.consume(request.code());
         recordDevice(tokens.userId(), http);
         return withRefreshCookie(tokens);
     }

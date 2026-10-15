@@ -41,6 +41,8 @@ dependencies:
   image_picker: ^1.2.4
   provider: ^6.1.5+1
   url_launcher: ^6.3.3
+  # 소셜 로그인이 끝나면 브라우저가 앱 주소(godlife://login?code=...)로 돌려보낸다
+  app_links: ^6.3.0
   flutter_svg: ^2.3.0
   # 이미 축하한 뱃지를 기기에 적어 둔다 (새로 딴 뱃지만 '뱃지를 받았어요!')
   shared_preferences: ^2.5.3

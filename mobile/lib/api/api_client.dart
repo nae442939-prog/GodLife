@@ -95,6 +95,12 @@ class ApiClient {
     _accessToken = data['accessToken'] as String;
   }
 
+  /// 앱 소셜 로그인: 브라우저에서 받아 온 1회용 코드를 토큰으로 바꾼다 (리프레시 쿠키는 앱 쿠키 저장소로)
+  Future<void> appLogin(String code) async {
+    final data = await _send('POST', '/api/auth/app-login', body: {'code': code}, auth: false);
+    _accessToken = data['accessToken'] as String;
+  }
+
   Future<void> logout() async {
     try {
       await _send('POST', '/api/auth/logout', auth: false);

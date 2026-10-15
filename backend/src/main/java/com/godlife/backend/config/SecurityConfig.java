@@ -1,6 +1,7 @@
 package com.godlife.backend.config;
 
 import com.godlife.backend.auth.JwtAuthenticationFilter;
+import com.godlife.backend.auth.social.AppLoginMarkerFilter;
 import com.godlife.backend.auth.social.OAuth2LoginHandlers;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
@@ -81,7 +83,9 @@ public class SecurityConfig {
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) -> writeJson(res, 401, UNAUTHORIZED_BODY))
                         .accessDeniedHandler((req, res, ex) -> writeJson(res, 403, FORBIDDEN_BODY)))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // 앱에서 시작한 소셜 로그인 표시 (끝나면 앱 주소로 돌려보내려고)
+                .addFilterBefore(new AppLoginMarkerFilter(), OAuth2AuthorizationRequestRedirectFilter.class);
         return http.build();
     }
 

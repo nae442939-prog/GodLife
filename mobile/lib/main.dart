@@ -25,6 +25,7 @@ Future<void> main() async {
   final state = AppState(api);
   runApp(ChangeNotifierProvider.value(value: state, child: const GodLifeApp()));
   state.boot();
+  state.listenSocialLogin();
 }
 
 class GodLifeApp extends StatelessWidget {
