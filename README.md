@@ -8,6 +8,12 @@
 - 배포: https://mygodlife.duckdns.org (폰으로 열면 앱 화면, 컴퓨터로 열면 웹사이트. 시연할 때만 서버를 켭니다)
 - 안드로이드 APK: [Releases 의 app-latest](https://github.com/nae442939-prog/GodLife/releases/tag/app-latest) (main 에 합쳐질 때마다 GitHub Actions 가 다시 빌드)
 
+## 화면 (안드로이드 앱)
+
+| 로그인 | 홈 | 챌린지 | 갓생기록 | 마이페이지 |
+|---|---|---|---|---|
+| <img src="docs/screenshots/login.jpg" width="160" alt="로그인"> | <img src="docs/screenshots/home.jpg" width="160" alt="홈"> | <img src="docs/screenshots/challenges.jpg" width="160" alt="챌린지"> | <img src="docs/screenshots/record.jpg" width="160" alt="갓생기록"> | <img src="docs/screenshots/mypage.jpg" width="160" alt="마이페이지"> |
+
 ## 핵심 설계
 
 **직접 학습한 AI 로 인증 사진을 검증합니다.**
