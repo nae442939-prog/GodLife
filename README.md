@@ -11,9 +11,25 @@
 ## 핵심 설계
 
 **직접 학습한 AI 로 인증 사진을 검증합니다.**
-외부 AI API 를 부르지 않습니다. MobileNetV2 를 직접 모은 사진으로 전이학습(파인튜닝)해서, 따로 띄운 FastAPI 서버에서 추론합니다.
+외부 AI API 를 부르지 않습니다. ImageNet 으로 학습된 MobileNetV2 를 공개 데이터셋(Stanford 40 Actions)과 웹에서 모은 사진으로 전이학습(파인튜닝)해서, 따로 띄운 FastAPI 서버에서 추론합니다.
 사진이 챌린지 카테고리와 맞는지 판정하고, 이미지 임베딩의 유사도로 같은 사진 재사용을 잡아내며, 애매한 사진은 관리자 검토로 넘깁니다.
 사진 모양이 제각각인 '기타' 카테고리는 세부 종류(일찍 일어나기 · 산책 · 물 마시기 · 청소/정리 · 식물 가꾸기)로 나눠 학습해, 개설자가 고른 종류로 판정합니다.
+
+| 항목 | 내용 |
+|---|---|
+| 모델 | MobileNetV2 (ImageNet1K_V2) → 분류층만 학습 8 에폭 → 전체 미세조정 6 에폭 |
+| 라벨 (10개) | 운동 · 공부 · 독서 · 요리 + 기타 세부 5종 + 어디에도 안 맞는 사진(`other`) |
+| 데이터 | 사진 8,747장 (학습 7,003 / 검증 1,744) |
+| 검증 정확도 | **85.2%** (라벨별 혼동 행렬은 [metrics.json](ai-server/models/godlife-mobilenetv2.metrics.json)) |
+
+모델이 틀릴 수 있다는 전제로, 판정을 바로 확정하지 않고 확신도에 따라 세 갈래로 나눴습니다 ([AiVerifier.java](backend/src/main/java/com/godlife/backend/verification/ai/AiVerifier.java)).
+
+| 결과 | 조건 |
+|---|---|
+| 바로 통과 | 챌린지 카테고리와 같은 라벨, 확신도 60% 이상 |
+| 바로 거절 (다시 찍기) | 다른 라벨을 85% 이상으로 확신하거나, 챌린지 카테고리 점수가 30% 미만. 하루 5번을 넘으면 거절 대신 검토로 |
+| 관리자 검토 | 그 사이의 애매한 사진, 또는 예전 인증 사진과 임베딩 코사인 유사도 0.985 이상(같은 사진 재사용 의심) |
+| 건너뜀 | AI 서버가 꺼져 있으면 AI 없이 인증을 받음 (서비스가 AI 서버에 묶이지 않게) |
 
 **도박이 되지 않도록 닫힌 포인트 경제로 설계했습니다.**
 - 결과가 우연이 아니라 본인의 인증(노력)으로 정해집니다.
@@ -57,6 +73,16 @@
 | Mobile | Flutter (Dart) — 안드로이드 APK, 모바일 웹 빌드 |
 | Backend | Java 21 + Spring Boot 4 (Maven), Spring Security(JWT), JPA + JDBC, MySQL 8 |
 | AI 서버 | Python + FastAPI + PyTorch (MobileNetV2 전이학습 모델 서빙) |
+
+```mermaid
+flowchart LR
+  W[웹 · React] -->|HTTPS| N[nginx]
+  A[앱 · Flutter] -->|HTTPS| N
+  N -->|/api · /ws| B[Spring Boot]
+  B -->|JPA · JDBC| D[(MySQL)]
+  B -->|HTTP 사진 판정| F[FastAPI · MobileNetV2]
+  B -->|결제 · 취소 테스트 모드| T[토스페이먼츠]
+```
 
 AI 서버를 따로 둔 이유는 Java 에서 PyTorch 로 학습한 모델을 직접 돌릴 수 없기 때문입니다. 백엔드가 HTTP 로 호출하고, AI 서버가 꺼져 있으면 AI 판정만 건너뜁니다.
 
