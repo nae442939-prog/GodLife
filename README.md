@@ -10,9 +10,13 @@
 
 ## 화면 (안드로이드 앱)
 
-| 로그인 | 홈 | 챌린지 | 갓생기록 | 마이페이지 |
-|---|---|---|---|---|
-| <img src="docs/screenshots/login.jpg" width="160" alt="로그인"> | <img src="docs/screenshots/home.jpg" width="160" alt="홈"> | <img src="docs/screenshots/challenges.jpg" width="160" alt="챌린지"> | <img src="docs/screenshots/record.jpg" width="160" alt="갓생기록"> | <img src="docs/screenshots/mypage.jpg" width="160" alt="마이페이지"> |
+| 로그인 | 가입 축하 | 홈 | 챌린지 |
+|---|---|---|---|
+| <img src="docs/screenshots/login.jpg" width="180" alt="로그인"> | <img src="docs/screenshots/welcome.jpg" width="180" alt="가입 축하"> | <img src="docs/screenshots/home.jpg" width="180" alt="홈"> | <img src="docs/screenshots/challenges.jpg" width="180" alt="챌린지"> |
+
+| 커뮤니티 | 갓생기록 | 마이페이지 |
+|---|---|---|
+| <img src="docs/screenshots/community.jpg" width="180" alt="커뮤니티"> | <img src="docs/screenshots/record.jpg" width="180" alt="갓생기록"> | <img src="docs/screenshots/mypage.jpg" width="180" alt="마이페이지"> |
 
 ## 핵심 설계
 
