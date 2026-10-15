@@ -16,6 +16,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
@@ -29,6 +30,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -167,5 +171,79 @@ class SocialLoginTest {
         assertThat(response.getRedirectedUrl()).isEqualTo("http://localhost:5173/");
         assertThat(response.getHeader("Set-Cookie"))
                 .startsWith("refresh_token=").contains("HttpOnly").contains("SameSite=Strict");
+    }
+
+    // ---------- 안드로이드 앱 흐름 ----------
+
+    @Test
+    @DisplayName("앱에서 시작하면(?app=1) 인가 요청 세션에 표시가 남고, 웹에서 시작하면 남지 않는다")
+    void appMarkerOnAuthorization() throws Exception {
+        var app = mvc.perform(get("/oauth2/authorization/kakao").param("app", "1"))
+                .andExpect(status().is3xxRedirection()).andReturn().getRequest().getSession(false);
+        assertThat(app.getAttribute(AppLoginMarkerFilter.SESSION_KEY)).isEqualTo(Boolean.TRUE);
+
+        var web = mvc.perform(get("/oauth2/authorization/kakao"))
+                .andExpect(status().is3xxRedirection()).andReturn().getRequest().getSession(false);
+        assertThat(web == null ? null : web.getAttribute(AppLoginMarkerFilter.SESSION_KEY)).isNull();
+    }
+
+    @Test
+    @DisplayName("앱 로그인: 쿠키 대신 1회용 코드를 앱 주소로 넘기고, 코드는 한 번만 토큰으로 바뀐다")
+    void appLoginExchangesOneTimeCode() throws Exception {
+        var principal = new DefaultOAuth2User(AuthorityUtils.createAuthorityList("OAUTH2_USER"),
+                Map.of("sub", "g-300", "email", "app@gmail.com", "email_verified", true, "name", "앱유저"), "sub");
+        var auth = new OAuth2AuthenticationToken(principal, principal.getAuthorities(), "google");
+        var request = new MockHttpServletRequest();
+        var session = new MockHttpSession();
+        session.setAttribute(AppLoginMarkerFilter.SESSION_KEY, Boolean.TRUE);
+        request.setSession(session);
+        var response = new MockHttpServletResponse();
+
+        handlers.onAuthenticationSuccess(request, response, auth);
+
+        assertThat(response.getRedirectedUrl()).startsWith("godlife://login?code=");
+        assertThat(response.getHeader("Set-Cookie")).as("브라우저에는 쿠키를 남기지 않는다").isNull();
+        String code = response.getRedirectedUrl().substring("godlife://login?code=".length());
+
+        mvc.perform(post("/api/auth/app-login").contentType("application/json")
+                        .content("{\"code\":\"" + code + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.startsWith("refresh_token=")));
+
+        mvc.perform(post("/api/auth/app-login").contentType("application/json")
+                        .content("{\"code\":\"" + code + "\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("앱 로그인이 실패하면 앱 주소로 오류를 넘긴다")
+    void appLoginFailureGoesBackToApp() throws Exception {
+        var request = new MockHttpServletRequest();
+        var session = new MockHttpSession();
+        session.setAttribute(AppLoginMarkerFilter.SESSION_KEY, Boolean.TRUE);
+        request.setSession(session);
+        var response = new MockHttpServletResponse();
+
+        handlers.onAuthenticationFailure(request, response,
+                new org.springframework.security.oauth2.core.OAuth2AuthenticationException("access_denied"));
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("godlife://login?error=SOCIAL_LOGIN_FAILED");
+    }
+
+    @Test
+    @DisplayName("없는 코드나 지난 코드는 토큰으로 바뀌지 않는다")
+    void appLoginCodeExpires() {
+        var clock = new java.util.concurrent.atomic.AtomicReference<>(java.time.Instant.parse("2026-10-15T00:00:00Z"));
+        var codes = new AppLoginCodes(new java.time.Clock() {
+            @Override public java.time.ZoneId getZone() { return java.time.ZoneOffset.UTC; }
+            @Override public java.time.Clock withZone(java.time.ZoneId zone) { return this; }
+            @Override public java.time.Instant instant() { return clock.get(); }
+        });
+        String code = codes.issue(new com.godlife.backend.auth.dto.IssuedTokens("a", 60, "r", false, 1L));
+        clock.set(clock.get().plus(AppLoginCodes.TTL).plusSeconds(1));
+
+        assertThatThrownBy(() -> codes.consume(code)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> codes.consume("nope")).isInstanceOf(BusinessException.class);
     }
 }

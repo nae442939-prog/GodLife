@@ -72,7 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
       message: '$label 로그인',
       child: InkWell(
         customBorder: const CircleBorder(),
-        onTap: () => _openWeb('/oauth2/authorization/$provider'),
+        // 앱은 끝나고 앱으로 돌아오도록 app=1 을 붙인다 (서버가 쿠키 대신 1회용 코드를 godlife:// 로 넘긴다)
+        onTap: () => _openWeb('/oauth2/authorization/$provider${kIsWeb ? '' : '?app=1'}'),
         child: Container(
           width: 52,
           height: 52,
@@ -91,6 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 소셜 로그인이 실패해 앱으로 돌아왔을 때의 안내
+    final socialError = context.watch<AppState>().socialError;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -126,9 +129,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   onSubmitted: (_) => _submit(),
                   decoration: const InputDecoration(labelText: '비밀번호'),
                 ),
-                if (_error != null) ...[
+                if ((_error ?? socialError) != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                  Text((_error ?? socialError)!, style: const TextStyle(color: AppColors.danger)),
                 ],
                 const SizedBox(height: 20),
                 FilledButton(
