@@ -191,7 +191,7 @@ cd backend
 ```
 
 테스트는 개발 DB 가 아니라 `godlife_test` DB 를 씁니다. 같은 스키마(`01-schema.sql`)와 기준 데이터(`02-seed.sql`)를 넣어 두어야 합니다.
-백엔드 통합 테스트 221개, 앱 단위 테스트(`flutter test`)가 있습니다.
+백엔드 통합 테스트 225개, 앱 단위 테스트(`flutter test`)가 있습니다.
 
 ## 배포
 
