@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 
 import 'api/api_client.dart';
@@ -16,6 +19,11 @@ class AppState extends ChangeNotifier {
 
   bool get loggedIn => user != null;
 
+  /// 소셜 로그인이 실패해서 앱으로 돌아왔을 때 로그인 화면에 보여 줄 말
+  String? socialError;
+
+  StreamSubscription<Uri>? _links;
+
   Future<void> boot() async {
     try {
       await api.refresh();
@@ -25,6 +33,39 @@ class AppState extends ChangeNotifier {
     }
     booting = false;
     notifyListeners();
+  }
+
+  /// 안드로이드 앱: 소셜 로그인은 브라우저 탭에서 하고, 끝나면 godlife://login?code=... 로 앱이 다시 열린다
+  void listenSocialLogin() {
+    if (kIsWeb) return; // 모바일 웹은 같은 창에서 웹 로그인 흐름을 그대로 탄다
+    _links = AppLinks().uriLinkStream.listen((uri) {
+      if (uri.scheme == 'godlife' && uri.host == 'login') _finishSocialLogin(uri);
+    });
+  }
+
+  Future<void> _finishSocialLogin(Uri uri) async {
+    final code = uri.queryParameters['code'];
+    if (code == null || loggedIn) {
+      if (!loggedIn) {
+        socialError = '소셜 로그인에 실패했어요. 다시 시도해 주세요.';
+        notifyListeners();
+      }
+      return;
+    }
+    try {
+      await api.appLogin(code);
+      user = User.fromJson(await api.get('/api/users/me') as Map<String, dynamic>);
+      socialError = null;
+    } catch (_) {
+      socialError = '소셜 로그인에 실패했어요. 다시 시도해 주세요.';
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _links?.cancel();
+    super.dispose();
   }
 
   Future<void> login(String email, String password) async {

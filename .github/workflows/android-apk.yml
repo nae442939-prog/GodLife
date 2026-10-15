@@ -9,6 +9,11 @@ on:
     paths:
       - 'mobile/**'
       - '.github/workflows/android-apk.yml'
+  # PR 에서는 빌드 · 테스트만 해서 합치기 전에 깨지는지 본다 (Releases 는 건드리지 않는다)
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 
 permissions:
@@ -44,6 +49,7 @@ jobs:
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Releases 의 app-latest 에 올리기
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
