@@ -162,3 +162,60 @@ class ColorTag extends StatelessWidget {
     );
   }
 }
+
+/// 목록 위 알약 모양 검색창: 엔터(키보드 검색)로 [onSearch], 지우기(X)를 누르면 빈 검색어로 [onSearch]
+class SearchField extends StatefulWidget {
+  const SearchField({super.key, required this.hint, required this.onSearch});
+
+  final String hint;
+  final ValueChanged<String> onSearch;
+
+  @override
+  State<SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<SearchField> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pill = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(999),
+      borderSide: const BorderSide(color: AppColors.cardBorder),
+    );
+    return TextField(
+      controller: _controller,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (v) => widget.onSearch(v.trim()),
+      onChanged: (_) => setState(() {}), // 지우기 버튼을 보이거나 숨긴다
+      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: widget.hint,
+        hintStyle: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+        prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.muted),
+        suffixIcon: _controller.text.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close, size: 18, color: AppColors.muted),
+                onPressed: () {
+                  _controller.clear();
+                  setState(() {});
+                  widget.onSearch('');
+                },
+              ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 11),
+        border: pill,
+        enabledBorder: pill,
+        // 강조는 진한 갈색 (주황 남발 금지)
+        focusedBorder: pill.copyWith(borderSide: const BorderSide(color: AppColors.brown, width: 1.4)),
+      ),
+    );
+  }
+}
