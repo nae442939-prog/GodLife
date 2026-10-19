@@ -15,7 +15,6 @@ import 'notifications_screen.dart';
 import 'profile_edit_screen.dart';
 import 'badges_screen.dart';
 import 'follow_list_screen.dart';
-import 'messages_screen.dart';
 import 'ranking_screen.dart';
 import 'settings_screen.dart';
 import 'wallet_screen.dart';
@@ -41,9 +40,8 @@ class MyPageScreen extends StatelessWidget {
       load: () async {
         final wallet = Wallet.fromJson(await state.api.get('/api/wallet') as Map<String, dynamic>);
         final tier = admin ? null : await state.api.get('/api/users/me/tier') as Map<String, dynamic>;
-        // 팔로워 · 팔로잉 수는 내 공개 프로필에서, 메시지는 안 읽은 수 + 받은 요청 수
+        // 팔로워 · 팔로잉 수는 내 공개 프로필에서
         final profile = await state.api.get('/api/users/${user.id}/profile') as Map<String, dynamic>;
-        final dm = await state.api.get('/api/messages/unread-count') as Map<String, dynamic>;
         return _MyData(
           wallet,
           tier,
@@ -51,7 +49,6 @@ class MyPageScreen extends StatelessWidget {
           following: (profile['followingCount'] as num).toInt(),
           badges: ((profile['badges'] as List?) ?? []).cast<Map<String, dynamic>>(),
           equippedBadge: profile['equippedBadge'] as String?,
-          unread: ((dm['count'] as num?)?.toInt() ?? 0) + ((dm['requests'] as num?)?.toInt() ?? 0),
         );
       },
       builder: (context, data, reload) => ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 28), children: [
@@ -164,8 +161,6 @@ class MyPageScreen extends StatelessWidget {
                   () => open(const AdminScreen())),
             _menu(Icons.flag, ColorTag.coral, '내 챌린지', () => open(const MyChallengesScreen())),
             _menu(Icons.emoji_events, ColorTag.gold, '랭킹', () => open(const RankingScreen())),
-            _menu(Icons.chat_bubble, ColorTag.mint, data.unread > 0 ? '메시지 · 새 소식 ${data.unread}' : '메시지',
-                () => open(const MessagesScreen())),
             _menu(Icons.insights, ColorTag.coral, '주간 회고', () => open(const WeeklyReportScreen())),
             _menu(Icons.account_balance_wallet, ColorTag.gold, '포인트 지갑 · 거래 내역', () => open(const WalletScreen())),
             _menu(Icons.shopping_bag, ColorTag.mint, '포인트 상점', () => openWeb('/shop')),
@@ -252,8 +247,7 @@ class _MyData {
       {required this.followers,
       required this.following,
       required this.badges,
-      required this.equippedBadge,
-      required this.unread});
+      required this.equippedBadge});
 
   final Wallet wallet;
   final Map<String, dynamic>? tier;
@@ -265,9 +259,6 @@ class _MyData {
 
   /// 착용한 뱃지 코드 (없으면 null)
   final String? equippedBadge;
-
-  /// 안 읽은 메시지 수 + 받은 메시지 요청 수
-  final int unread;
 }
 
 /// 뱃지 줄 (웹 마이페이지와 같다): 미리보기 7개를 옆으로 넘겨 본다. 딴 것 먼저 또렷하게, 남는 자리는 아직인 것을 흐리게 + 따는 조건
