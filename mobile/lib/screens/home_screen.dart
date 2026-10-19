@@ -12,7 +12,7 @@ import 'challenge_detail_screen.dart';
 import 'ranking_screen.dart';
 import 'verify_screen.dart';
 
-/// 홈 (시안): 소개 띠 → 오늘 인증할 챌린지 → 모집 중인 챌린지
+/// 홈 (시안): 소개 띠 → 오늘 인증할 챌린지 → 포인트 상점 바로가기 → 모집 중인 챌린지
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.onBrowse, required this.onCommunity});
 
@@ -28,6 +28,8 @@ class HomeScreen extends StatelessWidget {
         final results = await Future.wait([
           state.api.get('/api/me/challenges'),
           state.api.get('/api/challenges?sort=popular'),
+          // 상점 바로가기에 보여 줄 보상 포인트 (못 받아도 홈은 그대로 뜬다)
+          state.api.get('/api/wallet').catchError((_) => null),
         ]);
         final mine = (results[0] as List).map((c) => MyChallenge.fromJson(c as Map<String, dynamic>)).toList();
         int order(MyChallenge c) => c.canVerify ? 0 : (c.joined ? 1 : 2);
@@ -38,6 +40,9 @@ class HomeScreen extends StatelessWidget {
               .map((c) => Challenge.fromJson(c as Map<String, dynamic>))
               .take(6)
               .toList(),
+          rewardBalance: results[2] == null
+              ? null
+              : Wallet.fromJson(results[2] as Map<String, dynamic>).rewardBalance,
         );
       },
       builder: (context, data, reload) {
@@ -80,7 +85,12 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                 child: _TodayItem(c, reload: reload),
               ),
-            const SizedBox(height: 12),
+            // 포인트 상점이 있는 줄 모르는 사람이 많아 홈에 바로가기를 둔다
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              child: _ShopBanner(rewardBalance: data.rewardBalance),
+            ),
+            const SizedBox(height: 22),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(children: [
@@ -149,10 +159,50 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _HomeData {
-  _HomeData({required this.mine, required this.recruiting});
+  _HomeData({required this.mine, required this.recruiting, required this.rewardBalance});
 
   final List<MyChallenge> mine;
   final List<Challenge> recruiting;
+  final int? rewardBalance;
+}
+
+/// 포인트 상점 바로가기: 보상 포인트를 어디에 쓰는지 홈에서 바로 보이게 한다 (상점 화면은 웹으로 연다)
+class _ShopBanner extends StatelessWidget {
+  const _ShopBanner({required this.rewardBalance});
+
+  final int? rewardBalance;
+
+  @override
+  Widget build(BuildContext context) {
+    final (background, foreground) = ColorTag.mint;
+    return AppCard(
+      bordered: false,
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(16, 15, 14, 15),
+      onTap: () => openWeb('/shop'),
+      child: Row(children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+          child: Icon(Icons.shopping_bag, size: 21, color: foreground),
+        ),
+        const SizedBox(width: 13),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('포인트 상점', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(
+                rewardBalance == null || rewardBalance == 0
+                    ? '챌린지에 성공해 모은 보상 포인트로 상품을 받아요'
+                    : '보상 포인트 ${points(rewardBalance!)}P로 상품을 받아 보세요',
+                style: const TextStyle(fontSize: 12, color: AppColors.muted, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+        const Icon(Icons.chevron_right, size: 20, color: Color(0xFFC7C0B0)),
+      ]),
+    );
+  }
 }
 
 /// (제목, 설명, 색, 아이콘) — 웹 홈의 STEPS 와 같은 흐름
