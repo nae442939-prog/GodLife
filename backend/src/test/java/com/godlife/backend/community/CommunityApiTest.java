@@ -160,7 +160,7 @@ class CommunityApiTest {
     }
 
     @Test
-    @DisplayName("댓글을 달면 글쓴이에게 알림이 가고, 내 댓글만 지울 수 있다")
+    @DisplayName("댓글을 달면 글쓴이에게 알림이 가고, 내 댓글만 고치고 지울 수 있다")
     void comments() throws Exception {
         long id = write(a, "QUESTION", word, "어떻게 찍어요?", null);
 
@@ -184,10 +184,20 @@ class CommunityApiTest {
         mvc.perform(delete(likeUrl).header("Authorization", "Bearer " + a))
                 .andExpect(jsonPath("$.liked").value(false)).andExpect(jsonPath("$.likeCount").value(0));
 
+        // 댓글 고치기: 쓴 사람만
+        String edited = "{\"content\":\"조금 멀리서 찍으세요\"}";
+        mvc.perform(put("/api/post-comments/" + comment).header("Authorization", "Bearer " + a)
+                .contentType(MediaType.APPLICATION_JSON).content(edited)).andExpect(status().isNotFound());
+        mvc.perform(put("/api/post-comments/" + comment).header("Authorization", "Bearer " + b)
+                .contentType(MediaType.APPLICATION_JSON).content(edited)).andExpect(status().isNoContent());
+        detail(a, id).andExpect(jsonPath("$.comments[0].content").value("조금 멀리서 찍으세요"));
+
         mvc.perform(delete("/api/post-comments/" + comment).header("Authorization", "Bearer " + a))
                 .andExpect(status().isNotFound());
         mvc.perform(delete("/api/post-comments/" + comment).header("Authorization", "Bearer " + b))
                 .andExpect(status().isNoContent());
+        mvc.perform(put("/api/post-comments/" + comment).header("Authorization", "Bearer " + b)
+                .contentType(MediaType.APPLICATION_JSON).content(edited)).andExpect(status().isNotFound());
         detail(a, id).andExpect(jsonPath("$.commentCount").value(0))
                 .andExpect(jsonPath("$.comments.length()").value(0));
     }

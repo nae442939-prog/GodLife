@@ -130,6 +130,14 @@ public class CommunityController {
                 .body(new Created(communityService.comment(authUser.id(), id, request.content(), request.parentId())));
     }
 
+    /** 내 댓글 고치기 (parentId 는 무시한다) */
+    @PutMapping("/api/post-comments/{id}")
+    public ResponseEntity<Void> updateComment(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser,
+                                              @Valid @RequestBody CommentRequest request) {
+        communityService.updateComment(authUser.id(), id, request.content());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/api/post-comments/{id}")
     public ResponseEntity<Void> deleteComment(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
         communityService.deleteComment(authUser.id(), id);
