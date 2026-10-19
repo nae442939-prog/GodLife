@@ -73,7 +73,7 @@ class PaymentConcurrencyTest {
     @DisplayName("같은 결제의 승인 요청이 동시에 8번 와도 PG 승인도 충전도 한 번만 된다")
     void confirmOnceUnderConcurrency() throws Exception {
         Long me = newUser();
-        ReadyResponse order = paymentService.ready(me, 10_000);
+        ReadyResponse order = paymentService.ready(me, 10_000, "TOSS");
 
         int ok = runAll(() -> paymentService.confirm(me, "pay-key", order.orderId(), 10_000));
 
@@ -116,7 +116,7 @@ class PaymentConcurrencyTest {
     // ---------- helpers ----------
 
     private void charge(Long userId, String paymentKey, long amount) {
-        ReadyResponse order = paymentService.ready(userId, amount);
+        ReadyResponse order = paymentService.ready(userId, amount, "TOSS");
         paymentService.confirm(userId, paymentKey, order.orderId(), amount);
     }
 

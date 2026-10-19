@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { paymentApi } from '../api/client.js'
 
 // 같은 주문의 승인 요청은 한 번만 보낸다. (개발 모드에서는 화면이 두 번 그려져 effect 가 두 번 돈다.
@@ -14,27 +14,35 @@ function approveOnce(orderId, request) {
 const p = (n) => `${n.toLocaleString()}P`
 
 /**
- * 토스 결제창에서 돌아오는 곳.
- * - /wallet/charge/success?paymentKey=&orderId=&amount=   결제 성공 → 서버에 승인 요청 → '결제 성공' 화면
+ * 결제창(토스 · 카카오페이)에서 돌아오는 곳.
+ * - /wallet/charge/success?paymentKey=&orderId=&amount=   토스 결제 성공 → 서버에 승인 요청 → '결제 성공' 화면
+ * - /wallet/charge/kakao/{orderId}/{amount}?pg_token=     카카오페이 결제 성공 → 서버에 승인 요청
  * - /wallet/charge/fail?code=&message=&orderId=           결제를 그만뒀거나 실패 → 주문을 닫는다
  * 승인되면 포인트가 충전되고, 얼마가 충전됐는지 · 지금 충전 포인트가 얼마인지 보여 준다.
  */
 export function PaymentReturnPage({ step }) {
   const [params] = useSearchParams()
+  const path = useParams()
   const failed = step === 'fail'
+  const kakao = step === 'kakao'
   const [error, setError] = useState(failed ? params.get('message') || '결제가 완료되지 않았어요.' : '')
   // 승인이 끝나면 충전된 지갑
   const [wallet, setWallet] = useState(null)
-  const amount = Number(params.get('amount'))
+  // 카카오페이는 주문 번호 · 금액이 경로에 온다 (금액은 보여 주기만 하고, 서버는 주문에 적힌 금액으로 승인한다)
+  const amount = Number(kakao ? path.amount : params.get('amount'))
 
   useEffect(() => {
-    const orderId = params.get('orderId')
+    const orderId = kakao ? path.orderId : params.get('orderId')
     if (failed) {
       if (orderId) paymentApi.fail(orderId).catch(() => {})
       return
     }
     let cancelled = false
-    approveOnce(orderId, () => paymentApi.confirm(params.get('paymentKey'), orderId, amount))
+    approveOnce(orderId, () =>
+      kakao
+        ? paymentApi.approveKakao(orderId, params.get('pg_token'))
+        : paymentApi.confirm(params.get('paymentKey'), orderId, amount),
+    )
       .then((w) => !cancelled && setWallet(w))
       .catch((err) => !cancelled && setError(err.message))
     return () => {

@@ -22,14 +22,23 @@ function loadTossSdk() {
   return tossSdk
 }
 
+const METHODS = [
+  { value: 'TOSS', label: '토스페이먼츠', key: 'tossEnabled' },
+  { value: 'KAKAOPAY', label: '카카오페이', key: 'kakaoPayEnabled' },
+]
+
+/** 휴대폰 브라우저면 카카오페이 모바일 결제창으로 */
+const isMobile = () => /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
+
 /**
- * 포인트 충전: 금액을 고르고 토스페이먼츠 결제창(테스트 모드)을 띄운다.
+ * 포인트 충전: 결제 수단 · 금액을 고르고 결제창(토스페이먼츠 · 카카오페이 테스트 모드)을 띄운다.
  * 서버가 주문을 먼저 만들고(금액을 적어 둠), 결제가 끝나면 PaymentReturnPage 가 승인을 요청한다.
- * 카드 정보는 토스 결제창에서만 입력한다. 실제 돈은 빠지지 않는다.
+ * 카드 정보는 PG 결제창에서만 입력한다. 실제 돈은 빠지지 않는다.
  */
 export function ChargeBox({ chargedToday, dailyLimit }) {
   const [config, setConfig] = useState(null)
   const [amount, setAmount] = useState(null)
+  const [method, setMethod] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -45,12 +54,20 @@ export function ChargeBox({ chargedToday, dailyLimit }) {
   }, [])
 
   const left = Math.max(0, dailyLimit - chargedToday)
+  const methods = config ? METHODS.filter((m) => config[m.key]) : []
+  // 고르지 않았으면 쓸 수 있는 첫 번째 수단
+  const chosen = method ?? methods[0]?.value
 
   async function pay() {
     setBusy(true)
     setError('')
     try {
-      const order = await paymentApi.ready(amount)
+      const order = await paymentApi.ready(amount, chosen)
+      if (order.provider === 'KAKAOPAY') {
+        // 카카오페이 결제창으로 이동한다. 끝나면 /wallet/charge/kakao/... 로 돌아온다
+        window.location.assign(isMobile() ? order.mobileRedirectUrl : order.redirectUrl)
+        return
+      }
       const TossPayments = await loadTossSdk()
       const payment = TossPayments(config.tossClientKey).payment({ customerKey: TossPayments.ANONYMOUS })
       try {
@@ -79,12 +96,28 @@ export function ChargeBox({ chargedToday, dailyLimit }) {
       <div className="wl-section-head">
         <h2>포인트 충전</h2>
         <span className="wl-sub">
-          토스페이먼츠 테스트 결제 · 오늘 {p(chargedToday)} / {p(dailyLimit)}
+          테스트 결제 · 오늘 {p(chargedToday)} / {p(dailyLimit)}
         </span>
       </div>
 
       {config && (
         <>
+          {methods.length > 1 && (
+            <div className="wl-charge wl-method" role="group" aria-label="결제 수단">
+              {methods.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  className={`wl-charge-btn${chosen === m.value ? ' is-active' : ''}`}
+                  aria-pressed={chosen === m.value}
+                  onClick={() => setMethod(m.value)}
+                  disabled={busy}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="wl-charge" role="group" aria-label="충전 금액">
             {config.amounts.map((a) => (
               <button
@@ -114,7 +147,7 @@ export function ChargeBox({ chargedToday, dailyLimit }) {
           </button>
           <p className="wl-help">
             {config.enabled
-              ? '테스트 결제라 실제 돈은 빠지지 않아요. 카드 정보는 토스페이먼츠 결제창에서만 입력하고 갓생살기에는 저장되지 않아요.'
+              ? '테스트 결제라 실제 돈은 빠지지 않아요. 카드 정보는 토스페이먼츠 · 카카오페이 결제창에서만 입력하고 갓생살기에는 저장되지 않아요.'
               : '결제 테스트 키가 아직 설정되지 않았어요. (backend/.env)'}
           </p>
         </>

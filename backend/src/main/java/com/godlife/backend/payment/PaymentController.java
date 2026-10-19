@@ -1,6 +1,7 @@
 package com.godlife.backend.payment;
 
 import com.godlife.backend.auth.AuthUser;
+import com.godlife.backend.payment.dto.PaymentDtos.KakaoApproveRequest;
 import com.godlife.backend.payment.dto.PaymentDtos.PaymentConfig;
 import com.godlife.backend.payment.dto.PaymentDtos.ReadyRequest;
 import com.godlife.backend.payment.dto.PaymentDtos.ReadyResponse;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 포인트 충전 결제 (토스페이먼츠 테스트 모드). 로그인 회원만. 환불(결제 취소)은 지갑 쪽 POST /api/wallet/refund 에 있다. */
+/** 포인트 충전 결제 (토스페이먼츠 · 카카오페이 테스트 모드). 로그인 회원만. 환불(결제 취소)은 지갑 쪽 POST /api/wallet/refund 에 있다. */
 @RestController
 @RequiredArgsConstructor
 public class PaymentController {
@@ -33,7 +34,14 @@ public class PaymentController {
     /** 결제 준비: 주문을 만들고 주문 번호를 돌려준다 */
     @PostMapping("/api/payments/ready")
     public ReadyResponse ready(@AuthenticationPrincipal AuthUser authUser, @Valid @RequestBody ReadyRequest request) {
-        return paymentService.ready(authUser.id(), request.amount());
+        return paymentService.ready(authUser.id(), request.amount(), request.provider());
+    }
+
+    /** 카카오페이 결제 승인 → 충전 */
+    @PostMapping("/api/payments/kakao/approve")
+    public WalletResponse approveKakao(@AuthenticationPrincipal AuthUser authUser,
+                                       @Valid @RequestBody KakaoApproveRequest request) {
+        return paymentService.approveKakao(authUser.id(), request.orderId(), request.pgToken());
     }
 
     /** 결제 승인 → 충전 */

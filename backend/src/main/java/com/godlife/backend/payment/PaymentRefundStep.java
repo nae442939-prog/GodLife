@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * 결제 한 건의 (부분) 취소 = 환불 한 걸음. 걸음마다 트랜잭션이 따로라, 여러 결제에 걸친 환불이 중간에 실패해도
- * 이미 토스에서 취소된 결제는 포인트 차감과 함께 그대로 남는다 (토스와 원장이 어긋나지 않는다).
+ * 이미 PG(토스 · 카카오페이)에서 취소된 결제는 포인트 차감과 함께 그대로 남는다 (PG 와 원장이 어긋나지 않는다).
  */
 @Component
 @RequiredArgsConstructor
@@ -22,6 +22,7 @@ public class PaymentRefundStep {
     private final NamedParameterJdbcTemplate jdbc;
     private final WalletService walletService;
     private final TossClient toss;
+    private final KakaoPayClient kakaoPay;
 
     /**
      * 결제 행 → 지갑 순서로 잠그고, 충전 포인트를 먼저 뺀 다음(아직 커밋 전) 토스 결제 취소를 부른다.
@@ -32,7 +33,7 @@ public class PaymentRefundStep {
     @Transactional
     public void cancelOne(Long userId, Long paymentId, long part, String ledgerKey, String pgKey) {
         Map<String, Object> row = jdbc.queryForList("""
-                SELECT payment_key, amount, canceled_amount, status FROM payments
+                SELECT provider, payment_key, amount, canceled_amount, status FROM payments
                 WHERE id = :id AND user_id = :user
                 FOR UPDATE
                 """, new MapSqlParameterSource("id", paymentId).addValue("user", userId)).stream()
@@ -46,7 +47,16 @@ public class PaymentRefundStep {
             throw new BusinessException(ErrorCode.REFUND_EXCEEDS_CHARGED,
                     "환불할 수 있는 금액이 바뀌었어요. 새로고침한 뒤 다시 시도해 주세요.");
         }
-        toss.cancel((String) row.get("payment_key"), part, "충전 포인트 환불", pgKey);
+        String paymentKey = (String) row.get("payment_key");
+        if (PaymentService.KAKAOPAY.equals(row.get("provider"))) {
+            // 카카오페이 취소에는 멱등 키가 없다: 앞선 시도가 카카오페이에서는 취소됐는데 응답을 못 받아 되돌려졌을 수 있어,
+            // 카카오페이에 적힌 취소 금액이 이미 이번 몫까지 채웠으면 다시 부르지 않는다
+            if (kakaoPay.canceledTotal(paymentKey) < canceled + part) {
+                kakaoPay.cancel(paymentKey, part);
+            }
+        } else {
+            toss.cancel(paymentKey, part, "충전 포인트 환불", pgKey);
+        }
         jdbc.update("UPDATE payments SET canceled_amount = :canceled, status = :status WHERE id = :id",
                 new MapSqlParameterSource("id", paymentId).addValue("canceled", canceled + part)
                         .addValue("status", canceled + part >= amount ? "CANCELED" : "PAID"));

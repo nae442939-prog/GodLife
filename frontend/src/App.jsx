@@ -103,6 +103,7 @@ export default function App() {
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/wallet/charge/success" element={<PaymentReturnPage step="success" />} />
           <Route path="/wallet/charge/fail" element={<PaymentReturnPage step="fail" />} />
+          <Route path="/wallet/charge/kakao/:orderId/:amount" element={<PaymentReturnPage step="kakao" />} />
           <Route path="/messages" element={<MessagesPage />} />
           <Route path="/messages/:userId" element={<MessageRoomPage />} />
           <Route path="/challenges/:id/chat" element={<ChallengeChatPage />} />

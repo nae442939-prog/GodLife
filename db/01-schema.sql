@@ -443,7 +443,7 @@ CREATE TABLE daily_settlements (
 CREATE TABLE payments (
   id             BIGINT       NOT NULL AUTO_INCREMENT,
   user_id        BIGINT       NOT NULL,
-  provider       ENUM('TOSS','KAKAOPAY') NOT NULL COMMENT '지금은 토스페이먼츠(TOSS)만 쓴다',
+  provider       ENUM('TOSS','KAKAOPAY') NOT NULL COMMENT '토스페이먼츠(TOSS) · 카카오페이(KAKAOPAY), 둘 다 테스트 모드',
   order_id       VARCHAR(64)  NOT NULL COMMENT '멱등키 역할. 같은 주문 재처리 방지',
   payment_key    VARCHAR(200) NULL COMMENT 'PG 결제키/토큰만 저장. 카드정보 컬럼 없음. 승인 전에는 NULL',
   amount         BIGINT       NOT NULL COMMENT '결제 금액(원)',

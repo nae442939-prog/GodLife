@@ -517,15 +517,18 @@ export const walletApi = {
   refund: (amount, requestKey) => apiFetch('/api/wallet/refund', { method: 'POST', body: { amount, requestKey } }),
 }
 
-// 포인트 충전 결제 (토스페이먼츠 테스트 모드). 카드 정보는 토스 결제창에서만 입력하고 우리 서버로 오지 않는다.
+// 포인트 충전 결제 (토스페이먼츠 · 카카오페이 테스트 모드). 카드 정보는 PG 결제창에서만 입력하고 우리 서버로 오지 않는다.
 export const paymentApi = {
-  // → { amounts: [1000, ...], enabled, tossClientKey }
+  // → { amounts: [1000, ...], enabled, tossEnabled, tossClientKey, kakaoPayEnabled }
   config: () => apiFetch('/api/payments/config'),
-  // 주문 만들기 → { orderId, amount, orderName }
-  ready: (amount) => apiFetch('/api/payments/ready', { method: 'POST', body: { amount } }),
-  // 승인 → 충전된 지갑. 같은 주문을 다시 보내도 한 번만 충전된다.
+  // 주문 만들기 (provider = TOSS | KAKAOPAY) → { orderId, amount, orderName, provider, redirectUrl, mobileRedirectUrl }
+  ready: (amount, provider = 'TOSS') => apiFetch('/api/payments/ready', { method: 'POST', body: { amount, provider } }),
+  // 토스 승인 → 충전된 지갑. 같은 주문을 다시 보내도 한 번만 충전된다.
   confirm: (paymentKey, orderId, amount) =>
     apiFetch('/api/payments/toss/confirm', { method: 'POST', body: { paymentKey, orderId, amount } }),
+  // 카카오페이 승인 (결제창이 돌려준 pg_token) → 충전된 지갑
+  approveKakao: (orderId, pgToken) =>
+    apiFetch('/api/payments/kakao/approve', { method: 'POST', body: { orderId, pgToken } }),
   // 결제를 그만뒀을 때 승인 전 주문을 닫는다
   fail: (orderId) => apiFetch(`/api/payments/${encodeURIComponent(orderId)}/fail`, { method: 'POST' }),
 }

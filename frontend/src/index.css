@@ -6119,6 +6119,11 @@ a.back-button:hover {
   gap: 10px;
 }
 
+/* 결제 수단 고르기: 금액 버튼과 같은 모양, 금액 줄 위에 */
+.wl-method {
+  margin-bottom: 10px;
+}
+
 .wl-charge-btn {
   flex: 1;
   padding: 14px 0;
