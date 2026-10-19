@@ -62,35 +62,55 @@ public class NotificationService {
      */
     @Transactional
     public int remindToday(LocalDate today) {
-        Long before = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) FROM notifications",
-                new MapSqlParameterSource(), Long.class);
-        int made = jdbc.update("""
-                INSERT IGNORE INTO notifications (user_id, type, title, body, link, dedupe_key)
+        return remind("""
                 SELECT p.user_id, 'VERIFY_REMINDER', '오늘 인증하는 날이에요!',
                        CONCAT('''', c.title, ''' 챌린지 인증을 잊지 마세요.'),
                        CONCAT('/challenges/', c.id),
                        CONCAT('verify:', c.id, ':', :today)
-                FROM challenge_participants p
-                  JOIN challenges c ON c.id = p.challenge_id
-                  JOIN users u ON u.id = p.user_id AND u.status = 'ACTIVE'
-                  LEFT JOIN notification_settings s ON s.user_id = p.user_id
-                WHERE p.status = 'ACTIVE' AND c.status IN ('RECRUITING', 'ONGOING')
-                  AND c.start_date <= :today AND c.end_date >= :today
-                  AND COALESCE(s.verify_reminder, TRUE)
-                  AND NOT EXISTS (SELECT 1 FROM verifications v
-                                  WHERE v.participant_id = p.id AND v.verify_date = :today)
-                  AND (c.frequency_type = 'DAILY'
-                       OR (SELECT COUNT(*) FROM verifications v
-                           WHERE v.participant_id = p.id AND v.status <> 'REJECTED'
-                             AND v.verify_date >= DATE_ADD(c.start_date,
-                                     INTERVAL FLOOR(DATEDIFF(:today, c.start_date) / 7) * 7 DAY)) < c.weekly_count)
-                """, new MapSqlParameterSource("today", today.toString()));
+                """ + DUE_TODAY, new MapSqlParameterSource("today", today.toString()), "verify:%:" + today);
+    }
+
+    /**
+     * 인증 마감 알림: 마감 {@value #DEADLINE_HOURS}시간 전부터 마감 전까지, 오늘 인증해야 하는데 아직 안 한 사람에게 챌린지마다 하나씩.
+     * 마감 = 인증 가능 시간대의 끝(verify_until), 시간대가 없으면 자정. 몇 분마다 불러도 하루에 한 번만 만들어진다.
+     */
+    @Transactional
+    public int remindDeadline(LocalDateTime now) {
+        LocalDate today = now.toLocalDate();
+        return remind("""
+                SELECT p.user_id, 'VERIFY_REMINDER', '인증 마감이 얼마 안 남았어요!',
+                       CONCAT('''', c.title, ''' 챌린지는 ',
+                              IF(c.verify_until IS NULL, '오늘 자정', TIME_FORMAT(c.verify_until, '%H:%i')),
+                              '까지 인증해야 해요. 아직 오늘 인증이 없어요.'),
+                       CONCAT('/challenges/', c.id),
+                       CONCAT('deadline:', c.id, ':', :today)
+                """ + DUE_TODAY + """
+                  AND CAST(:nowTime AS TIME) >= SUBTIME(COALESCE(c.verify_until, CAST('24:00:00' AS TIME)),
+                                                        CAST(:before AS TIME))
+                  AND (c.verify_until IS NULL OR CAST(:nowTime AS TIME) < c.verify_until)
+                """, new MapSqlParameterSource("today", today.toString())
+                .addValue("nowTime", now.toLocalTime().withNano(0).toString())
+                .addValue("before", "%02d:00:00".formatted(DEADLINE_HOURS)), "deadline:%:" + today);
+    }
+
+    /** 인증을 올렸으니 그날 그 챌린지의 인증 알림(오늘 · 마감) 둘 다 읽음으로 */
+    @Transactional
+    public void resolveVerified(Long userId, Long challengeId, LocalDate date) {
+        resolve(userId, "verify:" + challengeId + ":" + date);
+        resolve(userId, "deadline:" + challengeId + ":" + date);
+    }
+
+    /** 인증 알림을 한꺼번에 넣고, 새로 생긴 줄만 푸시로도 보낸다 (어떤 줄이 새로 생겼는지는 id 로 가린다) */
+    private int remind(String select, MapSqlParameterSource params, String keyPattern) {
+        Long before = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) FROM notifications",
+                new MapSqlParameterSource(), Long.class);
+        int made = jdbc.update("INSERT IGNORE INTO notifications (user_id, type, title, body, link, dedupe_key)\n"
+                + select, params);
         if (made > 0) {
-            // 방금 만든 인증 알림을 푸시로도 보낸다 (한꺼번에 넣어서, 어떤 줄이 새로 생겼는지는 id 로 가린다)
             jdbc.query("""
                     SELECT user_id, title, body, link FROM notifications
                     WHERE id > :before AND type = 'VERIFY_REMINDER' AND dedupe_key LIKE :key
-                    """, new MapSqlParameterSource("before", before).addValue("key", "verify:%:" + today),
+                    """, new MapSqlParameterSource("before", before).addValue("key", keyPattern),
                     rs -> {
                         events.publishEvent(new NotificationPushEvent(rs.getLong("user_id"), rs.getString("title"),
                                 rs.getString("body"), rs.getString("link")));
@@ -98,6 +118,30 @@ public class NotificationService {
         }
         return made;
     }
+
+    /** 마감 몇 시간 전부터 알릴지 */
+    static final int DEADLINE_HOURS = 2;
+
+    /**
+     * 오늘 인증해야 하는데 아직 안 한 참가자 (:today). 인증 알림 SELECT 뒤에 붙인다.
+     * 주 N회 챌린지는 이번 주 횟수를 이미 채운 사람을 뺀다.
+     */
+    private static final String DUE_TODAY = """
+            FROM challenge_participants p
+              JOIN challenges c ON c.id = p.challenge_id
+              JOIN users u ON u.id = p.user_id AND u.status = 'ACTIVE'
+              LEFT JOIN notification_settings s ON s.user_id = p.user_id
+            WHERE p.status = 'ACTIVE' AND c.status IN ('RECRUITING', 'ONGOING')
+              AND c.start_date <= :today AND c.end_date >= :today
+              AND COALESCE(s.verify_reminder, TRUE)
+              AND NOT EXISTS (SELECT 1 FROM verifications v
+                              WHERE v.participant_id = p.id AND v.verify_date = :today)
+              AND (c.frequency_type = 'DAILY'
+                   OR (SELECT COUNT(*) FROM verifications v
+                       WHERE v.participant_id = p.id AND v.status <> 'REJECTED'
+                         AND v.verify_date >= DATE_ADD(c.start_date,
+                                 INTERVAL FLOOR(DATEDIFF(:today, c.start_date) / 7) * 7 DAY)) < c.weekly_count)
+            """;
 
     /** 할 일을 끝낸 알림은 읽음으로 바꾼다 (오늘 인증을 올리면 그 챌린지의 인증 알림이 사라지게) */
     @Transactional

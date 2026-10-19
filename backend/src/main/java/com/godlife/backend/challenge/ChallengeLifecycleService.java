@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
 /**
@@ -53,6 +54,19 @@ public class ChallengeLifecycleService {
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void midnight() {
         daily(LocalDate.now(clock));
+    }
+
+    /** 인증 마감 알림: 10분마다 마감이 2시간 안으로 다가온 챌린지를 찾는다 (같은 날 같은 챌린지는 한 번만) */
+    @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Seoul")
+    public void deadlineReminder() {
+        try {
+            int made = notificationService.remindDeadline(LocalDateTime.now(clock));
+            if (made > 0) {
+                log.info("인증 마감 알림 {}건", made);
+            }
+        } catch (RuntimeException e) {
+            log.error("인증 마감 알림 만들기 실패", e);
+        }
     }
 
     @EventListener(ApplicationReadyEvent.class)

@@ -108,7 +108,7 @@ public class VerificationService {
         boolean verifiedYesterday = verificationRepository.existsByParticipantIdAndVerifyDateAndStatusNot(
                 participant.getId(), now.toLocalDate().minusDays(1), VerificationStatus.REJECTED);
         participant.recordVerification(verifiedYesterday);
-        notificationService.resolve(userId, "verify:" + challengeId + ":" + now.toLocalDate());
+        notificationService.resolveVerified(userId, challengeId, now.toLocalDate());
         // 인증 성공으로 점수가 올랐으면 칭호를 올린다
         tierService.refresh(userId);
 
