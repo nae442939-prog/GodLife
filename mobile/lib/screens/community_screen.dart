@@ -10,7 +10,7 @@ import '../widgets/design.dart';
 import 'post_detail_screen.dart';
 import 'post_write_screen.dart';
 
-/// 커뮤니티: 말머리로 거르는 글 목록 + 글쓰기
+/// 커뮤니티: 제목 · 내용 검색 + 말머리로 거르는 글 목록 + 글쓰기
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
 
@@ -21,10 +21,15 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   String? _topic; // null = 전체
   String _sort = 'latest';
+  String _q = ''; // 제목 · 내용 검색어
   int _version = 0; // 글을 쓰고 돌아오면 목록을 새로 불러온다
 
   Future<List<Post>> _load() async {
-    final params = ['sort=$_sort', if (_topic != null) 'topic=$_topic'];
+    final params = [
+      'sort=$_sort',
+      if (_topic != null) 'topic=$_topic',
+      if (_q.isNotEmpty) 'q=${Uri.encodeQueryComponent(_q)}',
+    ];
     final data = await context.read<AppState>().api.get('/api/posts?${params.join('&')}');
     return ((data as Map)['items'] as List).map((p) => Post.fromJson(p as Map<String, dynamic>)).toList();
   }
@@ -40,6 +45,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Stack(children: [
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: SearchField(hint: '제목이나 내용으로 검색', onSearch: (q) => setState(() => _q = q)),
+        ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -61,13 +70,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
         Expanded(
           child: AsyncView<List<Post>>(
             // 거르는 조건이 바뀌면 새로 불러온다
-            key: ValueKey('$_topic/$_sort/$_version'),
+            key: ValueKey('$_topic/$_sort/$_q/$_version'),
             load: _load,
             builder: (context, posts, reload) {
               if (posts.isEmpty) {
-                return ListView(children: const [
-                  SizedBox(height: 120),
-                  Center(child: Text('아직 글이 없어요. 첫 글을 남겨 보세요.', style: TextStyle(color: AppColors.muted))),
+                return ListView(children: [
+                  const SizedBox(height: 120),
+                  Center(
+                      child: Text(_q.isEmpty ? '아직 글이 없어요. 첫 글을 남겨 보세요.' : "'$_q' 검색 결과가 없어요.",
+                          style: const TextStyle(color: AppColors.muted))),
                 ]);
               }
               return ListView.separated(

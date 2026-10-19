@@ -11,7 +11,7 @@ import '../widgets/design.dart';
 import 'challenge_create_screen.dart';
 import 'challenge_detail_screen.dart';
 
-/// 모집 중인 챌린지 둘러보기 (종류 · 카테고리로 거르기) + 챌린지 만들기
+/// 모집 중인 챌린지 둘러보기 (제목 검색 · 종류 · 카테고리로 거르기) + 챌린지 만들기
 class ChallengeListScreen extends StatefulWidget {
   const ChallengeListScreen({super.key});
 
@@ -22,6 +22,7 @@ class ChallengeListScreen extends StatefulWidget {
 class _ChallengeListScreenState extends State<ChallengeListScreen> {
   String? _mode; // null = 전체, FREE, BET
   int? _categoryId;
+  String _q = ''; // 제목 검색어
   int _version = 0; // 챌린지를 만들고 돌아오면 목록을 새로 불러온다
   List<Category> _categories = [];
 
@@ -46,6 +47,7 @@ class _ChallengeListScreenState extends State<ChallengeListScreen> {
     final params = <String>[
       if (_mode != null) 'mode=$_mode',
       if (_categoryId != null) 'categoryId=$_categoryId',
+      if (_q.isNotEmpty) 'q=${Uri.encodeQueryComponent(_q)}',
     ];
     final data = await context.read<AppState>().api.get('/api/challenges${params.isEmpty ? '' : '?${params.join('&')}'}');
     return ((data as Map)['items'] as List).map((c) => Challenge.fromJson(c as Map<String, dynamic>)).toList();
@@ -64,6 +66,10 @@ class _ChallengeListScreenState extends State<ChallengeListScreen> {
   Widget build(BuildContext context) {
     return Stack(children: [
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: SearchField(hint: '챌린지 제목으로 검색', onSearch: (q) => setState(() => _q = q)),
+        ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -82,13 +88,15 @@ class _ChallengeListScreenState extends State<ChallengeListScreen> {
         Expanded(
           child: AsyncView<List<Challenge>>(
             // 거르는 조건이 바뀌면 새로 불러온다
-            key: ValueKey('$_mode/$_categoryId/$_version'),
+            key: ValueKey('$_mode/$_categoryId/$_q/$_version'),
             load: _load,
             builder: (context, items, reload) {
               if (items.isEmpty) {
-                return ListView(children: const [
-                  SizedBox(height: 120),
-                  Center(child: Text('조건에 맞는 챌린지가 없어요.', style: TextStyle(color: AppColors.muted))),
+                return ListView(children: [
+                  const SizedBox(height: 120),
+                  Center(
+                      child: Text(_q.isEmpty ? '조건에 맞는 챌린지가 없어요.' : "'$_q' 검색 결과가 없어요.",
+                          style: const TextStyle(color: AppColors.muted))),
                 ]);
               }
               return ListView.separated(
