@@ -6,9 +6,11 @@ import '../api/models.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
+import 'post_write_screen.dart';
 import 'profile_screen.dart';
 
 /// 커뮤니티 글 상세: 본문 · 사진 · 좋아요 · 댓글(답글은 한 단계 들여 쓴다) · 댓글 쓰기
+/// 내 글은 ⋮ 에서 고치기 · 지우기, 내 댓글도 ⋮ 에서 고치기 · 지우기
 class PostDetailScreen extends StatefulWidget {
   const PostDetailScreen({super.key, required this.id});
 
@@ -86,6 +88,77 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
+  Future<void> _edit(PostDetail p) async {
+    final saved =
+        await Navigator.of(context).push<int>(MaterialPageRoute(builder: (_) => PostWriteScreen(editing: p)));
+    if (saved == null || !mounted) return;
+    showMessage(context, '글을 고쳤어요.');
+    await _view.currentState?.reload();
+  }
+
+  Future<void> _editComment(PostComment c) async {
+    final controller = TextEditingController(text: c.content);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('댓글 고치기'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          minLines: 1,
+          maxLines: 5,
+          maxLength: 300,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('저장')),
+        ],
+      ),
+    );
+    // 창이 닫히는 동안에도 입력칸이 controller 를 쓰므로 여기서 바로 dispose 하지 않는다
+    if (text == null || text.isEmpty || text == c.content) return;
+    try {
+      await _api.put('/api/post-comments/${c.id}', body: {'content': text, 'parentId': null});
+      await _view.currentState?.reload();
+    } catch (e) {
+      if (mounted) showMessage(context, '$e');
+    }
+  }
+
+  Future<void> _deleteComment(PostComment c) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('이 댓글을 지울까요?'),
+        content: const Text('지운 댓글은 되돌릴 수 없어요.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('지우기')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _api.delete('/api/post-comments/${c.id}');
+      await _view.currentState?.reload();
+    } catch (e) {
+      if (mounted) showMessage(context, '$e');
+    }
+  }
+
+  /// 내 글 · 내 댓글의 ⋮ 메뉴 (고치기 / 지우기)
+  Widget _mineMenu({required VoidCallback onEdit, required VoidCallback onDelete, double size = 22}) {
+    return PopupMenuButton<String>(
+      tooltip: '더 보기',
+      icon: Icon(Icons.more_vert, size: size, color: AppColors.muted),
+      onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'edit', child: Text('고치기')),
+        PopupMenuItem(value: 'delete', child: Text('지우기', style: TextStyle(color: AppColors.danger))),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,12 +199,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       ]),
                     ),
                   ),
-                  if (p.mine)
-                    IconButton(
-                      tooltip: '글 지우기',
-                      onPressed: () => _delete(p),
-                      icon: const Icon(Icons.delete_outline, color: AppColors.muted),
-                    ),
+                  if (p.mine) _mineMenu(onEdit: () => _edit(p), onDelete: () => _delete(p)),
                 ]),
                 const SizedBox(height: 16),
                 Row(children: [Tag(p.topicLabel)]),
@@ -234,6 +302,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 Text(c.author?.nickname ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                 const SizedBox(width: 8),
                 Text(shortDateTime(c.createdAt), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                const Spacer(),
+                if (c.mine)
+                  SizedBox(
+                    height: 28,
+                    child: _mineMenu(onEdit: () => _editComment(c), onDelete: () => _deleteComment(c), size: 18),
+                  ),
               ]),
               const SizedBox(height: 3),
               Text(c.content, style: const TextStyle(height: 1.45)),

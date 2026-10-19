@@ -361,6 +361,18 @@ public class CommunityService {
         return commentId;
     }
 
+    /** 내 댓글 고치기. 남의 댓글이거나 지워진 댓글이면 404 */
+    @Transactional
+    public void updateComment(Long userId, Long commentId, String content) {
+        int changed = jdbc.update("""
+                UPDATE post_comments SET content = :content WHERE id = :id AND user_id = :user AND status = 'VISIBLE'
+                """, new MapSqlParameterSource("id", commentId).addValue("user", userId)
+                .addValue("content", content.strip()));
+        if (changed == 0) {
+            throw new BusinessException(ErrorCode.COMMENT_NOT_FOUND);
+        }
+    }
+
     /** 내 댓글 지우기 */
     @Transactional
     public void deleteComment(Long userId, Long commentId) {
