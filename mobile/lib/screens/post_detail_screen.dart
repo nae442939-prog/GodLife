@@ -10,7 +10,7 @@ import 'post_write_screen.dart';
 import 'profile_screen.dart';
 
 /// 커뮤니티 글 상세: 본문 · 사진 · 좋아요 · 댓글(답글은 한 단계 들여 쓴다) · 댓글 쓰기
-/// 내 글은 ⋮ 에서 고치기 · 지우기, 내 댓글도 ⋮ 에서 고치기 · 지우기
+/// 내 글과 내 댓글은 ⋮ 메뉴에서 수정, 삭제
 class PostDetailScreen extends StatefulWidget {
   const PostDetailScreen({super.key, required this.id});
 
@@ -71,11 +71,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('이 글을 지울까요?'),
-        content: const Text('지운 글은 되돌릴 수 없어요.'),
+        title: const Text('이 글을 삭제할까요?'),
+        content: const Text('삭제한 글은 되돌릴 수 없어요.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('지우기')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제')),
         ],
       ),
     );
@@ -92,7 +92,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final saved =
         await Navigator.of(context).push<int>(MaterialPageRoute(builder: (_) => PostWriteScreen(editing: p)));
     if (saved == null || !mounted) return;
-    showMessage(context, '글을 고쳤어요.');
+    showMessage(context, '글을 수정했어요.');
     await _view.currentState?.reload();
   }
 
@@ -101,7 +101,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final text = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('댓글 고치기'),
+        title: const Text('댓글 수정'),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -129,11 +129,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('이 댓글을 지울까요?'),
-        content: const Text('지운 댓글은 되돌릴 수 없어요.'),
+        title: const Text('이 댓글을 삭제할까요?'),
+        content: const Text('삭제한 댓글은 되돌릴 수 없어요.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('지우기')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제')),
         ],
       ),
     );
@@ -146,15 +146,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
-  /// 내 글 · 내 댓글의 ⋮ 메뉴 (고치기 / 지우기)
+  /// 내 글 · 내 댓글의 ⋮ 메뉴 (수정 / 삭제)
   Widget _mineMenu({required VoidCallback onEdit, required VoidCallback onDelete, double size = 22}) {
     return PopupMenuButton<String>(
       tooltip: '더 보기',
       icon: Icon(Icons.more_vert, size: size, color: AppColors.muted),
       onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
       itemBuilder: (_) => const [
-        PopupMenuItem(value: 'edit', child: Text('고치기')),
-        PopupMenuItem(value: 'delete', child: Text('지우기', style: TextStyle(color: AppColors.danger))),
+        PopupMenuItem(value: 'edit', child: Text('수정')),
+        PopupMenuItem(value: 'delete', child: Text('삭제', style: TextStyle(color: AppColors.danger))),
       ],
     );
   }
