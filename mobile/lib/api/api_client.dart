@@ -66,7 +66,7 @@ class ApiClient {
 
   Future<dynamic> put(String path, {Object? body}) => _send('PUT', path, body: body);
 
-  Future<dynamic> delete(String path) => _send('DELETE', path);
+  Future<dynamic> delete(String path, {Object? body}) => _send('DELETE', path, body: body);
 
   /// 사진 한 장 올리기 (multipart 의 file 칸)
   Future<dynamic> upload(String path, Uint8List bytes, String filename) {

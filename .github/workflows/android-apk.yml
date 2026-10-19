@@ -40,7 +40,14 @@ jobs:
 
       - run: flutter pub get
       - run: flutter test
-      - run: flutter build apk --release
+      # 휴대폰 알림(FCM) 설정값은 저장소에 넣지 않고 GitHub Secrets 의 FIREBASE_DART_DEFINES(JSON 한 덩어리)에서 넣는다.
+      # 없으면 빈 설정으로 빌드한다 — 앱은 그대로 돌고 휴대폰 알림만 꺼진다. 모양은 mobile/firebase-defines.example.json
+      - name: Firebase 설정 넣기
+        env:
+          FIREBASE_DART_DEFINES: ${{ secrets.FIREBASE_DART_DEFINES }}
+        run: |
+          if [ -n "$FIREBASE_DART_DEFINES" ]; then printf '%s' "$FIREBASE_DART_DEFINES" > firebase-defines.json; else echo '{}' > firebase-defines.json; fi
+      - run: flutter build apk --release --dart-define-from-file=firebase-defines.json
 
       - name: APK 를 실행 결과에 붙이기
         uses: actions/upload-artifact@v4

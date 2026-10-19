@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'api/api_client.dart';
 import 'api/models.dart';
+import 'push.dart';
 
 /// 로그인 상태. 앱을 켜면 저장된 리프레시 쿠키로 조용히 다시 로그인해 본다 (자동 로그인).
 class AppState extends ChangeNotifier {
@@ -13,6 +14,9 @@ class AppState extends ChangeNotifier {
   }
 
   final ApiClient api;
+
+  /// 휴대폰 알림(FCM). 로그인하면 이 휴대폰을 서버에 남기고, 로그아웃하면 지운다
+  final AppPush push = AppPush();
 
   User? user;
   bool booting = true;
@@ -28,6 +32,7 @@ class AppState extends ChangeNotifier {
     try {
       await api.refresh();
       user = User.fromJson(await api.get('/api/users/me') as Map<String, dynamic>);
+      unawaited(push.register(api));
     } catch (_) {
       user = null;
     }
@@ -56,6 +61,7 @@ class AppState extends ChangeNotifier {
       await api.appLogin(code);
       user = User.fromJson(await api.get('/api/users/me') as Map<String, dynamic>);
       socialError = null;
+      unawaited(push.register(api));
     } catch (_) {
       socialError = '소셜 로그인에 실패했어요. 다시 시도해 주세요.';
     }
@@ -72,6 +78,7 @@ class AppState extends ChangeNotifier {
     await api.login(email, password);
     user = User.fromJson(await api.get('/api/users/me') as Map<String, dynamic>);
     notifyListeners();
+    unawaited(push.register(api));
   }
 
   /// 프로필 · 설정을 바꾼 뒤 내 정보를 다시 읽는다
@@ -81,6 +88,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await push.unregister(api); // 로그인이 살아 있을 때 지워야 해서 로그아웃보다 먼저
     await api.logout();
     user = null;
     notifyListeners();

@@ -35,6 +35,10 @@
                 <data android:scheme="godlife" android:host="login"/>
             </intent-filter>
         </activity>
+        <!-- 휴대폰 알림(FCM)에 쓰는 아이콘. 없으면 알림 줄에 회색 네모로 나오는 폰이 있다 -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
