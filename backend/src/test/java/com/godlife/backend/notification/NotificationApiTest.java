@@ -24,6 +24,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
@@ -141,6 +143,46 @@ class NotificationApiTest {
                 .andExpect(status().isNoContent());
     }
 
+    @Test
+    @DisplayName("인증 마감 알림: 시간대가 없으면 22시부터 자정 전까지, 아직 인증 안 한 사람에게 하루 한 번만 가고 인증하면 읽음이 된다")
+    void deadlineReminder() throws Exception {
+        LocalDate today = LocalDate.now(clock);
+        long id = challenge(today);
+        join(id, a);
+        join(id, b);
+        verify(id, b);
+
+        assertThat(notificationService.remindDeadline(today.atTime(21, 59))).isZero();
+        notificationService.remindDeadline(today.atTime(22, 0));
+        notificationService.remindDeadline(today.atTime(23, 50));
+
+        list(a).andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].type").value("VERIFY_REMINDER"))
+                .andExpect(jsonPath("$[0].title").value("인증 마감이 얼마 안 남았어요!"))
+                .andExpect(jsonPath("$[0].body").value("'알림 테스트' 챌린지는 오늘 자정까지 인증해야 해요. 아직 오늘 인증이 없어요."));
+        list(b).andExpect(jsonPath("$.length()").value(0));
+
+        // 오늘 인증 알림 · 마감 알림 둘 다 있어도 인증하면 둘 다 읽음
+        notificationService.remindToday(today);
+        unread(a).andExpect(jsonPath("$.count").value(2));
+        verify(id, a);
+        unread(a).andExpect(jsonPath("$.count").value(0));
+    }
+
+    @Test
+    @DisplayName("인증 마감 알림: 인증 가능 시간대가 있으면 그 끝나기 2시간 전부터 끝날 때까지만")
+    void deadlineReminderWithWindow() throws Exception {
+        LocalDate today = LocalDate.now(clock);
+        long id = challenge(today, LocalTime.of(6, 0), LocalTime.of(10, 0));
+        join(id, a);
+
+        assertThat(notificationService.remindDeadline(today.atTime(7, 59))).isZero();
+        assertThat(notificationService.remindDeadline(today.atTime(10, 0))).isZero();
+        assertThat(notificationService.remindDeadline(today.atTime(8, 0))).isEqualTo(1);
+
+        list(a).andExpect(jsonPath("$[0].body").value("'알림 테스트' 챌린지는 10:00까지 인증해야 해요. 아직 오늘 인증이 없어요."));
+    }
+
     // ---------- helpers ----------
 
     private ResultActions list(String token) throws Exception {
@@ -159,11 +201,18 @@ class NotificationApiTest {
     }
 
     private long challenge(LocalDate today) throws Exception {
+        return challenge(today, null, null);
+    }
+
+    /** verifyFrom · verifyUntil 이 있으면 인증 가능 시간대를 건다 */
+    private long challenge(LocalDate today, LocalTime verifyFrom, LocalTime verifyUntil) throws Exception {
         String host = tokenOf(newUser());
+        String window = verifyFrom == null ? ""
+                : ",\"verifyFrom\":\"%s\",\"verifyUntil\":\"%s\"".formatted(verifyFrom, verifyUntil);
         String body = """
                 {"categoryId":1,"title":"알림 테스트","description":"매일 인증","mode":"FREE",
-                 "startDate":"%s","endDate":"%s","frequencyType":"DAILY","maxParticipants":10}
-                """.formatted(today, today.plusDays(6)).replace("\n", "");
+                 "startDate":"%s","endDate":"%s","frequencyType":"DAILY","maxParticipants":10%s}
+                """.formatted(today, today.plusDays(6), window).replace("\n", "");
         String res = mvc.perform(post("/api/challenges").header("Authorization", "Bearer " + host)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
