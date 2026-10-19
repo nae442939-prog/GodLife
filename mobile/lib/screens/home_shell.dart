@@ -7,6 +7,7 @@ import 'challenge_list_screen.dart';
 import 'community_screen.dart';
 import 'home_screen.dart';
 import 'my_page_screen.dart';
+import 'messages_screen.dart';
 import 'notifications_screen.dart';
 import 'records_screen.dart';
 import '../widgets/celebrations.dart';
@@ -86,6 +87,7 @@ class _TabsPage extends StatefulWidget {
 
 class _TabsPageState extends State<_TabsPage> {
   int _unread = 0;
+  int _unreadMessages = 0; // 안 읽은 메시지 + 받은 메시지 요청
 
   @override
   void initState() {
@@ -116,9 +118,19 @@ class _TabsPageState extends State<_TabsPage> {
   }
 
   Future<void> _loadUnread() async {
+    final api = context.read<AppState>().api;
     try {
-      final data = await context.read<AppState>().api.get('/api/notifications/unread-count');
+      final data = await api.get('/api/notifications/unread-count');
       if (mounted) setState(() => _unread = ((data as Map)['count'] as num?)?.toInt() ?? 0);
+    } catch (_) {
+      // 숫자 표시만 빠진다
+    }
+    try {
+      final dm = await api.get('/api/messages/unread-count') as Map;
+      if (mounted) {
+        setState(() => _unreadMessages =
+            ((dm['count'] as num?)?.toInt() ?? 0) + ((dm['requests'] as num?)?.toInt() ?? 0));
+      }
     } catch (_) {
       // 숫자 표시만 빠진다
     }
@@ -127,6 +139,31 @@ class _TabsPageState extends State<_TabsPage> {
   Future<void> _openNotifications() async {
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
     _loadUnread();
+  }
+
+  Future<void> _openMessages() async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MessagesScreen()));
+    _loadUnread();
+  }
+
+  /// 아이콘 오른쪽 위의 작은 코랄 동그라미(안 읽은 수)
+  Widget _withCount(IconData icon, int count) {
+    return Stack(clipBehavior: Clip.none, children: [
+      Icon(icon, size: 24, color: AppColors.brown),
+      if (count > 0)
+        Positioned(
+          top: -4,
+          right: -5,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(99)),
+            child: Text(count > 99 ? '99+' : '$count',
+                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, height: 1)),
+          ),
+        ),
+    ]);
   }
 
   @override
@@ -154,27 +191,18 @@ class _TabsPageState extends State<_TabsPage> {
           const Text('갓생살기'),
         ]),
         actions: [
-          // 종 + 오른쪽 위의 작은 코랄 동그라미(안 읽은 수)
+          // 메시지 + 종 (각각 안 읽은 수)
+          IconButton(
+            tooltip: '메시지',
+            onPressed: _openMessages,
+            padding: const EdgeInsets.all(12),
+            icon: _withCount(Icons.chat_bubble_outline, _unreadMessages),
+          ),
           IconButton(
             tooltip: '알림',
             onPressed: _openNotifications,
             padding: const EdgeInsets.all(12),
-            icon: Stack(clipBehavior: Clip.none, children: [
-              const Icon(Icons.notifications_none, size: 24, color: AppColors.brown),
-              if (_unread > 0)
-                Positioned(
-                  top: -4,
-                  right: -5,
-                  child: Container(
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(99)),
-                    child: Text(_unread > 99 ? '99+' : '$_unread',
-                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, height: 1)),
-                  ),
-                ),
-            ]),
+            icon: _withCount(Icons.notifications_none, _unread),
           ),
           const SizedBox(width: 10),
         ],
