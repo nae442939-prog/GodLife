@@ -12,7 +12,7 @@ import 'challenge_detail_screen.dart';
 import 'ranking_screen.dart';
 import 'verify_screen.dart';
 
-/// 홈 (시안): 소개 띠 → 오늘 인증할 챌린지 → 포인트 상점 바로가기 → 모집 중인 챌린지
+/// 홈 (시안): 소개 띠 → 포인트 상점 바로가기 → 오늘 인증할 챌린지 → 모집 중인 챌린지
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.onBrowse, required this.onCommunity});
 
@@ -58,6 +58,12 @@ class HomeScreen extends StatelessWidget {
           final cardWidth = (box.maxWidth - 40 - 12) / 2;
           return ListView(padding: const EdgeInsets.fromLTRB(0, 6, 0, 28), children: [
             Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _Hero(onBrowse: onBrowse)),
+            // 포인트 상점이 있는 줄 모르는 사람이 많아 소개 띠 바로 아래에 크게 둔다
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _ShopBanner(rewardBalance: data.rewardBalance),
+            ),
             const SizedBox(height: 22),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -85,12 +91,7 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
                 child: _TodayItem(c, reload: reload),
               ),
-            // 포인트 상점이 있는 줄 모르는 사람이 많아 홈에 바로가기를 둔다
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: _ShopBanner(rewardBalance: data.rewardBalance),
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(children: [
@@ -166,7 +167,7 @@ class _HomeData {
   final int? rewardBalance;
 }
 
-/// 포인트 상점 바로가기: 보상 포인트를 어디에 쓰는지 홈에서 바로 보이게 한다 (상점 화면은 웹으로 연다)
+/// 포인트 상점 바로가기: 민트 띠에 내 보상 포인트와 [상점 가기] 버튼 (상점 화면은 웹으로 연다)
 class _ShopBanner extends StatelessWidget {
   const _ShopBanner({required this.rewardBalance});
 
@@ -174,33 +175,54 @@ class _ShopBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (background, foreground) = ColorTag.mint;
-    return AppCard(
-      bordered: false,
-      radius: 18,
-      padding: const EdgeInsets.fromLTRB(16, 15, 14, 15),
-      onTap: () => openWeb('/shop'),
-      child: Row(children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(color: background, shape: BoxShape.circle),
-          child: Icon(Icons.shopping_bag, size: 21, color: foreground),
+    final has = rewardBalance != null && rewardBalance! > 0;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFCDEEE5), Color(0xFFE8F6F1)],
+          ),
         ),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('포인트 상점', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 3),
-            Text(
-                rewardBalance == null || rewardBalance == 0
-                    ? '챌린지에 성공해 모은 보상 포인트로 상품을 받아요'
-                    : '보상 포인트 ${points(rewardBalance!)}P로 상품을 받아 보세요',
-                style: const TextStyle(fontSize: 12, color: AppColors.muted, fontWeight: FontWeight.w600)),
-          ]),
+        child: InkWell(
+          onTap: () => openWeb('/shop'),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Row(children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: const Icon(Icons.shopping_bag, size: 26, color: AppColors.mint),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('포인트 상점',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.mint)),
+                  const SizedBox(height: 3),
+                  Text(has ? '내 보상 포인트 ${points(rewardBalance!)}P' : '보상 포인트로 상품을 받아요',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+                  const SizedBox(height: 2),
+                  Text(has ? '상점에서 바로 써 보세요' : '챌린지에 성공하면 보상 포인트가 쌓여요',
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF5F7A72), fontWeight: FontWeight.w600)),
+                ]),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+                decoration: BoxDecoration(color: AppColors.text, borderRadius: BorderRadius.circular(999)),
+                child: const Text('상점 가기',
+                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
+              ),
+            ]),
+          ),
         ),
-        const Icon(Icons.chevron_right, size: 20, color: Color(0xFFC7C0B0)),
-      ]),
+      ),
     );
   }
 }
