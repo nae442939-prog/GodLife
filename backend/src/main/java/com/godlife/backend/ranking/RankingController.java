@@ -21,7 +21,7 @@ public class RankingController {
 
     private final RankingService rankingService;
 
-    /** 전체(개인) 랭킹. ?metric=month_verify(기본) | total_success | max_streak | month_reward | success_rate */
+    /** 전체(개인) 랭킹. ?metric=month_verify(기본) | total_success | max_streak */
     @GetMapping("/api/rankings/users")
     public UserRankingResponse users(@RequestParam(defaultValue = "month_verify") String metric,
                                      @AuthenticationPrincipal AuthUser authUser) {
@@ -44,10 +44,11 @@ public class RankingController {
         return rankingService.challenges();
     }
 
-    /** 잘못된 기준은 기본(이번 달 인증)으로 */
+    /** 잘못된 기준 · 랭킹 기준이 아닌 것(누적 성공률)은 기본(이번 달 인증)으로 */
     private static RankingMetric parse(String metric) {
         try {
-            return RankingMetric.valueOf(metric.toUpperCase(Locale.ROOT));
+            RankingMetric parsed = RankingMetric.valueOf(metric.toUpperCase(Locale.ROOT));
+            return parsed.ranked() ? parsed : RankingMetric.MONTH_VERIFY;
         } catch (IllegalArgumentException e) {
             return RankingMetric.MONTH_VERIFY;
         }

@@ -95,18 +95,20 @@ class RankingApiTest {
     }
 
     @Test
-    @DisplayName("누적 성공률은 끝난 챌린지 기준: 하루짜리를 인증했으면 100%, 안 했으면 목록에 없다")
-    void successRate() throws Exception {
+    @DisplayName("누적 성공률은 랭킹 기준이 아니다: 고르면 기본(이번 달 인증)으로, 성공률은 프로필에만 나온다")
+    void successRateIsNotRanked() throws Exception {
         long id = challenge(today, today);
         join(id, a);
-        join(id, b);
         verify(id, a);
         lifecycle.run(today.plusDays(1));
 
         mvc.perform(get("/api/rankings/users").param("metric", "success_rate").header("Authorization", "Bearer " + a))
-                .andExpect(jsonPath("$.me.value").value(100.0));
-        mvc.perform(get("/api/rankings/users").param("metric", "success_rate").header("Authorization", "Bearer " + b))
-                .andExpect(jsonPath("$.me").doesNotExist());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.me.value").value(1.0));
+        mvc.perform(get("/api/rankings/users").param("metric", "month_reward").header("Authorization", "Bearer " + a))
+                .andExpect(jsonPath("$.me.value").value(1.0));
+        mvc.perform(get("/api/users/" + aUser.getId() + "/profile").header("Authorization", "Bearer " + a))
+                .andExpect(jsonPath("$.successRate").value(100.0));
     }
 
     @Test
