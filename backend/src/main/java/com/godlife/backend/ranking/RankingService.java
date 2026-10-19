@@ -31,7 +31,8 @@ import java.util.Set;
 
 /**
  * 랭킹 메뉴.
- * - 전체(개인): 누적 성공 · 이번 달 성공 · 최장 연속 (· 이번 달 보상 · 누적 성공률). 상위 N명 + 내 순위. 같은 값이면 같은 순위.
+ * - 전체(개인): 누적 성공 · 이번 달 성공 · 최장 연속. 상위 N명 + 내 순위. 같은 값이면 같은 순위.
+ *   누적 성공률은 랭킹에 없고 프로필 숫자로만 쓴다 ({@link #valueOrNull}).
  *   '성공' = 승인된 인증 한 번 (거절·검토 중인 사진은 세지 않는다).
  * - 친구: 같은 기준을 나 + 내가 팔로우한 사람 안에서만.
  * - 챌린지(팀): 진행 중인 공개 챌린지를 참가자 평균 달성률(어제까지 끝난 기간 기준)로.
@@ -64,12 +65,6 @@ public class RankingService {
                     FROM challenge_participants p
                     WHERE p.status NOT IN ('LEFT', 'KICKED')
                     GROUP BY p.user_id
-                    """,
-            RankingMetric.MONTH_REWARD, """
-                    SELECT w.user_id AS uid, SUM(t.amount) AS val
-                    FROM point_transactions t JOIN wallets w ON w.id = t.wallet_id
-                    WHERE t.type = 'REWARD' AND t.created_at >= :monthStart
-                    GROUP BY w.user_id
                     """,
             // 끝난 챌린지에서 필요한 인증 수(주 N회는 마지막 짧은 주를 남은 일수만큼) 중 채운 비율
             RankingMetric.SUCCESS_RATE, """
