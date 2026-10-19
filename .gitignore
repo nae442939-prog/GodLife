@@ -27,3 +27,8 @@ Thumbs.db
 
 # 채팅 사진 등 업로드 파일 (서버 디스크에만 둔다)
 backend/uploads/
+
+# 휴대폰 알림(FCM) 설정 · 키 — 저장소에 올리지 않는다 (규칙 6)
+mobile/firebase-defines.json
+mobile/android/app/google-services.json
+*firebase-adminsdk*.json

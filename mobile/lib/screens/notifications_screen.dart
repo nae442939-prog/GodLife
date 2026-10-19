@@ -8,6 +8,20 @@ import '../widgets/async_view.dart';
 import 'challenge_detail_screen.dart';
 import 'post_detail_screen.dart';
 
+/// 알림의 화면 주소(link)를 연다: 챌린지 · 글이면 그 화면, 그 밖에는 알림함 (휴대폰 알림을 눌렀을 때도 쓴다)
+void openNotificationLink(NavigatorState nav, String? link, {bool fallbackToList = false}) {
+  final path = link ?? '';
+  final challenge = RegExp(r'^/challenges/(\d+)').firstMatch(path);
+  final post = RegExp(r'^/community/(\d+)').firstMatch(path);
+  if (challenge != null) {
+    nav.push(MaterialPageRoute(builder: (_) => ChallengeDetailScreen(id: int.parse(challenge.group(1)!))));
+  } else if (post != null) {
+    nav.push(MaterialPageRoute(builder: (_) => PostDetailScreen(id: int.parse(post.group(1)!))));
+  } else if (fallbackToList) {
+    nav.push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+  }
+}
+
 /// 알림함 (홈 위쪽의 종을 누르면 열린다). 누르면 읽음 처리하고, 챌린지 · 글 알림이면 그 화면으로 간다
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -30,15 +44,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     }
     if (!mounted) return;
-    final link = n.link ?? '';
-    final challenge = RegExp(r'^/challenges/(\d+)').firstMatch(link);
-    final post = RegExp(r'^/community/(\d+)').firstMatch(link);
-    if (challenge != null) {
-      Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => ChallengeDetailScreen(id: int.parse(challenge.group(1)!))));
-    } else if (post != null) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => PostDetailScreen(id: int.parse(post.group(1)!))));
-    }
+    openNotificationLink(Navigator.of(context), n.link);
   }
 
   Future<void> _readAll() async {
