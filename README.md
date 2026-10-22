@@ -7,6 +7,7 @@
 
 - 배포: https://mygodlife.duckdns.org (폰으로 열면 앱 화면, 컴퓨터로 열면 웹사이트. 시연할 때만 서버를 켭니다)
 - 안드로이드 APK: [Releases 의 app-latest](https://github.com/nae442939-prog/GodLife/releases/tag/app-latest) (main 에 합쳐질 때마다 GitHub Actions 가 다시 빌드)
+- 포트폴리오 PPT: [docs/갓생살기_포트폴리오.pptx](docs/갓생살기_포트폴리오.pptx)
 
 ## 화면 (안드로이드 앱)
 
@@ -104,7 +105,7 @@ frontend/ Vite + React
 mobile/ Flutter 앱 (안드로이드 · 모바일 웹, 자세히는 mobile/README.md)
 ai-server/ FastAPI 추론 서버, training/ 에 학습 스크립트와 노트북
 db/ 00-init.sql(DB · 계정) → 01-schema.sql(테이블) → 02-seed.sql(기준 데이터), migrations/(변경 이력)
-docs/ erd.md (스키마에서 자동 생성한 ERD: python docs/gen-erd.py), erd.html (초기 시안)
+docs/ erd.md (스키마에서 자동 생성한 ERD: python docs/gen-erd.py), erd.html (초기 시안), 갓생살기_포트폴리오.pptx (포트폴리오 PPT)
 deploy/ nginx 설정 사본, server/ 배포 서버 홈의 스크립트 (웹 · 앱 빌드 올리기)
 ```
 
