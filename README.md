@@ -7,7 +7,7 @@
 
 - 배포: https://mygodlife.duckdns.org (폰으로 열면 앱 화면, 컴퓨터로 열면 웹사이트. 시연할 때만 서버를 켭니다)
 - 안드로이드 APK: [Releases 의 app-latest](https://github.com/nae442939-prog/GodLife/releases/tag/app-latest) (main 에 합쳐질 때마다 GitHub Actions 가 다시 빌드)
-- 포트폴리오 PPT: [docs/갓생살기_포트폴리오.pptx](docs/갓생살기_포트폴리오.pptx)
+- 포트폴리오 PPT: [브라우저에서 바로 보기](https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fraw.githubusercontent.com%2Fnae442939-prog%2FGodLife%2Fmain%2Fdocs%2F%25EA%25B0%2593%25EC%2583%259D%25EC%2582%25B4%25EA%25B8%25B0_%25ED%258F%25AC%25ED%258A%25B8%25ED%258F%25B4%25EB%25A6%25AC%25EC%2598%25A4.pptx) · [파일 받기](docs/갓생살기_포트폴리오.pptx)
 
 ## 화면 (안드로이드 앱)
 
