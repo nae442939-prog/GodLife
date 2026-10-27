@@ -9,6 +9,7 @@ import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.notify.EmailSender;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
+import com.godlife.backend.demo.DemoAccounts;
 import com.godlife.backend.phone.PhoneVerification;
 import com.godlife.backend.phone.PhoneVerificationService;
 import com.godlife.backend.user.User;
@@ -47,6 +48,7 @@ public class AccountRecoveryService {
     private final PasswordEncoder passwordEncoder;
     private final EmailSender emailSender;
     private final RequestThrottle throttle;
+    private final DemoAccounts demoAccounts;
     private final Clock clock;
     private final int mailIpLimit;
 
@@ -54,7 +56,7 @@ public class AccountRecoveryService {
                                   PasswordResetTokenRepository resetTokenRepository,
                                   RefreshTokenRepository refreshTokenRepository,
                                   PhoneVerificationService phoneVerificationService, PasswordEncoder passwordEncoder,
-                                  EmailSender emailSender, RequestThrottle throttle, Clock clock,
+                                  EmailSender emailSender, RequestThrottle throttle, DemoAccounts demoAccounts, Clock clock,
                                   @Value("${app.mail.ip-limit}") int mailIpLimit) {
         this.userRepository = userRepository;
         this.socialAccountRepository = socialAccountRepository;
@@ -64,6 +66,7 @@ public class AccountRecoveryService {
         this.passwordEncoder = passwordEncoder;
         this.emailSender = emailSender;
         this.throttle = throttle;
+        this.demoAccounts = demoAccounts;
         this.clock = clock;
         this.mailIpLimit = mailIpLimit;
     }
@@ -100,6 +103,10 @@ public class AccountRecoveryService {
     @Transactional
     public String requestPasswordReset(String rawEmail, String clientIp) {
         throttle.check("mail:" + clientIp, mailIpLimit, Duration.ofMinutes(10));
+        // 테스트 계정은 데모 메일 모드에서 누구나 인증번호를 받아 비밀번호를 바꿀 수 있으므로 막는다 (아이디가 공개돼 있어 숨길 것도 없다)
+        if (demoAccounts.isDemoEmail(rawEmail)) {
+            throw new BusinessException(ErrorCode.DEMO_ACCOUNT_LOCKED);
+        }
         LocalDateTime now = LocalDateTime.now(clock);
         User user = userRepository.findByEmail(normalizeEmail(rawEmail))
                 .filter(u -> u.getPasswordHash() != null && u.getStatus() == UserStatus.ACTIVE)
@@ -161,6 +168,7 @@ public class AccountRecoveryService {
         User user = userRepository.findById(token.getUserId())
                 .filter(u -> u.getStatus() == UserStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_RESET_TOKEN));
+        demoAccounts.requireNotDemo(user.getId());
         user.changePassword(passwordEncoder.encode(newPassword));
         token.markUsed(now);
         refreshTokenRepository.revokeAllByUserId(user.getId(), now);

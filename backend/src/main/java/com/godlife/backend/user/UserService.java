@@ -2,6 +2,7 @@ package com.godlife.backend.user;
 
 import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
+import com.godlife.backend.demo.DemoAccounts;
 import com.godlife.backend.phone.PhoneCipher;
 import com.godlife.backend.phone.PhoneVerification;
 import com.godlife.backend.phone.PhoneVerificationService;
@@ -18,6 +19,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PhoneVerificationService phoneVerificationService;
     private final PhoneCipher phoneCipher;
+    private final DemoAccounts demoAccounts;
 
     /** 본인에게 돌려주는 내 정보 (인증한 휴대폰 번호 포함) */
     public UserResponse toResponse(User user) {
@@ -38,6 +40,8 @@ public class UserService {
     @Transactional
     public User registerPhone(Long userId, String phoneProof) {
         User user = getActive(userId);
+        // 테스트 계정에 실제 번호를 등록하면 그 번호로 따로 가입할 수 없게 되고, 다음 사람에게 번호가 보인다
+        demoAccounts.requireNotDemo(userId);
         PhoneVerification phone = phoneVerificationService.consumeProof(phoneProof);
         userRepository.findByPhoneHash(phone.getPhoneHash())
                 .filter(owner -> !owner.getId().equals(userId))

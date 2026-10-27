@@ -83,6 +83,16 @@ public class User {
         return user;
     }
 
+    /**
+     * 회사에서 둘러볼 테스트 계정 (DemoAccountReset 이 만든다). 휴대폰 인증 없이 만들므로 phoneHash 에는
+     * 실제 번호가 아닌 계정 고유 값을 넣어 휴대폰 인증을 마친 회원처럼 쓸 수 있게 한다.
+     */
+    public static User createDemo(String email, String passwordHash, String nickname, String phoneHash, Role role) {
+        User user = createWithPassword(email, passwordHash, nickname, phoneHash);
+        user.role = role;
+        return user;
+    }
+
     /** 소셜 전용 가입자. 비밀번호가 없어 이메일 로그인은 할 수 없다. */
     public static User createSocial(String email, String nickname) {
         return create(email, nickname);
