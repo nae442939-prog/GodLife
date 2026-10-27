@@ -6,6 +6,7 @@ import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
 import com.godlife.backend.common.upload.ImageStore;
+import com.godlife.backend.demo.DemoAccounts;
 import com.godlife.backend.user.dto.ProfileEditDtos.AccountResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -45,6 +46,7 @@ public class ProfileEditService {
     private final PasswordEncoder passwordEncoder;
     private final ImageStore imageStore;
     private final RequestThrottle throttle;
+    private final DemoAccounts demoAccounts;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -120,6 +122,7 @@ public class ProfileEditService {
     @Transactional
     public void changePassword(Long userId, String currentPassword, String newPassword) {
         User user = userService.getActive(userId);
+        demoAccounts.requireNotDemo(userId);
         if (user.getPasswordHash() == null) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "소셜 로그인으로 가입한 계정은 비밀번호가 없어요.");
         }

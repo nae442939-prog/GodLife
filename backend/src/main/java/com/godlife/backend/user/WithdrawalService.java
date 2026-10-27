@@ -5,6 +5,7 @@ import com.godlife.backend.common.error.BusinessException;
 import com.godlife.backend.common.error.ErrorCode;
 import com.godlife.backend.common.ratelimit.RequestThrottle;
 import com.godlife.backend.common.upload.ImageStore;
+import com.godlife.backend.demo.DemoAccounts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -24,6 +25,7 @@ import java.util.List;
  * - 내가 연 챌린지가 아직 끝나지 않았으면 불가
  * - 쓰지 않은 충전 포인트가 있으면 불가 (지갑에서 환불받은 뒤 탈퇴)
  * - 포인트 상점에서 아직 받지 못한 주문(준비 중 · 배송 중)이 있으면 불가
+ * - 여러 사람이 같이 쓰는 테스트 계정이면 불가 (테스트 계정은 매일 새벽 forceWithdraw 로 내리고 새로 만든다)
  * 보상 포인트는 원래 현금으로 바꿀 수 없는 포인트라 탈퇴하면 그대로 사라진다 (탈퇴 전에 안내한다).
  * 탈퇴하면 이메일 · 닉네임 · 휴대폰 · 사진 · 소개 · 일기 · 팔로우 · 소셜 연결을 지우고 계정을 WITHDRAWN 으로 바꾼다.
  * 챌린지 참여 · 인증 · 채팅 기록은 다른 참가자의 기록과 얽혀 있어 '탈퇴한회원' 이름으로 남는다.
@@ -53,6 +55,7 @@ public class WithdrawalService {
     private final PasswordEncoder passwordEncoder;
     private final RequestThrottle throttle;
     private final ImageStore imageStore;
+    private final DemoAccounts demoAccounts;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
 
@@ -61,6 +64,9 @@ public class WithdrawalService {
         User user = userService.getActive(userId);
         MapSqlParameterSource me = new MapSqlParameterSource("me", userId);
         List<String> blockers = new ArrayList<>();
+        if (demoAccounts.isDemo(userId)) {
+            blockers.add("테스트 계정은 탈퇴할 수 없어요. 여러 분이 같이 쓰는 계정이라 매일 새벽 처음 상태로 돌아가요.");
+        }
 
         long joined = count("""
                 SELECT COUNT(*) FROM challenge_participants p JOIN challenges c ON c.id = p.challenge_id
@@ -112,8 +118,17 @@ public class WithdrawalService {
     /** 탈퇴. 본인 확인을 한 번 더 거친 뒤 진행한다 (화면의 마지막 경고에서 [탈퇴하기]를 눌렀을 때). */
     @Transactional
     public void withdraw(Long userId, String password, String confirm) {
-        User user = verify(userId, password, confirm);
+        erase(verify(userId, password, confirm));
+    }
 
+    /** 테스트 계정 초기화용: 막는 조건 · 본인 확인 없이 탈퇴와 똑같이 개인정보를 지우고 계정을 닫는다 (DemoAccountReset) */
+    @Transactional
+    public void forceWithdraw(Long userId) {
+        erase(userService.getActive(userId));
+    }
+
+    private void erase(User user) {
+        Long userId = user.getId();
         MapSqlParameterSource me = new MapSqlParameterSource("me", userId);
         // 지울 사진 파일: 일기 사진, 올린 프로필 사진
         List<String> files = new ArrayList<>(jdbc.queryForList(

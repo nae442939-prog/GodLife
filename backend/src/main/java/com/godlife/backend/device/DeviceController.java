@@ -1,7 +1,11 @@
 package com.godlife.backend.device;
 
+import com.godlife.backend.auth.AuthUser;
+import com.godlife.backend.demo.DemoAccounts;
+import com.godlife.backend.demo.DemoMask;
 import com.godlife.backend.device.DeviceService.Group;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,9 +17,12 @@ import java.util.List;
 public class DeviceController {
 
     private final DeviceService deviceService;
+    private final DemoAccounts demoAccounts;
 
     @GetMapping("/api/admin/devices")
-    public List<Group> suspicious() {
-        return deviceService.suspicious();
+    public List<Group> suspicious(@AuthenticationPrincipal AuthUser authUser) {
+        List<Group> groups = deviceService.suspicious();
+        // 테스트용 관리자에게는 IP 뒷자리와 이메일을 가린다
+        return demoAccounts.isDemoAdmin(authUser.id()) ? groups.stream().map(DemoMask::device).toList() : groups;
     }
 }

@@ -1,5 +1,8 @@
 package com.godlife.backend.shop;
 
+import com.godlife.backend.auth.AuthUser;
+import com.godlife.backend.demo.DemoAccounts;
+import com.godlife.backend.demo.DemoMask;
 import com.godlife.backend.shop.dto.ShopDtos.AdminOrder;
 import com.godlife.backend.shop.dto.ShopDtos.AdminProduct;
 import com.godlife.backend.shop.dto.ShopDtos.Created;
@@ -13,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,10 +37,12 @@ public class ShopAdminController {
 
     private final ShopAdminService adminService;
     private final OrderService orderService;
+    private final DemoAccounts demoAccounts;
 
     @GetMapping("/api/admin/shop/sponsors")
-    public List<Sponsor> sponsors() {
-        return adminService.sponsors();
+    public List<Sponsor> sponsors(@AuthenticationPrincipal AuthUser authUser) {
+        List<Sponsor> sponsors = adminService.sponsors();
+        return demoAccounts.isDemoAdmin(authUser.id()) ? sponsors.stream().map(DemoMask::sponsor).toList() : sponsors;
     }
 
     @PostMapping("/api/admin/shop/sponsors")
@@ -75,8 +81,11 @@ public class ShopAdminController {
 
     /** 주문 목록 (?status=PREPARING|SHIPPING|DELIVERED|CANCELED, 없으면 전체) */
     @GetMapping("/api/admin/shop/orders")
-    public List<AdminOrder> orders(@RequestParam(required = false) OrderStatus status) {
-        return orderService.all(status);
+    public List<AdminOrder> orders(@AuthenticationPrincipal AuthUser authUser,
+                                   @RequestParam(required = false) OrderStatus status) {
+        List<AdminOrder> orders = orderService.all(status);
+        // 테스트용 관리자에게는 실제 회원의 배송지 · 연락처 · 쿠폰 번호를 가린다
+        return demoAccounts.isDemoAdmin(authUser.id()) ? orders.stream().map(DemoMask::order).toList() : orders;
     }
 
     /** 발송 처리 (준비 중 → 배송 중) */

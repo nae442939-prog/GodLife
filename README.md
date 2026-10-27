@@ -9,6 +9,19 @@
 - 안드로이드 APK: [Releases 의 app-latest](https://github.com/nae442939-prog/GodLife/releases/tag/app-latest) (main 에 합쳐질 때마다 GitHub Actions 가 다시 빌드)
 - 포트폴리오 PPT: [브라우저에서 바로 보기](https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fraw.githubusercontent.com%2Fnae442939-prog%2FGodLife%2Fmain%2Fdocs%2F%25EA%25B0%2593%25EC%2583%259D%25EC%2582%25B4%25EA%25B8%25B0_%25ED%258F%25AC%25ED%258A%25B8%25ED%258F%25B4%25EB%25A6%25AC%25EC%2598%25A4.pptx) · [파일 받기](docs/갓생살기_포트폴리오.pptx)
 
+### 테스트 계정
+
+가입하려면 휴대폰 인증이 필요해서, 바로 둘러볼 수 있는 계정을 준비해 두었습니다.
+
+| 계정 | 아이디 | 비밀번호 | 할 수 있는 것 |
+|---|---|---|---|
+| 일반 회원 | `test@godlife.test` | `test1234` | 챌린지 참여, 사진 인증, 커뮤니티, 포인트 상점 (보상 포인트 50,000P, 체험 챌린지 기록이 들어 있음) |
+| 관리자 | `admin@godlife.test` | `admin1234` | 관리자 화면 보기 (AI 검토, 신고, 문의, 상점 주문). 처리 버튼은 막혀 있고, 회원 개인정보는 가려서 보입니다 |
+
+- 여러 분이 같이 쓰는 계정이라 비밀번호 변경과 찾기, 휴대폰 등록, 탈퇴는 막아 두었습니다.
+- 매일 새벽 4시에 처음 상태로 돌아갑니다 (그 시간에 서버가 꺼져 있었으면 켜질 때).
+- 서버는 비용 때문에 시연할 때만 켭니다. 접속이 안 되면 지원서의 연락처로 알려 주시면 바로 켜겠습니다.
+
 ## 화면 (안드로이드 앱)
 
 | 로그인 | 가입 축하 | 홈 | 챌린지 |
@@ -133,6 +146,7 @@ mysql -u godlife_user -p godlife < db/02-seed.sql
 |---|---|
 | `DEMO_KEEP_DATES=true` | 더미 데이터의 날짜를 매일 오늘에 맞춰 민다 → 날짜가 지나도 모집 중 · 진행 중 챌린지와 랭킹이 그대로 보인다 (실제 회원의 기록은 건드리지 않는다) |
 | `DEMO_STARTER_DATA=true` | 가입하면 체험 데이터를 넣는다: 오늘 시작하는 무료 챌린지 3개 참여 + 지난 6일 기록이 있는 본인만 보는 '갓생 체험' 챌린지 + 환영 알림. 포인트는 건드리지 않는다 |
+| `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD`, `DEMO_ADMIN_EMAIL`, `DEMO_ADMIN_PASSWORD` | 위의 테스트 계정을 만든다 (비워 두면 안 만든다). 매일 새벽 4시에 예전 계정을 탈퇴 처리하고 같은 아이디로 새로 만든다. 관리자 계정은 보기만 된다 |
 
 ### 2. 백엔드 (http://localhost:8080)
 
@@ -192,7 +206,7 @@ cd backend
 ```
 
 테스트는 개발 DB 가 아니라 `godlife_test` DB 를 씁니다. 같은 스키마(`01-schema.sql`)와 기준 데이터(`02-seed.sql`)를 넣어 두어야 합니다.
-백엔드 통합 테스트 233개, 앱 단위 테스트(`flutter test`)가 있습니다.
+백엔드 통합 테스트 239개, 앱 단위 테스트(`flutter test`)가 있습니다.
 
 ## 배포
 
